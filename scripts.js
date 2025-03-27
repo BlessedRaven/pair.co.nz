@@ -137,6 +137,56 @@ const deityIcons = {
 function addMessage(data) {
     const messageElement = document.createElement('div');
     messageElement.classList.add('message');
-    let content = `<strong>${deityIcons[data.deity]} ${data.deity.toUpperCase()} - ${data.username}</strong><br>${data.message}`;
+    
+    le// God Powers
+document.getElementById('lightning').addEventListener('click', () => {
+    socket.emit('effect', 'lightning');
+});
+
+document.getElementById('heal').addEventListener('click', () => {
+    socket.emit('effect', 'heal');
+});
+
+document.getElementById('ban').addEventListener('click', () => {
+    const user = prompt('Who to banish?');
+    if (user) socket.emit('ban', user);
+});
+
+socket.on('effect', (type) => {
+    if (type === 'lightning') {
+        createParticles(50, 'var(--sacred-blue)');
+    } else if (type === 'heal') {
+        createParticles(50, 'var(--welsh-green)');
+    }
+});
+
+function createParticles(count, color) {
+    for (let i = 0; i < count; i++) {
+        const particle = document.createElement('div');
+        particle.classList.add('particle');
+        particle.style.background = color;
+        particle.style.left = `${Math.random() * window.innerWidth}px`;
+        particle.style.top = `${Math.random() * window.innerHeight}px`;
+        document.body.appendChild(particle);
+        setTimeout(() => particle.remove(), 2000);
+    }
+}
+
+// Enhanced Geometry
+function drawMetatronsCube(x, y, radius) {
+    drawVesicaPiscis(x, y, radius);
+    for (let i = 0; i < 6; i++) {
+        const angle = (Math.PI / 3) * i;
+        const newX = x + Math.cos(angle) * radius * 2;
+        const newY = y + Math.sin(angle) * radius * 2;
+        drawVesicaPiscis(newX, newY, radius);
+    }
+}
+
+function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawMetatronsCube(canvas.width/2, canvas.height/2, 100);
+    requestAnimationFrame(animate);
+}t content = `<strong>${deityIcons[data.deity]} ${data.deity.toUpperCase()} - ${data.username}</strong><br>${data.message}`;
     // ... rest of the function remains same
 }
