@@ -3,175 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pair.co.nz - Mythic Chat</title>
-    <style>
-        :root {
-            --golden-ratio: 1.618;
-            --sacred-blue: #1E90FF;
-            --roman-gold: #DAA520;
-            --egyptian-sand: #F4A460;
-        }
-
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Papyrus', sans-serif;
-            background: linear-gradient(45deg, #000033, #1a0033);
-            color: var(--roman-gold);
-            overflow: hidden;
-        }
-
-        /* Sacred Geometry Background */
-        #background-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: -1;
-            opacity: 0.2;
-        }
-
-        #chat-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            height: 100vh;
-            display: grid;
-            grid-template-rows: auto 1fr auto;
-            gap: 20px;
-        }
-
-        #header {
-            text-align: center;
-            border-bottom: 2px solid var(--egyptian-sand);
-            padding-bottom: 20px;
-        }
-
-        #header h1 {
-            margin: 0;
-            font-size: calc(1em * var(--golden-ratio));
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        #messages {
-            background: rgba(0, 0, 0, 0.7);
-            border-radius: 10px;
-            padding: 20px;
-            overflow-y: auto;
-            height: 100%;
-        }
-
-        .message {
-            margin: 10px 0;
-            padding: 10px;
-            border-left: 4px solid var(--sacred-blue);
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        #input-area {
-            display: flex;
-            gap: 10px;
-        }
-
-        #username, #message-input {
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-            background: rgba(255, 255, 255, 0.2);
-            color: var(--roman-gold);
-        }
-
-        #username {
-            width: 200px;
-        }
-
-        #message-input {
-            flex-grow: 1;
-        }
-
-        #send-btn {
-            padding: 10px 20px;
-            background: var(--sacred-blue);
-            border: none;
-            border-radius: 5px;
-            color: white;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-        #send-btn:hover {
-            transform: scale(1.1);
-        }
-    </style>
+    <title>Pair.co.nz - Pantheon Chat</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.1/socket.io.js"></script>
 </head>
 <body>
-    <canvas id="background-canvas"></canvas>
+    <canvas id="sacred-canvas"></canvas>
     <div id="chat-container">
-        <div id="header">
-            <h1>Mythic Chat - Where Gods Converge</h1>
-            <p>Channeling the wisdom of Roman, Greek, Welsh, and Egyptian deities</p>
-        </div>
+        <header>
+            <h1>Pantheon Chat</h1>
+            <p>Where Mortals Commune with Gods</p>
+            <div id="god-selector">
+                <select id="deity-choice">
+                    <option value="zeus">Zeus (Greek)</option>
+                    <option value="jupiter">Jupiter (Roman)</option>
+                    <option value="anubis">Anubis (Egyptian)</option>
+                    <option value="ceridwen">Ceridwen (Welsh)</option>
+                </select>
+            </div>
+        </header>
         
-        <div id="messages"></div>
+        <div id="messages-container">
+            <div id="messages"></div>
+        </div>
         
         <div id="input-area">
-            <input type="text" id="username" placeholder="Enter your divine name">
-            <input type="text" id="message-input" placeholder="Speak your truth...">
-            <button id="send-btn">Send</button>
+            <input type="text" id="username" placeholder="Your Mortal Name">
+            <textarea id="message-input" placeholder="Speak to the Divine..."></textarea>
+            <input type="file" id="file-upload" accept="image/*, .pdf">
+            <button id="send-btn">Invoke</button>
         </div>
     </div>
-
-    <script>
-        // Basic Chat Functionality
-        const messagesDiv = document.getElementById('messages');
-        const usernameInput = document.getElementById('username');
-        const messageInput = document.getElementById('message-input');
-        const sendBtn = document.getElementById('send-btn');
-
-        sendBtn.addEventListener('click', sendMessage);
-        messageInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendMessage();
-        });
-
-        function sendMessage() {
-            const username = usernameInput.value.trim() || 'Anonymous Deity';
-            const message = messageInput.value.trim();
-            
-            if (message) {
-                const messageElement = document.createElement('div');
-                messageElement.classList.add('message');
-                messageElement.innerHTML = `<strong>${username}:</strong> ${message}`;
-                messagesDiv.appendChild(messageElement);
-                messageInput.value = '';
-                messagesDiv.scrollTop = messagesDiv.scrollHeight;
-            }
-        }
-
-        // Sacred Geometry Background
-        const canvas = document.getElementById('background-canvas');
-        const ctx = canvas.getContext('2d');
-        
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-
-        function drawFlowerOfLife(x, y, radius, layers) {
-            ctx.beginPath();
-            ctx.arc(x, y, radius, 0, Math.PI * 2);
-            ctx.strokeStyle = 'rgba(218, 165, 32, 0.3)';
-            ctx.stroke();
-            
-            if (layers > 0) {
-                for (let i = 0; i < 6; i++) {
-                    const angle = (Math.PI / 3) * i;
-                    const newX = x + Math.cos(angle) * radius;
-                    const newY = y + Math.sin(angle) * radius;
-                    drawFlowerOfLife(newX, newY, radius, layers - 1);
-                }
-            }
-        }
-
-        // Draw initial pattern
-        drawFlowerOfLife(canvas.width/2, canvas.height/2, 50, 2);
-    </script>
+    <script src="scripts.js"></script>
 </body>
 </html>
