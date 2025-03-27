@@ -1,0 +1,105 @@
+:root {
+    --golden-ratio: 1.618;
+    --sacred-blue: #1E90FF;
+    --roman-gold: #DAA520;
+    --egyptian-sand: #F4A460;
+    --welsh-green: #228B22;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Papyrus', 'Arial', sans-serif;
+    background: radial-gradient(circle at center, #000033, #1a0033);
+    color: var(--roman-gold);
+    overflow: hidden;
+}
+
+#sacred-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: -1;
+    opacity: 0.3;
+}
+
+#chat-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+    height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 20px;
+}
+
+header {
+    text-align: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 10px;
+}
+
+#god-selector {
+    margin-top: 10px;
+}
+
+#messages-container {
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 10px;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.message {
+    margin: 15px 0;
+    padding: 15px;
+    border-left: 6px solid var(--sacred-blue);
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    animation: fadeIn 0.5s ease-in;
+}
+
+.message img, .message embed {
+    max-width: 300px;
+    margin-top: 10px;
+}
+
+#input-area {
+    display: grid;
+    grid-template-columns: 1fr 3fr 1fr 1fr;
+    gap: 10px;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 10px;
+}
+
+input, textarea, select, button {
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--roman-gold);
+}
+
+textarea {
+    resize: vertical;
+    min-height: 60px;
+}
+
+button {
+    background: var(--sacred-blue);
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+button:hover {
+    transform: scale(1.05);
+    background: var(--welsh-green);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
