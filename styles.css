@@ -103,3 +103,43 @@ button:hover {
     from { opacity: 0; }
     to { opacity: 1; }
 }
+body {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+}
+
+.sidebar {
+    background: rgba(0, 0, 0, 0.9);
+    padding: 20px;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+#god-powers {
+    position: fixed;
+    bottom: 20px;
+    right: 320px;
+    display: flex;
+    gap: 10px;
+}
+
+#god-powers button {
+    padding: 15px;
+    font-family: 'Cinzel', serif;
+    text-transform: uppercase;
+}
+
+/* Particle Effects */
+.particle {
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    background: var(--roman-gold);
+    border-radius: 50%;
+    animation: particleFade 2s ease-out forwards;
+}
+
+@keyframes particleFade {
+    0% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(0); }
+}
