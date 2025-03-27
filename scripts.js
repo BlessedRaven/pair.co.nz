@@ -111,3 +111,32 @@ io.on('connection', (socket) => {
 server.listen(3000, () => {
     console.log('Pantheon Chat running on port 3000');
 });
+// Moderation
+socket.on('ban', (user) => {
+    if (usernameInput.value === user) {
+        alert('You have been banished from the Pantheon!');
+        window.location.reload();
+    }
+});
+
+// User List
+const userList = new Set();
+socket.on('userList', (users) => {
+    userList.clear();
+    users.forEach(u => userList.add(u));
+});
+
+// Profile Icons
+const deityIcons = {
+    zeus: '⚡',
+    jupiter: '🦅',
+    anubis: '🐺',
+    ceridwen: '🍵'
+};
+
+function addMessage(data) {
+    const messageElement = document.createElement('div');
+    messageElement.classList.add('message');
+    let content = `<strong>${deityIcons[data.deity]} ${data.deity.toUpperCase()} - ${data.username}</strong><br>${data.message}`;
+    // ... rest of the function remains same
+}
