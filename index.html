@@ -3,51 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pair.co.nz - Pantheon Chat</title>
-    <link rel="stylesheet" href="styles.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.1/socket.io.js"></script>
+    <title>Pair Trading Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .hidden {
+            display: none;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .item {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 5px 0;
+        }
+    </style>
 </head>
 <body>
-    <canvas id="sacred-canvas"></canvas>
-    <div id="chat-container">
-        <header>
-            <h1>Pantheon Chat</h1>
-            <p>Where Mortals Commune with Gods</p>
-            <div id="god-selector">
-                <select id="deity-choice">
-                    <option value="zeus">Zeus (Greek)</option>
-                    <option value="jupiter">Jupiter (Roman)</option>
-                    <option value="anubis">Anubis (Egyptian)</option>
-                    <option value="ceridwen">Ceridwen (Welsh)</option>
-                </select>
-            </div>
-        </header>
-        
-        <div id="messages-container">
-            <div id="messages"></div>
+    <div class="container">
+        <!-- Login Section -->
+        <div id="login-section">
+            <h1>Welcome to Pair Trading Game</h1>
+            <p>Log in to start trading!</p>
+            <input type="text" id="username" placeholder="Enter username" required>
+            <br>
+            <button onclick="login()">Login</button>
         </div>
-        
-        <div id="input-area">
-            <input type="text" id="username" placeholder="Your Mortal Name">
-            <textarea id="message-input" placeholder="Speak to the Divine..."></textarea>
-            <input type="file" id="file-upload" accept="image/*, .pdf">
-            <button id="send-btn">Invoke</button>
+
+        <!-- Game Section -->
+        <div id="game-section" class="hidden">
+            <h1>Pair Trading Game</h1>
+            <p>Welcome, <span id="player-name"></span>!</p>
+            <p>Your PairCoins: <span id="paircoins">100</span> PC</p>
+            
+            <h2>Marketplace</h2>
+            <div id="marketplace">
+                <div class="item">
+                    <p>Wooden Sword - 20 PC</p>
+                    <button onclick="buyItem('Wooden Sword', 20)">Buy</button>
+                </div>
+                <div class="item">
+                    <p>Golden Apple - 50 PC</p>
+                    <button onclick="buyItem('Golden Apple', 50)">Buy</button>
+                </div>
+                <div class="item">
+                    <p>Magic Stone - 100 PC</p>
+                    <button onclick="buyItem('Magic Stone', 100)">Buy</button>
+                </div>
+            </div>
+
+            <h2>Your Inventory</h2>
+            <div id="inventory"></div>
+            <button onclick="logout()">Logout</button>
         </div>
     </div>
-    <!-- Add to head -->
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
 
-<!-- Add to body -->
-<div id="user-list" class="sidebar">
-    <h2>Pantheon Members</h2>
-    <div id="users"></div>
-</div>
+    <script>
+        let player = {
+            name: '',
+            paircoins: 100,
+            inventory: []
+        };
 
-<div id="god-powers">
-    <button id="lightning">Thunder</button>
-    <button id="heal">Blessing</button>
-    <button id="ban">Banish</button>
-</div>
-    <script src="scripts.js"></script>
+        // Load player data from localStorage if it exists
+        if (localStorage.getItem('player')) {
+            player = JSON.parse(localStorage.getItem('player'));
+            showGame();
+        }
+
+        function login() {
+            const username = document.getElementById('username').value.trim();
+            if (username) {
+                player.name = username;
+                localStorage.setItem('player', JSON.stringify(player));
+                showGame();
+            } else {
+                alert('Please enter a username!');
+            }
+        }
+
+        function showGame() {
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('game-section').classList.remove('hidden');
+            document.getElementById('player-name').textContent = player.name;
+            document.getElementById('paircoins').textContent = player.paircoins;
+            updateInventory();
+        }
+
+        function buyItem(itemName, cost) {
+            if (player.paircoins >= cost) {
+                player.paircoins -= cost;
+                player.inventory.push(itemName);
+                localStorage.setItem('player', JSON.stringify(player));
+                document.getElementById('paircoins').textContent = player.paircoins;
+                updateInventory();
+                alert(`You bought a ${itemName}!`);
+            } else {
+                alert('Not enough PairCoins!');
+            }
+        }
+
+        function updateInventory() {
+            const inventoryDiv = document.getElementById('inventory');
+            inventoryDiv.innerHTML = '';
+            player.inventory.forEach(item => {
+                const itemElement = document.createElement('p');
+                itemElement.textContent = item;
+                inventoryDiv.appendChild(itemElement);
+            });
+        }
+
+        function logout() {
+            localStorage.removeItem('player');
+            location.reload();
+        }
+    </script>
 </body>
 </html>
+git add index.html
+git commit -m "Replace index.html with trading game"
+git push origin main
