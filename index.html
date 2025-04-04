@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PAIR - See the Wild, Master It</title>
+    <title>PAIR - Unlock Nature’s Secrets</title>
     <style>
         body {
             margin: 0;
@@ -14,116 +14,119 @@
             overflow-x: hidden;
             position: relative;
         }
-        .plant-rain {
+        .nature-stream {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            opacity: 0.1;
+            opacity: 0.08;
             z-index: -1;
-            animation: leafFall 15s infinite linear;
+            animation: natureFlow 18s infinite linear;
         }
-        @keyframes leafFall {
-            0% { background: linear-gradient(to bottom, #000, rgba(0, 255, 0, 0.15)); transform: translateY(-100%); }
+        @keyframes natureFlow {
+            0% { background: linear-gradient(to bottom, #000, rgba(0, 255, 0, 0.1)); transform: translateY(-100%); }
             100% { transform: translateY(100%); }
         }
         .container {
-            max-width: 1400px;
+            max-width: 1500px;
             margin: 0 auto;
-            padding: 40px;
+            padding: 50px;
         }
         header {
             text-align: center;
-            padding: 100px 0;
+            padding: 120px 0;
             background: linear-gradient(180deg, #001a00, #000);
-            border-bottom: 5px solid #00ff00;
-            box-shadow: 0 0 50px rgba(0, 255, 0, 0.9);
+            border-bottom: 6px solid #00ff00;
+            box-shadow: 0 0 60px rgba(0, 255, 0, 1);
         }
         header h1 {
-            font-size: 4.5em;
+            font-size: 5em;
             text-transform: uppercase;
-            letter-spacing: 12px;
+            letter-spacing: 15px;
             margin: 0;
-            text-shadow: 0 0 25px #00ff00, 0 0 50px #00ff00;
-            animation: pulseText 2s infinite;
+            text-shadow: 0 0 30px #00ff00, 0 0 60px #00ff00;
+            animation: glowText 2.2s infinite;
         }
-        @keyframes pulseText {
-            0%, 100% { text-shadow: 0 0 25px #00ff00; }
-            50% { text-shadow: 0 0 40px #00ff00; }
+        @keyframes glowText {
+            0%, 100% { text-shadow: 0 0 30px #00ff00; }
+            50% { text-shadow: 0 0 50px #00ff00; }
         }
         header p {
-            font-size: 1.5em;
-            margin: 20px 0;
+            font-size: 1.6em;
+            margin: 25px 0;
             opacity: 0.9;
-            text-shadow: 0 0 8px #00ff00;
+            text-shadow: 0 0 10px #00ff00;
         }
         .pitch {
-            padding: 100px 0;
-            background: rgba(0, 26, 0, 0.9);
-            border: 3px solid #00ff00;
-            box-shadow: inset 0 0 30px rgba(0, 255, 0, 0.5);
+            padding: 120px 0;
+            background: rgba(0, 26, 0, 0.92);
+            border: 4px solid #00ff00;
+            box-shadow: inset 0 0 35px rgba(0, 255, 0, 0.6);
         }
         .pitch h2 {
-            font-size: 2.8em;
+            font-size: 3em;
             text-align: center;
-            margin-bottom: 40px;
-            text-shadow: 0 0 20px #00ff00;
+            margin-bottom: 50px;
+            text-shadow: 0 0 25px #00ff00;
         }
         .pitch-text {
-            line-height: 1.9;
-            font-size: 1.2em;
-            max-width: 800px;
-            margin: 0 auto 40px;
+            line-height: 2;
+            font-size: 1.3em;
+            max-width: 900px;
+            margin: 0 auto 50px;
             opacity: 0.95;
         }
-        .use-cases {
+        .capabilities {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 40px;
-            margin-top: 40px;
+            gap: 50px;
+            margin-top: 50px;
         }
-        .case {
-            background: rgba(0, 26, 0, 0.95);
-            padding: 30px;
-            border: 3px solid #00ff00;
-            border-radius: 12px;
-            box-shadow: 0 0 25px rgba(0, 255, 0, 0.7);
-            transition: transform 0.5s;
+        .capability {
+            background: rgba(0, 26, 0, 0.98);
+            padding: 40px;
+            border: 4px solid #00ff00;
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.8);
+            transition: transform 0.6s;
         }
-        .case:hover {
-            transform: translateY(-10px);
+        .capability:hover {
+            transform: translateY(-15px);
         }
-        .case h3 {
-            font-size: 1.9em;
+        .capability h3 {
+            font-size: 2em;
             margin-top: 0;
-            text-shadow: 0 0 10px #00ff00;
+            text-shadow: 0 0 15px #00ff00;
+        }
+        .capability p {
+            line-height: 1.8;
         }
         .cta {
             text-align: center;
-            padding: 60px 0;
+            padding: 80px 0;
         }
         .cta a {
             color: #00ff00;
             text-decoration: none;
-            font-size: 1.6em;
-            padding: 15px 40px;
-            border: 3px solid #00ff00;
-            border-radius: 8px;
-            transition: all 0.4s;
-            text-shadow: 0 0 10px #00ff00;
+            font-size: 1.8em;
+            padding: 20px 50px;
+            border: 4px solid #00ff00;
+            border-radius: 10px;
+            transition: all 0.5s;
+            text-shadow: 0 0 15px #00ff00;
         }
         .cta a:hover {
             background: #00ff00;
             color: #000;
-            box-shadow: 0 0 30px #00ff00;
+            box-shadow: 0 0 40px #00ff00;
         }
         footer {
             text-align: center;
-            padding: 40px;
+            padding: 50px;
             background: #001a00;
-            border-top: 5px solid #00ff00;
-            box-shadow: 0 -15px 25px rgba(0, 255, 0, 0.5);
+            border-top: 6px solid #00ff00;
+            box-shadow: 0 -20px 30px rgba(0, 255, 0, 0.6);
         }
         a {
             color: #00ff00;
@@ -131,47 +134,47 @@
         }
         a:hover {
             color: #00cc00;
-            text-shadow: 0 0 15px #00ff00;
-        }
+            text-shadow: 0 0 20px #00ff00;
+>            }
         @media (max-width: 768px) {
-            .use-cases {
+            .capabilities {
                 grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
 <body>
-    <div class="plant-rain"></div>
+    <div class="nature-stream"></div>
     <header>
         <div class="container">
             <h1>PAIR</h1>
             <p>Plant & Augmented Intelligence Recognition</p>
-            <p>Vision Beyond the Visible</p>
+            <p>Empower Humanity with Nature’s Code</p>
         </div>
     </header>
 
     <section class="pitch">
         <div class="container">
-            <h2>Revolutionize Survival in 2025</h2>
+            <h2>The Next Evolution of Survival</h2>
             <div class="pitch-text">
-                <p>PAIR is the future of human-nature interaction—augmented reality glasses powered by an ever-learning AI, designed to decode the wild. With a vivid green interface, our tech overlays the world with real-time insights, bridging the gap between ancient survival skills and cutting-edge innovation. We’re raising funds to bring this vision to life—join us in shaping a smarter, greener tomorrow.</p>
+                <p>PAIR is more than augmented reality glasses—it’s a revolution in how we interact with the natural world. Powered by advanced AI, PAIR scans plants, fungi, stones, and resources, identifying their chemical compounds and unlocking their potential. From sustainable living to cutting-edge research, we’re fundraising to bring this technology to life. Invest in a future where nature’s secrets are at your fingertips.</p>
             </div>
-            <div class="use-cases">
-                <div class="case">
-                    <h3>Foraging Mastery</h3>
-                    <p>Spot edible plants, mushrooms, and berries instantly. PAIR identifies nutritional value, warns of toxins, and suggests preparation methods—turning any wilderness into a pantry.</p>
+            <div class="capabilities">
+                <div class="capability">
+                    <h3>Compound Analysis</h3>
+                    <p>PAIR’s AI dissects the molecular makeup of plants and resources—detecting alkaloids, flavonoids, terpenes, and minerals in seconds. Identify caffeine in wild coffee beans, salicylic acid in willow bark, or quartz in a rock sample. Perfect for botanists, chemists, and survivalists seeking precision.</p>
                 </div>
-                <div class="case">
-                    <h3>Medicinal Discovery</h3>
-                    <p>Scan flora to reveal healing properties—anti-inflammatory herbs, natural antibiotics, or pain relievers. Get step-by-step recipes for salves, teas, and poultices.</p>
+                <div class="capability">
+                    <h3>Medicinal Breakthroughs</h3>
+                    <p>Discover pharmaceutical goldmines in your backyard. PAIR flags compounds like morphine in poppies or anti-cancer agents in yew trees, providing dosage guidelines and preparation methods. It’s a game-changer for herbalists, doctors, and remote communities needing accessible healthcare.</p>
                 </div>
-                <div class="case">
-                    <h3>Resource Crafting</h3>
-                    <p>Identify stones and plants for tools, dyes, or fibers. PAIR overlays crafting blueprints—build shelters, weave baskets, or forge primitive tech with precision.</p>
+                <div class="capability">
+                    <h3>Resource Optimization</h3>
+                    <p>Turn raw materials into solutions. PAIR identifies silica in horsetail for glassmaking, tannins in oak bark for leather tanning, or iron oxides in clay for pigments. Crafters, engineers, and off-grid pioneers can maximize every resource with real-time data.</p>
                 </div>
-                <div class="case">
-                    <h3>Environmental Insight</h3>
-                    <p>Detect plant diseases, soil quality, or water sources. PAIR’s AI analyzes ecosystems, flagging risks and opportunities for sustainable living.</p>
+                <div class="capability">
+                    <h3>Ecosystem Guardianship</h3>
+                    <p>Monitor plant health and environmental conditions. PAIR detects pesticide residues, fungal infections, or nutrient deficiencies in crops, alongside soil pH and water purity. Farmers, conservationists, and researchers can protect ecosystems with actionable insights.</p>
                 </div>
             </div>
         </div>
@@ -179,12 +182,12 @@
 
     <section class="cta">
         <div class="container">
-            <a href="donate.html">Fund the Future</a>
+            <a href="donate.html">Support PAIR’s Vision</a>
         </div>
     </section>
 
     <footer>
-        <p>© 2025 PAIR | <a href="https://github.com/pair-co-nz">GitHub</a> | <a href="mailto:contact@pair.co.nz">Contact Us</a></p>
+        <p>© 2025 PAIR | <a href="https://github.com/pair-co-nz">GitHub</a> | <a href="mailto:contact@pair.co.nz">Join the Mission</a></p>
     </footer>
 </body>
 </html>
