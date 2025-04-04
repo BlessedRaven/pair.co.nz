@@ -3,143 +3,162 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pair Trading Game</title>
+    <title>PAIR - Plant & Augmented Intelligence Recognition</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-color: #f0f0f0;
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            font-family: 'Courier New', Courier, monospace;
+            background: #0a1a0a;
+            color: #00ff00;
+            overflow-x: hidden;
         }
         .container {
-            max-width: 600px;
+            max-width: 1200px;
             margin: 0 auto;
-            background: white;
             padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
-        .hidden {
-            display: none;
+        header {
+            text-align: center;
+            padding: 50px 0;
+            background: linear-gradient(180deg, #001a00, #0a1a0a);
+            border-bottom: 2px solid #00ff00;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
         }
-        button {
-            padding: 10px 20px;
-            margin: 5px;
-            background-color: #007bff;
-            color: white;
-            border: none;
+        header h1 {
+            font-size: 3em;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            margin: 0;
+            text-shadow: 0 0 10px #00ff00;
+        }
+        header p {
+            font-size: 1.2em;
+            margin: 10px 0;
+            opacity: 0.8;
+        }
+        .hero {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 50px 0;
+        }
+        .hero-text {
+            flex: 1;
+            padding-right: 20px;
+        }
+        .hero-text h2 {
+            font-size: 2em;
+            margin-bottom: 20px;
+            text-shadow: 0 0 5px #00ff00;
+        }
+        .hero-text p {
+            line-height: 1.6;
+            opacity: 0.9;
+        }
+        .hero-image {
+            flex: 1;
+            text-align: center;
+        }
+        .hero-image .placeholder {
+            width: 300px;
+            height: 200px;
+            background: #001a00;
+            border: 2px solid #00ff00;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-transform: uppercase;
+            font-size: 1.2em;
+            box-shadow: 0 0 15px #00ff00;
+        }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            padding: 50px 0;
+        }
+        .feature-card {
+            background: #001a00;
+            padding: 20px;
+            border: 1px solid #00ff00;
             border-radius: 5px;
-            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+            transition: transform 0.3s;
         }
-        button:hover {
-            background-color: #0056b3;
+        .feature-card:hover {
+            transform: scale(1.05);
         }
-        .item {
-            border: 1px solid #ccc;
-            padding: 10px;
-            margin: 5px 0;
+        .feature-card h3 {
+            margin-top: 0;
+            font-size: 1.5em;
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            background: #001a00;
+            border-top: 2px solid #00ff00;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+        a {
+            color: #00ff00;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        @media (max-width: 768px) {
+            .hero {
+                flex-direction: column;
+            }
+            .features {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Login Section -->
-        <div id="login-section">
-            <h1>Welcome to Pair Trading Game</h1>
-            <p>Log in to start trading!</p>
-            <input type="text" id="username" placeholder="Enter username" required>
-            <br>
-            <button onclick="login()">Login</button>
+    <header>
+        <div class="container">
+            <h1>PAIR</h1>
+            <p>Plant & Augmented Intelligence Recognition</p>
+            <p>Explore. Identify. Thrive.</p>
         </div>
+    </header>
 
-        <!-- Game Section -->
-        <div id="game-section" class="hidden">
-            <h1>Pair Trading Game</h1>
-            <p>Welcome, <span id="player-name"></span>!</p>
-            <p>Your PairCoins: <span id="paircoins">100</span> PC</p>
-            
-            <h2>Marketplace</h2>
-            <div id="marketplace">
-                <div class="item">
-                    <p>Wooden Sword - 20 PC</p>
-                    <button onclick="buyItem('Wooden Sword', 20)">Buy</button>
-                </div>
-                <div class="item">
-                    <p>Golden Apple - 50 PC</p>
-                    <button onclick="buyItem('Golden Apple', 50)">Buy</button>
-                </div>
-                <div class="item">
-                    <p>Magic Stone - 100 PC</p>
-                    <button onclick="buyItem('Magic Stone', 100)">Buy</button>
-                </div>
+    <section class="hero">
+        <div class="container">
+            <div class="hero-text">
+                <h2>Welcome to the Future of Foraging</h2>
+                <p>PAIR integrates cutting-edge AI with augmented reality glasses, delivering a green-tinted interface straight out of a post-apocalyptic dream. Identify trees, plants, mushrooms, and stones with a glance—unlocking their uses in foraging, medicine, crafting, and chemistry. Detect diseases, access recipes, and gather resources like never before.</p>
             </div>
-
-            <h2>Your Inventory</h2>
-            <div id="inventory"></div>
-            <button onclick="logout()">Logout</button>
+            <div class="hero-image">
+                <div class="placeholder">[AR Glasses Prototype]</div>
+            </div>
         </div>
-    </div>
+    </section>
 
-    <script>
-        let player = {
-            name: '',
-            paircoins: 100,
-            inventory: []
-        };
+    <section class="features">
+        <div class="container">
+            <div class="feature-card">
+                <h3>Bio-Recognition</h3>
+                <p>Scan and identify flora, fungi, and minerals instantly with our AI-driven database.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Green Overlay</h3>
+                <p>Experience a retro-futuristic UI with a *Fallout*-inspired green tint, optimized for clarity.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Survival Tools</h3>
+                <p>Get recipes, medicinal uses, and crafting tips tailored to what you find.</p>
+            </div>
+        </div>
+    </section>
 
-        // Load player data from localStorage if it exists
-        if (localStorage.getItem('player')) {
-            player = JSON.parse(localStorage.getItem('player'));
-            showGame();
-        }
-
-        function login() {
-            const username = document.getElementById('username').value.trim();
-            if (username) {
-                player.name = username;
-                localStorage.setItem('player', JSON.stringify(player));
-                showGame();
-            } else {
-                alert('Please enter a username!');
-            }
-        }
-
-        function showGame() {
-            document.getElementById('login-section').classList.add('hidden');
-            document.getElementById('game-section').classList.remove('hidden');
-            document.getElementById('player-name').textContent = player.name;
-            document.getElementById('paircoins').textContent = player.paircoins;
-            updateInventory();
-        }
-
-        function buyItem(itemName, cost) {
-            if (player.paircoins >= cost) {
-                player.paircoins -= cost;
-                player.inventory.push(itemName);
-                localStorage.setItem('player', JSON.stringify(player));
-                document.getElementById('paircoins').textContent = player.paircoins;
-                updateInventory();
-                alert(`You bought a ${itemName}!`);
-            } else {
-                alert('Not enough PairCoins!');
-            }
-        }
-
-        function updateInventory() {
-            const inventoryDiv = document.getElementById('inventory');
-            inventoryDiv.innerHTML = '';
-            player.inventory.forEach(item => {
-                const itemElement = document.createElement('p');
-                itemElement.textContent = item;
-                inventoryDiv.appendChild(itemElement);
-            });
-        }
-
-        function logout() {
-            localStorage.removeItem('player');
-            location.reload();
-        }
-    </script>
+    <footer>
+        <p>&copy; 2025 PAIR | <a href="https://github.com/pair-co-nz">GitHub</a> | <a href="mailto:contact@pair.co.nz">Contact Us</a></p>
+    </footer>
 </body>
 </html>
