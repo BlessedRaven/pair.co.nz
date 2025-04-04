@@ -17,75 +17,75 @@
             justify-content: center;
             position: relative;
         }
-        .plant-rain {
+        .nature-stream {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            opacity: 0.1;
+            opacity: 0.08;
             z-index: -1;
-            animation: leafFall 15s infinite linear;
+            animation: natureFlow 18s infinite linear;
         }
-        @keyframes leafFall {
-            0% { background: linear-gradient(to bottom, #000, rgba(0, 255, 0, 0.15)); transform: translateY(-100%); }
+        @keyframes natureFlow {
+            0% { background: linear-gradient(to bottom, #000, rgba(0, 255, 0, 0.1)); transform: translateY(-100%); }
             100% { transform: translateY(100%); }
         }
         .donate-box {
             text-align: center;
-            padding: 50px;
-            background: rgba(0, 26, 0, 0.95);
-            border: 4px solid #00ff00;
-            box-shadow: 0 0 40px rgba(0, 255, 0, 0.8);
-            border-radius: 15px;
-            max-width: 600px;
+            padding: 60px;
+            background: rgba(0, 26, 0, 0.98);
+            border: 5px solid #00ff00;
+            box-shadow: 0 0 50px rgba(0, 255, 0, 0.9);
+            border-radius: 20px;
+            max-width: 700px;
         }
         h1 {
-            font-size: 3em;
+            font-size: 3.5em;
             text-transform: uppercase;
-            letter-spacing: 8px;
-            text-shadow: 0 0 20px #00ff00;
+            letter-spacing: 10px;
+            text-shadow: 0 0 25px #00ff00;
         }
         p {
-            font-size: 1.3em;
-            line-height: 1.7;
-            margin: 20px 0;
+            font-size: 1.4em;
+            line-height: 1.8;
+            margin: 25px 0;
             opacity: 0.9;
         }
         .eth-address {
-            font-size: 1.1em;
+            font-size: 1.2em;
             word-wrap: break-word;
-            padding: 15px;
+            padding: 20px;
             background: #001a00;
-            border: 2px solid #00ff00;
-            border-radius: 8px;
-            margin: 20px 0;
-            text-shadow: 0 0 5px #00ff00;
+            border: 3px solid #00ff00;
+            border-radius: 10px;
+            margin: 25px 0;
+            text-shadow: 0 0 8px #00ff00;
         }
         a {
             color: #00ff00;
             text-decoration: none;
-            font-size: 1.4em;
-            padding: 10px 30px;
-            border: 3px solid #00ff00;
-            border-radius: 8px;
-            transition: all 0.4s;
+            font-size: 1.5em;
+            padding: 15px 40px;
+            border: 4px solid #00ff00;
+            border-radius: 10px;
+            transition: all 0.5s;
         }
         a:hover {
             background: #00ff00;
             color: #000;
-            box-shadow: 0 0 25px #00ff00;
+            box-shadow: 0 0 30px #00ff00;
         }
     </style>
 </head>
 <body>
-    <div class="plant-rain"></div>
+    <div class="nature-stream"></div>
     <div class="donate-box">
-        <h1>Support PAIR</h1>
-        <p>Help us build the future of augmented survival. Your donation fuels the development of AI-driven AR glasses that empower humanity to thrive in harmony with nature.</p>
-        <p>Send ETH to:</p>
+        <h1>Fund PAIR</h1>
+        <p>Your support accelerates the development of AI-driven AR glasses that decode nature’s compounds, empowering survival, science, and sustainability. Be a pioneer in this groundbreaking journey.</p>
+        <p>Donate ETH to:</p>
         <div class="eth-address">0x0a26edEFB2dB72C5cB66dD9A10B0850364f5a6f3</div>
-        <a href="index.html">Back to Home</a>
+        <a href="index.html">Return to Mission</a>
     </div>
 </body>
 </html>
