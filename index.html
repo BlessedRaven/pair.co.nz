@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PAIR - Decode the Wild</title>
+    <title>PAIR - See the Wild, Master It</title>
     <style>
         body {
             margin: 0;
@@ -14,207 +14,177 @@
             overflow-x: hidden;
             position: relative;
         }
-        .matrix-stream {
+        .plant-rain {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            opacity: 0.12;
+            opacity: 0.1;
             z-index: -1;
-            animation: codeFall 12s infinite linear;
+            animation: leafFall 15s infinite linear;
         }
-        @keyframes codeFall {
-            0% { background: linear-gradient(to bottom, #000, rgba(0, 255, 0, 0.2)); transform: translateY(-100%); }
+        @keyframes leafFall {
+            0% { background: linear-gradient(to bottom, #000, rgba(0, 255, 0, 0.15)); transform: translateY(-100%); }
             100% { transform: translateY(100%); }
         }
         .container {
-            max-width: 1300px;
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 30px;
+            padding: 40px;
         }
         header {
             text-align: center;
-            padding: 80px 0;
+            padding: 100px 0;
             background: linear-gradient(180deg, #001a00, #000);
-            border-bottom: 4px solid #00ff00;
-            box-shadow: 0 0 40px rgba(0, 255, 0, 0.8);
+            border-bottom: 5px solid #00ff00;
+            box-shadow: 0 0 50px rgba(0, 255, 0, 0.9);
         }
         header h1 {
-            font-size: 4em;
+            font-size: 4.5em;
             text-transform: uppercase;
-            letter-spacing: 10px;
+            letter-spacing: 12px;
             margin: 0;
-            text-shadow: 0 0 20px #00ff00, 0 0 40px #00ff00;
-            animation: glitchText 1.8s infinite;
+            text-shadow: 0 0 25px #00ff00, 0 0 50px #00ff00;
+            animation: pulseText 2s infinite;
         }
-        @keyframes glitchText {
-            0%, 100% { transform: translate(0); }
-            25% { transform: translate(-4px, 4px); }
-            50% { transform: translate(4px, -4px); }
+        @keyframes pulseText {
+            0%, 100% { text-shadow: 0 0 25px #00ff00; }
+            50% { text-shadow: 0 0 40px #00ff00; }
         }
         header p {
-            font-size: 1.4em;
-            margin: 15px 0;
+            font-size: 1.5em;
+            margin: 20px 0;
             opacity: 0.9;
-            text-shadow: 0 0 5px #00ff00;
+            text-shadow: 0 0 8px #00ff00;
         }
-        .hero {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 80px 0;
-            background: rgba(0, 26, 0, 0.85);
-            border: 2px solid #00ff00;
-            box-shadow: inset 0 0 25px rgba(0, 255, 0, 0.4);
-            position: relative;
+        .pitch {
+            padding: 100px 0;
+            background: rgba(0, 26, 0, 0.9);
+            border: 3px solid #00ff00;
+            box-shadow: inset 0 0 30px rgba(0, 255, 0, 0.5);
         }
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: rgba(0, 255, 0, 0.6);
-            animation: scanline 5s infinite linear;
-        }
-        @keyframes scanline {
-            0% { top: 0; }
-            100% { top: 100%; }
-        }
-        .hero-text {
-            flex: 1;
-            padding-right: 40px;
-        }
-        .hero-text h2 {
-            font-size: 2.5em;
-            margin-bottom: 25px;
-            text-shadow: 0 0 15px #00ff00;
-        }
-        .hero-text p {
-            line-height: 1.8;
-            opacity: 0.95;
-            animation: dataStream 4s infinite;
-        }
-        @keyframes dataStream {
-            0%, 100% { opacity: 0.95; }
-            50% { opacity: 0.7; }
-        }
-        .hero-image {
-            flex: 1;
+        .pitch h2 {
+            font-size: 2.8em;
             text-align: center;
+            margin-bottom: 40px;
+            text-shadow: 0 0 20px #00ff00;
         }
-        .hero-image .overlay {
-            width: 350px;
-            height: 250px;
-            background: #001a00;
-            border: 4px solid #00ff00;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-transform: uppercase;
-            font-size: 1.4em;
-            box-shadow: 0 0 25px #00ff00;
-            animation: pulseGlow 2.5s infinite;
+        .pitch-text {
+            line-height: 1.9;
+            font-size: 1.2em;
+            max-width: 800px;
+            margin: 0 auto 40px;
+            opacity: 0.95;
         }
-        @keyframes pulseGlow {
-            0%, 100% { box-shadow: 0 0 25px #00ff00; }
-            50% { box-shadow: 0 0 50px #00ff00; }
-        }
-        .features {
+        .use-cases {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 30px;
-            padding: 80px 0;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 40px;
+            margin-top: 40px;
         }
-        .feature-card {
+        .case {
             background: rgba(0, 26, 0, 0.95);
             padding: 30px;
             border: 3px solid #00ff00;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.6);
-            transition: transform 0.5s, box-shadow 0.5s;
+            border-radius: 12px;
+            box-shadow: 0 0 25px rgba(0, 255, 0, 0.7);
+            transition: transform 0.5s;
         }
-        .feature-card:hover {
-            transform: translateY(-15px);
-            box-shadow: 0 0 35px rgba(0, 255, 0, 0.9);
+        .case:hover {
+            transform: translateY(-10px);
         }
-        .feature-card h3 {
+        .case h3 {
+            font-size: 1.9em;
             margin-top: 0;
-            font-size: 1.8em;
             text-shadow: 0 0 10px #00ff00;
         }
-        .feature-card p {
-            line-height: 1.6;
+        .cta {
+            text-align: center;
+            padding: 60px 0;
+        }
+        .cta a {
+            color: #00ff00;
+            text-decoration: none;
+            font-size: 1.6em;
+            padding: 15px 40px;
+            border: 3px solid #00ff00;
+            border-radius: 8px;
+            transition: all 0.4s;
+            text-shadow: 0 0 10px #00ff00;
+        }
+        .cta a:hover {
+            background: #00ff00;
+            color: #000;
+            box-shadow: 0 0 30px #00ff00;
         }
         footer {
             text-align: center;
-            padding: 30px;
+            padding: 40px;
             background: #001a00;
-            border-top: 4px solid #00ff00;
-            box-shadow: 0 -10px 20px rgba(0, 255, 0, 0.4);
+            border-top: 5px solid #00ff00;
+            box-shadow: 0 -15px 25px rgba(0, 255, 0, 0.5);
         }
         a {
             color: #00ff00;
             text-decoration: none;
-            transition: all 0.3s;
         }
         a:hover {
             color: #00cc00;
             text-shadow: 0 0 15px #00ff00;
         }
         @media (max-width: 768px) {
-            .hero {
-                flex-direction: column;
-            }
-            .features {
+            .use-cases {
                 grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
 <body>
-    <div class="matrix-stream"></div>
+    <div class="plant-rain"></div>
     <header>
         <div class="container">
             <h1>PAIR</h1>
             <p>Plant & Augmented Intelligence Recognition</p>
-            <p>Unplug the Wild. Plug into Survival.</p>
+            <p>Vision Beyond the Visible</p>
         </div>
     </header>
 
-    <section class="hero">
+    <section class="pitch">
         <div class="container">
-            <div class="hero-text">
-                <h2>Reality 2.0: The Wild Decoded</h2>
-                <p>In 2025, PAIR’s AR glasses rewrite the rules. A *Fallout*-green overlay fuses with *Matrix*-grade data streams—scanning trees, plants, mushrooms, and stones in real time. Foraging intel, medicinal codes, crafting blueprints, and chemical matrices materialize before your eyes. Diseased flora pulses red; survival hacks cascade in glyphs. Our AI evolves with every scan, hosted at <a href="https://github.com/pair-co-nz">GitHub</a>.</p>
+            <h2>Revolutionize Survival in 2025</h2>
+            <div class="pitch-text">
+                <p>PAIR is the future of human-nature interaction—augmented reality glasses powered by an ever-learning AI, designed to decode the wild. With a vivid green interface, our tech overlays the world with real-time insights, bridging the gap between ancient survival skills and cutting-edge innovation. We’re raising funds to bring this vision to life—join us in shaping a smarter, greener tomorrow.</p>
             </div>
-            <div class="hero-image">
-                <div class="overlay">[PAIR v2.0 - Nature’s Matrix]</div>
+            <div class="use-cases">
+                <div class="case">
+                    <h3>Foraging Mastery</h3>
+                    <p>Spot edible plants, mushrooms, and berries instantly. PAIR identifies nutritional value, warns of toxins, and suggests preparation methods—turning any wilderness into a pantry.</p>
+                </div>
+                <div class="case">
+                    <h3>Medicinal Discovery</h3>
+                    <p>Scan flora to reveal healing properties—anti-inflammatory herbs, natural antibiotics, or pain relievers. Get step-by-step recipes for salves, teas, and poultices.</p>
+                </div>
+                <div class="case">
+                    <h3>Resource Crafting</h3>
+                    <p>Identify stones and plants for tools, dyes, or fibers. PAIR overlays crafting blueprints—build shelters, weave baskets, or forge primitive tech with precision.</p>
+                </div>
+                <div class="case">
+                    <h3>Environmental Insight</h3>
+                    <p>Detect plant diseases, soil quality, or water sources. PAIR’s AI analyzes ecosystems, flagging risks and opportunities for sustainable living.</p>
+                </div>
             </div>
         </div>
     </section>
 
-    <section class="features">
+    <section class="cta">
         <div class="container">
-            <div class="feature-card">
-                <h3>Bio-Decoder</h3>
-                <p>AI unravels nature’s code—flora, fungi, minerals—streaming data at quantum speed.</p>
-            </div>
-            <div class="feature-card">
-                <h3>Green Grid</h3>
-                <p>A *Fallout*-*Matrix* hybrid UI overlays reality with glowing, glitchy precision.</p>
-            </div>
-            <div class="feature-card">
-                <h3>Survival OS</h3>
-                <p>Recipes, cures, and crafts render instantly from the digital wild.</p>
-            </div>
+            <a href="donate.html">Fund the Future</a>
         </div>
     </section>
 
     <footer>
-        <p>© 2025 PAIR | <a href="https://github.com/pair-co-nz">GitHub</a> | <a href="mailto:contact@pair.co.nz">Upload Consciousness</a></p>
+        <p>© 2025 PAIR | <a href="https://github.com/pair-co-nz">GitHub</a> | <a href="mailto:contact@pair.co.nz">Contact Us</a></p>
     </footer>
 </body>
 </html>
