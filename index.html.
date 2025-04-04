@@ -9,9 +9,24 @@
             margin: 0;
             padding: 0;
             font-family: 'Courier New', Courier, monospace;
-            background: #0a1a0a;
+            background: #000;
             color: #00ff00;
             overflow-x: hidden;
+            position: relative;
+        }
+        .matrix-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.1;
+            z-index: -1;
+            animation: matrixRain 10s infinite linear;
+        }
+        @keyframes matrixRain {
+            0% { background: linear-gradient(to bottom, #000, rgba(0, 255, 0, 0.1)); transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
         }
         .container {
             max-width: 1200px;
@@ -20,94 +35,120 @@
         }
         header {
             text-align: center;
-            padding: 50px 0;
-            background: linear-gradient(180deg, #001a00, #0a1a0a);
-            border-bottom: 2px solid #00ff00;
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+            padding: 60px 0;
+            background: #001a00;
+            border-bottom: 3px solid #00ff00;
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.7);
+            position: relative;
+            overflow: hidden;
         }
         header h1 {
-            font-size: 3em;
+            font-size: 3.5em;
             text-transform: uppercase;
-            letter-spacing: 5px;
+            letter-spacing: 8px;
             margin: 0;
-            text-shadow: 0 0 10px #00ff00;
+            text-shadow: 0 0 15px #00ff00, 0 0 30px #00ff00;
+            animation: glitch 2s infinite;
+        }
+        @keyframes glitch {
+            0%, 100% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(2px, -2px); }
         }
         header p {
-            font-size: 1.2em;
+            font-size: 1.3em;
             margin: 10px 0;
-            opacity: 0.8;
+            opacity: 0.85;
         }
         .hero {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 50px 0;
+            padding: 60px 0;
+            background: rgba(0, 26, 0, 0.8);
+            border: 1px solid #00ff00;
+            box-shadow: inset 0 0 20px rgba(0, 255, 0, 0.3);
         }
         .hero-text {
-            flex: 1;
-            padding-right: 20px;
+            flex=flex: 1;
+            padding-right: 30px;
         }
         .hero-text h2 {
-            font-size: 2em;
+            font-size: 2.2em;
             margin-bottom: 20px;
-            text-shadow: 0 0 5px #00ff00;
+            text-shadow: 0 0 10px #00ff00;
         }
         .hero-text p {
-            line-height: 1.6;
+            line-height: 1.7;
             opacity: 0.9;
+            animation: fadeIn 3s ease-in-out infinite;
+        }
+        @keyframes fadeIn {
+            0%, 100% { opacity: 0.9; }
+            50% { opacity: 0.6; }
         }
         .hero-image {
             flex: 1;
             text-align: center;
         }
         .hero-image .placeholder {
-            width: 300px;
-            height: 200px;
+            width: 320px;
+            height: 220px;
             background: #001a00;
-            border: 2px solid #00ff00;
+            border: 3px solid #00ff00;
             display: flex;
             align-items: center;
             justify-content: center;
             text-transform: uppercase;
-            font-size: 1.2em;
-            box-shadow: 0 0 15px #00ff00;
+            font-size: 1.3em;
+            box-shadow: 0 0 20px #00ff00;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 20px #00ff00; }
+            50% { box-shadow: 0 0 40px #00ff00; }
         }
         .features {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            padding: 50px 0;
+            gap: 25px;
+            padding: 60px 0;
         }
         .feature-card {
-            background: #001a00;
-            padding: 20px;
-            border: 1px solid #00ff00;
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
-            transition: transform 0.3s;
+            background: rgba(0, 26, 0, 0.9);
+            padding: 25px;
+            border: 2px solid #00ff00;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+            transition: transform 0.4s, box-shadow 0.4s;
         }
         .feature-card:hover {
-            transform: scale(1.05);
+            transform: translateY(-10px);
+            box-shadow: 0 0 25px rgba(0, 255, 0, 0.8);
         }
         .feature-card h3 {
             margin-top: 0;
-            font-size: 1.5em;
+            font-size: 1.6em;
+            text-shadow: 0 0 5px #00ff00;
         }
         footer {
             text-align: center;
-            padding: 20px;
+            padding: 25px;
             background: #001a00;
-            border-top: 2px solid #00ff00;
+            border-top: 3px solid #00ff00;
             position: fixed;
             bottom: 0;
             width: 100%;
+            box-shadow: 0 -5px 15px rgba(0, 255, 0, 0.3);
         }
         a {
             color: #00ff00;
             text-decoration: none;
+            transition: color 0.3s;
         }
         a:hover {
-            text-decoration: underline;
+            color: #00cc00;
+            text-shadow: 0 0 10px #00ff00;
         }
         @media (max-width: 768px) {
             .hero {
@@ -120,22 +161,23 @@
     </style>
 </head>
 <body>
+    <div class="matrix-bg"></div>
     <header>
         <div class="container">
             <h1>PAIR</h1>
             <p>Plant & Augmented Intelligence Recognition</p>
-            <p>Explore. Identify. Thrive.</p>
+            <p>Decode the Wild. Master the Code.</p>
         </div>
     </header>
 
     <section class="hero">
         <div class="container">
             <div class="hero-text">
-                <h2>Welcome to the Future of Foraging</h2>
-                <p>PAIR integrates cutting-edge AI with augmented reality glasses, delivering a green-tinted interface straight out of a post-apocalyptic dream. Identify trees, plants, mushrooms, and stones with a glance—unlocking their uses in foraging, medicine, crafting, and chemistry. Detect diseases, access recipes, and gather resources like never before.</p>
+                <h2>Reality, Reprogrammed</h2>
+                <p>In 2025, PAIR’s AR glasses fuse *Fallout*’s green grit with *Matrix*’s digital edge. Scan the wild—trees, plants, mushrooms, stones—and watch data streams cascade: foraging intel, medicinal blueprints, crafting schematics, chemical breakdowns. Diseased flora glitches red; survival recipes render in real time. Our AI evolves, rewriting reality as you explore. Hosted at <a href="https://github.com/pair-co-nz">GitHub</a>.</p>
             </div>
             <div class="hero-image">
-                <div class="placeholder">[AR Glasses Prototype]</div>
+                <div class="placeholder">[PAIR v1.0 - Reality Overlay]</div>
             </div>
         </div>
     </section>
@@ -143,22 +185,22 @@
     <section class="features">
         <div class="container">
             <div class="feature-card">
-                <h3>Bio-Recognition</h3>
-                <p>Scan and identify flora, fungi, and minerals instantly with our AI-driven database.</p>
+                <h3>Neural Scan</h3>
+                <p>AI decodes nature’s matrix—flora, fungi, minerals—faster than you can blink.</p>
             </div>
             <div class="feature-card">
-                <h3>Green Overlay</h3>
-                <p>Experience a retro-futuristic UI with a *Fallout*-inspired green tint, optimized for clarity.</p>
+                <h3>Green Code</h3>
+                <p>A *Fallout*-meets-*Matrix* overlay streams data in a cyber-green haze.</p>
             </div>
             <div class="feature-card">
-                <h3>Survival Tools</h3>
-                <p>Get recipes, medicinal uses, and crafting tips tailored to what you find.</p>
+                <h3>Survival Hack</h3>
+                <p>Recipes, cures, and crafts materialize from the digital ether.</p>
             </div>
         </div>
     </section>
 
     <footer>
-        <p>&copy; 2025 PAIR | <a href="https://github.com/pair-co-nz">GitHub</a> | <a href="mailto:contact@pair.co.nz">Contact Us</a></p>
+        <p>© 2025 PAIR | <a href="https://github.com/pair-co-nz">GitHub</a> | <a href="mailto:contact@pair.co.nz">Jack In</a></p>
     </footer>
 </body>
 </html>
