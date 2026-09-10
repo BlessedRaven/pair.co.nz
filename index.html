@@ -18,7 +18,7 @@
       } catch (e) {}
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=52" />
+  <link rel="stylesheet" href="styles.css?v=53" />
 </head>
 <body>
   <header class="top">
@@ -52,8 +52,8 @@
             <button type="button" data-zoom-reset>Reset 100%</button>
           </span>
         </span>
-        <button type="button" data-link-toggle aria-pressed="true" title="Link mode: tap a shape to open its coin brief">Link</button>
-        <button type="button" data-drag-toggle aria-pressed="false" title="Drag mode: move shapes / pan the void">Drag</button>
+        <button type="button" data-link-toggle aria-pressed="true" title="Tap a shape (no drag) to open its coin brief">Link</button>
+        <button type="button" data-drag-toggle aria-pressed="false" title="Shapes always drag site-wide; also pan the void">Drag</button>
         <button type="button" data-sandbox-toggle aria-pressed="false" title="Sandbox play framing">Sandbox</button>
       </div>
     </div>
@@ -159,7 +159,7 @@
         <g class="hits-free"></g>
       </svg>
     </div>
-    <p class="hint">Link = tap shape → brief · Drag = move shapes / pan void · Pin = repel/orbit · hits follow SVG paint</p>
+    <p class="hint">Drag shapes anytime · tap (no move) opens brief · pan void · Pin = repel/orbit/reset</p>
   </main>
 
   <footer class="foot">
@@ -170,8 +170,8 @@
     <span class="muted">Mints TBD · not financial advice</span>
   </footer>
 
-  <script src="theme.js?v=52" defer></script>
-  <script src="motion.js?v=52" defer></script>
-  <script src="app.js?v=52" defer></script>
+  <script src="theme.js?v=53" defer></script>
+  <script src="motion.js?v=53" defer></script>
+  <script src="app.js?v=53" defer></script>
 </body>
 </html>

@@ -459,9 +459,7 @@
   // Pan void in Drag mode (or Pin) — not on a shape
   let panDrag = null;
   mark.addEventListener("pointerdown", (e) => {
-    const operate =
-      clickMode === "drag" || document.documentElement.getAttribute("data-pin") === "on";
-    if (!operate) return;
+    // Void pan is native (empty space). Zoom mode still owns empty-space zoom-drag.
     if (document.documentElement.getAttribute("data-zoom-mode") === "on") return;
     if (e.target.closest(".sym, .center, [data-motion-panel], header, .themes, .zoom-wrap, .pin-wrap")) return;
     e.preventDefault();
@@ -500,14 +498,12 @@
     if (id && href) linkBySym[id] = href;
   });
   let tap = null;
+  // Tap (no drag) always opens coin brief — move is handled site-wide by motion.js
   mark.addEventListener(
     "pointerdown",
     (e) => {
-      if (clickMode !== "link") return;
-      if (document.documentElement.getAttribute("data-pin") === "on") return;
       const el = e.target.closest(".mark-host svg.sigil .sym, .mark-host svg.sigil .center");
       if (!el) return;
-      // If they hit a shape-hit clone, still resolve the parent .sym
       tap = { id: el.getAttribute("data-sym"), x: e.clientX, y: e.clientY };
     },
     true
@@ -517,10 +513,10 @@
     (e) => {
       if (!tap) return;
       const id = tap.id;
-      const moved = Math.hypot(e.clientX - tap.x, e.clientY - tap.y) > 6;
+      const moved = Math.hypot(e.clientX - tap.x, e.clientY - tap.y) > 8;
       tap = null;
-      if (moved || clickMode !== "link") return;
-      if (document.documentElement.getAttribute("data-pin") === "on") return;
+      if (moved) return;
+      // Brief pause: don't navigate while actively in exclusive drag-pan intent? allow always
       const href = linkBySym[id];
       if (href) window.location.href = href;
     },
