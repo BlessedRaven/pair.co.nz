@@ -99,12 +99,13 @@ body {
   height: auto;
   aspect-ratio: 923.86 / 886.31;
   transform-origin: 50% 50%;
-  filter: drop-shadow(0 0 28px var(--glow));
   flex-shrink: 0;
 }
 
 .mark.is-ready {
-  animation: pair-breathe 8s ease-in-out infinite;
+  animation:
+    pair-breathe 8s ease-in-out infinite,
+    pair-glow 10s linear infinite;
 }
 
 /* Tiny breathe only — never large enough to clip */
@@ -117,6 +118,52 @@ body {
   50% {
     transform: scale(1.012);
     opacity: 1;
+  }
+}
+
+/* Multi-colour aura cycling around the white linework */
+@keyframes pair-glow {
+  0% {
+    filter:
+      drop-shadow(0 0 10px #ff2d55)
+      drop-shadow(0 0 28px rgba(255, 45, 85, 0.55))
+      drop-shadow(0 0 56px rgba(255, 45, 85, 0.25));
+  }
+  16% {
+    filter:
+      drop-shadow(0 0 10px #ff8a00)
+      drop-shadow(0 0 28px rgba(255, 138, 0, 0.55))
+      drop-shadow(0 0 56px rgba(255, 138, 0, 0.25));
+  }
+  33% {
+    filter:
+      drop-shadow(0 0 10px #ffd60a)
+      drop-shadow(0 0 28px rgba(255, 214, 10, 0.55))
+      drop-shadow(0 0 56px rgba(255, 214, 10, 0.25));
+  }
+  50% {
+    filter:
+      drop-shadow(0 0 10px #32d74b)
+      drop-shadow(0 0 28px rgba(50, 215, 75, 0.55))
+      drop-shadow(0 0 56px rgba(50, 215, 75, 0.25));
+  }
+  66% {
+    filter:
+      drop-shadow(0 0 10px #64d2ff)
+      drop-shadow(0 0 28px rgba(100, 210, 255, 0.55))
+      drop-shadow(0 0 56px rgba(100, 210, 255, 0.25));
+  }
+  83% {
+    filter:
+      drop-shadow(0 0 10px #bf5af2)
+      drop-shadow(0 0 28px rgba(191, 90, 242, 0.55))
+      drop-shadow(0 0 56px rgba(191, 90, 242, 0.25));
+  }
+  100% {
+    filter:
+      drop-shadow(0 0 10px #ff2d55)
+      drop-shadow(0 0 28px rgba(255, 45, 85, 0.55))
+      drop-shadow(0 0 56px rgba(255, 45, 85, 0.25));
   }
 }
 
@@ -383,6 +430,9 @@ body:has(.brief) .top {
   .mark {
     opacity: 1;
     transform: none;
+    filter:
+      drop-shadow(0 0 12px #ff2d55)
+      drop-shadow(0 0 28px rgba(100, 210, 255, 0.35));
   }
 
   .hits .hit,
