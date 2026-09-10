@@ -1,16 +1,22 @@
 (() => {
-  const STORE_KEY = "pair-sym-motion-v6";
-  const SELECTED_KEY = "pair-motion-selected-v6";
+  const STORE_KEY = "pair-sym-motion-v7";
+  const SELECTED_KEY = "pair-motion-selected-v7";
 
   const SYMBOLS = [
-    { id: "ne", label: "GOL" },
-    { id: "e", label: "SOL" },
-    { id: "se", label: "FOL" },
-    { id: "s", label: "Hermes" },
-    { id: "w", label: "Cloud" },
-    { id: "n", label: "Ra" },
-    { id: "sw", label: "Trinity" },
-    { id: "center", label: "Torus" },
+    { id: "gol", label: "GOL" },
+    { id: "flower", label: "Flower" },
+    { id: "sol", label: "SOL" },
+    { id: "fol", label: "FOL" },
+    { id: "hermes", label: "Hermes" },
+    { id: "cloud", label: "Cloud" },
+    { id: "trinity", label: "Trinity" },
+    { id: "pi", label: "Pi" },
+    { id: "ra", label: "Ra" },
+    { id: "scarab", label: "Scarab" },
+    { id: "sun", label: "Sun" },
+    { id: "key", label: "Key" },
+    { id: "bean", label: "Bean" },
+    { id: "torus", label: "Torus" },
   ];
 
   const ANIMS = [
@@ -45,11 +51,11 @@
   };
 
   let store = readStore();
-  let selected = "center";
+  let selected = "torus";
   try {
-    selected = localStorage.getItem(SELECTED_KEY) || "center";
+    selected = localStorage.getItem(SELECTED_KEY) || "torus";
   } catch {}
-  if (!SYMBOLS.some((s) => s.id === selected)) selected = "center";
+  if (!SYMBOLS.some((s) => s.id === selected)) selected = "torus";
 
   const ensure = (id) => {
     if (!store[id]) store[id] = { anim: "off", speed: 100 };
@@ -71,8 +77,8 @@
   const formatPct = (pct) => Math.round(Number(pct) || 100) + "%";
 
   const findEl = (id) => {
-    if (id === "center") {
-      return document.querySelector('.mark-host svg.sigil .center[data-sym="center"]');
+    if (id === "torus") {
+      return document.querySelector('.mark-host svg.sigil .center[data-sym="torus"]');
     }
     return document.querySelector('.mark-host svg.sigil .sym[data-sym="' + id + '"]');
   };
@@ -151,6 +157,22 @@
     setOpen(panel.hidden);
   });
 
+  document.querySelectorAll("[data-panel-open]").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const section = btn.getAttribute("data-panel-open");
+      setOpen(true);
+      document.querySelectorAll("[data-panel-open]").forEach((b) => {
+        b.setAttribute("aria-pressed", b === btn ? "true" : "false");
+      });
+      const el = panel.querySelector('[data-panel-section="' + section + '"]');
+      if (el) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      panel.querySelectorAll("[data-panel-section]").forEach((s) => {
+        s.classList.toggle("is-focus", s.getAttribute("data-panel-section") === section);
+      });
+    });
+  });
+
   document.addEventListener("click", (e) => {
     if (panel.hidden) return;
     if (e.target.closest("[data-motion-panel]") || e.target.closest("[data-motion-toggle]")) return;
@@ -202,7 +224,7 @@
         store[s.id] = { anim: "off", speed: 100 };
       });
       writeStore(store);
-      selected = "center";
+      selected = "torus";
       try {
         localStorage.setItem(SELECTED_KEY, selected);
       } catch {}

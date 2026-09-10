@@ -16,7 +16,7 @@
       } catch (e) {}
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=27" />
+  <link rel="stylesheet" href="styles.css?v=28" />
 </head>
 <body>
   <header class="top">
@@ -27,6 +27,8 @@
         <button type="button" data-theme-set="dark" aria-pressed="true">Dark</button>
         <button type="button" data-theme-set="light" aria-pressed="false">Light</button>
         <button type="button" data-theme-set="vibe" aria-pressed="false">Vibe</button>
+        <button type="button" data-panel-open="symbol" aria-pressed="false" title="Symbols">Symbol</button>
+        <button type="button" data-panel-open="animation" aria-pressed="false" title="Animations">Animation</button>
         <button type="button" data-motion-toggle aria-pressed="false" aria-expanded="false" aria-controls="motion-panel" title="Motion controls">Motion</button>
       </div>
     </div>
@@ -35,11 +37,11 @@
   <aside id="motion-panel" class="motion-panel" hidden data-motion-panel>
     <div class="motion-panel-inner">
       <p class="motion-kicker">Motion</p>
-      <div class="motion-block">
+      <div class="motion-block" data-panel-section="symbol">
         <p class="motion-label">Symbol</p>
         <div class="motion-list" data-motion-symbols role="listbox" aria-label="Symbol"></div>
       </div>
-      <div class="motion-block">
+      <div class="motion-block" data-panel-section="animation">
         <p class="motion-label">Animation</p>
         <div class="motion-list" data-motion-anims role="listbox" aria-label="Animation"></div>
       </div>
@@ -59,42 +61,62 @@
     <div class="mark" data-mark>
       <div class="mark-host" data-mark-host></div>
       <svg class="hits" viewBox="0 0 923.86 886.31" role="group" aria-label="Coin nodes">
-        <a class="hotspot hotspot-center" data-hotspot="center" href="coins/pair.html" aria-label="Torus coin brief">
+        <a class="hotspot hotspot-center" data-hotspot="torus" href="coins/pair.html" aria-label="Torus coin brief">
           <circle class="hit" cx="447.56" cy="484.96" r="155" />
           <text class="hit-label" x="447.56" y="484.96" text-anchor="middle" dy="0.35em">TORUS</text>
         </a>
         <g class="hits-orbit">
-          <a class="hotspot" data-hotspot="n" href="coins/raven.html" aria-label="Ra coin brief">
-            <circle class="hit" cx="453.56" cy="145" r="100" />
-            <text class="hit-label" x="453.56" y="145" text-anchor="middle" dy="0.35em">RA</text>
+          <a class="hotspot" data-hotspot="scarab" href="coins/raven.html" aria-label="Scarab coin brief">
+            <circle class="hit" cx="453.6" cy="188" r="78" />
+            <text class="hit-label" x="453.6" y="188" text-anchor="middle" dy="0.35em">SCARAB</text>
           </a>
-          <a class="hotspot" data-hotspot="nw" href="coins/archive.html" aria-label="Archive coin brief">
+          <a class="hotspot" data-hotspot="sun" href="coins/raven.html" aria-label="Sun coin brief">
+            <circle class="hit" cx="453.6" cy="165" r="28" />
+            <text class="hit-label" x="520" y="150" text-anchor="middle" dy="0.35em">SUN</text>
+          </a>
+          <a class="hotspot" data-hotspot="key" href="coins/raven.html" aria-label="Key coin brief">
+            <circle class="hit" cx="460.8" cy="70" r="36" />
+            <text class="hit-label" x="520" y="70" text-anchor="middle" dy="0.35em">KEY</text>
+          </a>
+          <a class="hotspot" data-hotspot="bean" href="coins/raven.html" aria-label="Bean coin brief">
+            <circle class="hit" cx="452" cy="8" r="18" />
+            <text class="hit-label" x="500" y="14" text-anchor="middle" dy="0.35em">BEAN</text>
+          </a>
+          <a class="hotspot" data-hotspot="pi" href="coins/archive.html" aria-label="Pi coin brief">
             <circle class="hit" cx="148" cy="167" r="90" />
-            <text class="hit-label" x="148" y="167" text-anchor="middle" dy="0.35em">ARC</text>
+            <text class="hit-label" x="148" y="167" text-anchor="middle" dy="0.35em">PI</text>
           </a>
-          <a class="hotspot" data-hotspot="w" href="coins/orbit.html" aria-label="Cloud coin brief">
+          <a class="hotspot" data-hotspot="cloud" href="coins/orbit.html" aria-label="Cloud coin brief">
             <circle class="hit" cx="91.8" cy="353" r="85" />
             <text class="hit-label" x="91.8" y="353" text-anchor="middle" dy="0.35em">CLOUD</text>
           </a>
-          <a class="hotspot" data-hotspot="sw" href="coins/wings.html" aria-label="Trinity coin brief">
+          <a class="hotspot" data-hotspot="trinity" href="coins/wings.html" aria-label="Trinity coin brief">
             <circle class="hit" cx="90" cy="555" r="90" />
             <text class="hit-label" x="90" y="555" text-anchor="middle" dy="0.35em">TRINITY</text>
           </a>
-          <a class="hotspot" data-hotspot="s" href="coins/fund.html" aria-label="Hermes coin brief">
+          <a class="hotspot" data-hotspot="ra" href="coins/raven.html" aria-label="Ra coin brief">
+            <circle class="hit" cx="215.7" cy="760" r="88" />
+            <text class="hit-label" x="215.7" y="760" text-anchor="middle" dy="0.35em">RA</text>
+          </a>
+          <a class="hotspot" data-hotspot="hermes" href="coins/fund.html" aria-label="Hermes coin brief">
             <circle class="hit" cx="462" cy="820" r="90" />
             <text class="hit-label" x="462" y="820" text-anchor="middle" dy="0.35em">HERMES</text>
           </a>
-          <a class="hotspot" data-hotspot="se" href="coins/nest.html" aria-label="FOL coin brief">
+          <a class="hotspot" data-hotspot="fol" href="coins/nest.html" aria-label="FOL coin brief">
             <circle class="hit" cx="672.71" cy="750.29" r="105" />
             <text class="hit-label" x="672.71" y="750.29" text-anchor="middle" dy="0.35em">FOL</text>
           </a>
-          <a class="hotspot" data-hotspot="e" href="coins/torus.html" aria-label="SOL coin brief">
+          <a class="hotspot" data-hotspot="sol" href="coins/torus.html" aria-label="SOL coin brief">
             <circle class="hit" cx="821.16" cy="582.19" r="100" />
             <text class="hit-label" x="821.16" y="582.19" text-anchor="middle" dy="0.35em">SOL</text>
           </a>
-          <a class="hotspot" data-hotspot="ne" href="coins/flower.html" aria-label="GOL coin brief">
+          <a class="hotspot" data-hotspot="gol" href="coins/flower.html" aria-label="GOL coin brief">
             <circle class="hit" cx="820.1" cy="342.59" r="100" />
             <text class="hit-label" x="820.1" y="342.59" text-anchor="middle" dy="0.35em">GOL</text>
+          </a>
+          <a class="hotspot" data-hotspot="flower" href="coins/flower.html" aria-label="Flower coin brief">
+            <circle class="hit" cx="706.6" cy="168" r="88" />
+            <text class="hit-label" x="706.6" y="168" text-anchor="middle" dy="0.35em">FLOWER</text>
           </a>
         </g>
       </svg>
@@ -110,8 +132,8 @@
     <span class="muted">Mints TBD · not financial advice</span>
   </footer>
 
-  <script src="theme.js?v=27" defer></script>
-  <script src="motion.js?v=27" defer></script>
-  <script src="app.js?v=27" defer></script>
+  <script src="theme.js?v=28" defer></script>
+  <script src="motion.js?v=28" defer></script>
+  <script src="app.js?v=28" defer></script>
 </body>
 </html>

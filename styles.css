@@ -188,6 +188,13 @@ body {
   margin-bottom: 0.75rem;
 }
 
+.motion-block.is-focus {
+  outline: 1px solid color-mix(in srgb, var(--fg) 28%, transparent);
+  outline-offset: 4px;
+  border-radius: 0.75rem;
+  padding: 0.35rem;
+}
+
 .motion-label {
   margin: 0 0 0.35rem;
   font-size: 0.58rem;

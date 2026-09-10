@@ -1,15 +1,20 @@
 (() => {
   const CX = 447.56;
   const CY = 484.96;
-  const HOTSPOTS = [
-    { id: "n", x: 453.56, y: 145 },
-    { id: "nw", x: 148, y: 167 },
-    { id: "w", x: 91.8, y: 353 },
-    { id: "sw", x: 90, y: 555 },
-    { id: "s", x: 462, y: 820 },
-    { id: "se", x: 672.71, y: 750.29 },
-    { id: "e", x: 821.16, y: 582.19 },
-    { id: "ne", x: 820.1, y: 342.59 },
+
+  // Orbit children after center is peeled off — fixed SVG order
+  // svg kids: 0 center, 1 GOL, 2 Flower, 3 SOL, 4 Trinity, 5 Cloud, 6 Pi, 7 Ra(eye), 8 Hermes, 9 ScarabCluster, 10 FOL
+  const ORBIT_IDS = [
+    "gol",
+    "flower",
+    "sol",
+    "trinity",
+    "cloud",
+    "pi",
+    "ra",
+    "hermes",
+    "scarab-cluster",
+    "fol",
   ];
 
   const host = document.querySelector("[data-mark-host]");
@@ -29,49 +34,97 @@
     }
   };
 
+  const wrapOne = (orbit, el, id, extra) => {
+    const wrap = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    wrap.setAttribute("class", "sym");
+    wrap.setAttribute("data-sym", id);
+    orbit.insertBefore(wrap, el);
+    if (extra && extra.before) {
+      extra.before.forEach((node) => wrap.appendChild(node));
+    }
+    wrap.appendChild(el);
+    if (extra && extra.after) {
+      extra.after.forEach((node) => wrap.appendChild(node));
+    }
+    pinOrigin(wrap);
+    return wrap;
+  };
+
+  const addGuideCircle = (el) => {
+    try {
+      const bb = el.getBBox();
+      const cx = bb.x + bb.width / 2;
+      const cy = bb.y + bb.height / 2;
+      const r = Math.max(bb.width, bb.height) * 0.55;
+      const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      circle.setAttribute("class", "cls-1");
+      circle.setAttribute("cx", String(cx));
+      circle.setAttribute("cy", String(cy));
+      circle.setAttribute("r", String(r));
+      return circle;
+    } catch (err) {
+      return null;
+    }
+  };
+
+  const wrapDetached = (orbit, ref, el, id) => {
+    if (!el) return null;
+    const wrap = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    wrap.setAttribute("class", "sym");
+    wrap.setAttribute("data-sym", id);
+    orbit.insertBefore(wrap, ref);
+    wrap.appendChild(el);
+    pinOrigin(wrap);
+    return wrap;
+  };
+
+  const splitScarabCluster = (orbit, cluster) => {
+    // cluster children: [bodyWrap, upperWrap]
+    // bodyWrap kids: [scarabPathsG, sunDiskCircle]
+    // upperWrap kids: [keyShaftG, beanA, beanB]
+    const parts = Array.from(cluster.children);
+    if (parts.length < 2) {
+      wrapOne(orbit, cluster, "scarab");
+      return;
+    }
+    const bodyWrap = parts[0];
+    const upperWrap = parts[1];
+    const bodyKids = Array.from(bodyWrap.children || []);
+    const scarabEl = bodyKids.find((k) => k.tagName.toLowerCase() === "g") || bodyWrap;
+    const sunDisk = bodyKids.find((k) => k.tagName.toLowerCase() === "circle") || null;
+    const upperKids = Array.from(upperWrap.children || []);
+    const keyEl = upperKids[0] || null;
+    const beanNodes = upperKids.slice(1);
+
+    // Insert new wraps before the intact cluster, moving nodes out of it
+    wrapDetached(orbit, cluster, scarabEl, "scarab");
+    if (sunDisk) wrapDetached(orbit, cluster, sunDisk, "sun");
+    if (keyEl) wrapDetached(orbit, cluster, keyEl, "key");
+    if (beanNodes.length) {
+      const beanWrap = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      beanWrap.setAttribute("class", "sym");
+      beanWrap.setAttribute("data-sym", "bean");
+      orbit.insertBefore(beanWrap, cluster);
+      beanNodes.forEach((n) => beanWrap.appendChild(n));
+      pinOrigin(beanWrap);
+    }
+    if (cluster.parentNode) cluster.parentNode.removeChild(cluster);
+  };
+
   const wrapOrbitSyms = (orbit) => {
-    const items = [];
-    Array.from(orbit.children).forEach((el) => {
-      let bb;
-      try {
-        bb = el.getBBox();
-      } catch (err) {
+    const children = Array.from(orbit.children);
+    children.forEach((el, i) => {
+      const id = ORBIT_IDS[i] || `_x${i}`;
+      if (id === "scarab-cluster") {
+        splitScarabCluster(orbit, el);
         return;
       }
-      if (!bb.width && !bb.height) return;
-      items.push({
-        el,
-        cx: bb.x + bb.width / 2,
-        cy: bb.y + bb.height / 2,
-      });
-    });
-
-    const pairs = [];
-    items.forEach((it, i) => {
-      HOTSPOTS.forEach((h) => {
-        pairs.push({ i, id: h.id, d: Math.hypot(it.cx - h.x, it.cy - h.y) });
-      });
-    });
-    pairs.sort((a, b) => a.d - b.d);
-
-    const usedItems = new Set();
-    const usedIds = new Set();
-    const itemId = new Map();
-    for (const p of pairs) {
-      if (usedItems.has(p.i) || usedIds.has(p.id)) continue;
-      if (p.d > 220) continue;
-      usedItems.add(p.i);
-      usedIds.add(p.id);
-      itemId.set(p.i, p.id);
-    }
-
-    items.forEach((it, i) => {
-      const wrap = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      wrap.setAttribute("class", "sym");
-      wrap.setAttribute("data-sym", itemId.get(i) || `_x${i}`);
-      orbit.insertBefore(wrap, it.el);
-      wrap.appendChild(it.el);
-      pinOrigin(wrap);
+      if (id === "flower") {
+        const guide = addGuideCircle(el);
+        wrapOne(orbit, el, id, guide ? { before: [guide] } : null);
+        return;
+      }
+      wrapOne(orbit, el, id);
     });
   };
 
@@ -110,7 +163,7 @@
 
     const center = document.createElementNS("http://www.w3.org/2000/svg", "g");
     center.setAttribute("class", "center");
-    center.setAttribute("data-sym", "center");
+    center.setAttribute("data-sym", "torus");
 
     const orbit = document.createElementNS("http://www.w3.org/2000/svg", "g");
     orbit.setAttribute("class", "orbit");
