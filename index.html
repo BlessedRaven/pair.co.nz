@@ -6,7 +6,7 @@
   <meta name="description" content="PAIR Portal — animated sigil hub. Each node is its own pump.fun coin brief." />
   <meta name="theme-color" content="#0a0a0c" />
   <title>PAIR Portal — Coin Hub</title>
-  <script>
+    <script>
     (function () {
       try {
         var t = localStorage.getItem("pair-theme");
@@ -16,7 +16,7 @@
       } catch (e) {}
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=14" />
+  <link rel="stylesheet" href="styles.css?v=10" />
 </head>
 <body>
   <header class="top">
@@ -31,141 +31,51 @@
     </div>
   </header>
 
-  <main class="stage" id="top" aria-label="PAIR coin hub">
-    <section class="stage-sigil" aria-label="Sigil">
-      <div class="mark" data-mark>
-        <div class="mark-host" data-mark-host></div>
-        <!-- SVG filters for violent warp/phase (referenced by CSS) -->
-        <svg class="fx-defs" aria-hidden="true" width="0" height="0">
-          <defs>
-            <filter id="warpViolent" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
-              <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="3" seed="2" result="noise">
-                <animate attributeName="baseFrequency" values="0.012;0.045;0.018;0.038;0.012" dur="0.7s" repeatCount="1" />
-              </feTurbulence>
-              <feDisplacementMap in="SourceGraphic" in2="noise" scale="0" result="disp" xChannelSelector="R" yChannelSelector="G">
-                <animate attributeName="scale" values="0;28;12;34;0" dur="0.7s" repeatCount="1" />
-              </feDisplacementMap>
-            </filter>
-            <filter id="warpDrip" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">
-              <feTurbulence type="turbulence" baseFrequency="0.01 0.04" numOctaves="2" seed="7" result="noise">
-                <animate attributeName="baseFrequency" values="0.008 0.03;0.02 0.08;0.01 0.05;0.008 0.03" dur="0.85s" repeatCount="1" />
-              </feTurbulence>
-              <feDisplacementMap in="SourceGraphic" in2="noise" scale="0" xChannelSelector="R" yChannelSelector="G">
-                <animate attributeName="scale" values="0;36;18;40;0" dur="0.85s" repeatCount="1" />
-              </feDisplacementMap>
-            </filter>
-            <filter id="warpFlutter" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
-              <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="11" result="noise">
-                <animate attributeName="baseFrequency" values="0.02;0.06;0.025;0.055;0.02" dur="0.55s" repeatCount="1" />
-              </feTurbulence>
-              <feDisplacementMap in="SourceGraphic" in2="noise" scale="0" xChannelSelector="R" yChannelSelector="G">
-                <animate attributeName="scale" values="0;22;8;26;0" dur="0.55s" repeatCount="1" />
-              </feDisplacementMap>
-            </filter>
-            <filter id="warpSpectral" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
-              <feTurbulence type="fractalNoise" baseFrequency="0.025" numOctaves="4" seed="3" result="noise">
-                <animate attributeName="baseFrequency" values="0.02;0.05;0.03;0.02" dur="0.9s" repeatCount="1" />
-              </feTurbulence>
-              <feDisplacementMap in="SourceGraphic" in2="noise" scale="0" xChannelSelector="R" yChannelSelector="G">
-                <animate attributeName="scale" values="0;18;30;10;0" dur="0.9s" repeatCount="1" />
-              </feDisplacementMap>
-              <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0">
-                <animate attributeName="values" dur="0.9s" repeatCount="1"
-                  values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0;
-                          1.2 0 0 0 0  0 0.7 0.3 0 0  0.2 0 1.1 0 0  0 0 0 1 0;
-                          0.8 0.2 0 0 0  0 1.1 0 0 0  0 0 1.3 0 0  0 0 0 0.85 0;
-                          1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0" />
-              </feColorMatrix>
-            </filter>
-          </defs>
-        </svg>
-
-        <svg class="hits" viewBox="0 0 923.86 886.31" role="group" aria-label="Coin nodes">
-          <!-- tiny bean (top apex) -->
-          <a class="hotspot hotspot-bean" data-hotspot="bean" data-fx="spectral" href="coins/archive.html" aria-label="Bean node">
-            <circle class="hit" cx="452.5" cy="28" r="42" />
-            <circle class="ripple" cx="452.5" cy="28" r="14" />
-            <text class="hit-label" x="452.5" y="28" text-anchor="middle" dy="0.35em">BEAN</text>
+  <main class="landing" id="top" aria-label="PAIR coin hub">
+    <div class="mark" data-mark>
+      <div class="mark-host" data-mark-host></div>
+      <svg class="hits" viewBox="0 0 923.86 886.31" role="group" aria-label="Coin nodes">
+        <a class="hotspot hotspot-center" data-hotspot="center" href="coins/pair.html" aria-label="PAIR coin brief">
+          <circle class="hit" cx="447.56" cy="484.96" r="155" />
+          <text class="hit-label" x="447.56" y="484.96" text-anchor="middle" dy="0.35em">PAIR</text>
+        </a>
+        <g class="hits-orbit">
+          <a class="hotspot" data-hotspot="n" href="coins/raven.html" aria-label="RAVEN coin brief">
+            <circle class="hit" cx="453.56" cy="145" r="100" />
+            <text class="hit-label" x="453.56" y="145" text-anchor="middle" dy="0.35em">RAVEN</text>
           </a>
-          <!-- key region (above scarab) -->
-          <a class="hotspot hotspot-key" data-hotspot="key" data-fx="flutter" href="coins/raven.html" aria-label="Key node">
-            <circle class="hit" cx="452.5" cy="78" r="48" />
-            <circle class="ripple" cx="452.5" cy="78" r="16" />
-            <text class="hit-label" x="452.5" y="78" text-anchor="middle" dy="0.35em">KEY</text>
+          <a class="hotspot" data-hotspot="nw" href="coins/archive.html" aria-label="Archive coin brief">
+            <circle class="hit" cx="148" cy="167" r="90" />
+            <text class="hit-label" x="148" y="167" text-anchor="middle" dy="0.35em">ARC</text>
           </a>
-          <!-- sun between key and scarab -->
-          <a class="hotspot hotspot-sun" data-hotspot="sun" data-fx="bloom" href="coins/flower.html" aria-label="Sun node">
-            <circle class="hit" cx="452.5" cy="118" r="36" />
-            <circle class="ripple" cx="452.5" cy="118" r="12" />
-            <text class="hit-label" x="452.5" y="118" text-anchor="middle" dy="0.35em">SUN</text>
+          <a class="hotspot" data-hotspot="w" href="coins/orbit.html" aria-label="Orbit coin brief">
+            <circle class="hit" cx="91.8" cy="353" r="85" />
+            <text class="hit-label" x="91.8" y="353" text-anchor="middle" dy="0.35em">ORBIT</text>
           </a>
-
-          <a class="hotspot hotspot-center" data-hotspot="center" data-fx="spectral" href="coins/pair.html" aria-label="Torus / PAIR">
-            <circle class="hit" cx="447.56" cy="484.96" r="155" />
-            <circle class="ripple" cx="447.56" cy="484.96" r="54" />
-            <text class="hit-label" x="447.56" y="484.96" text-anchor="middle" dy="0.35em">TORUS</text>
+          <a class="hotspot" data-hotspot="sw" href="coins/wings.html" aria-label="Wings coin brief">
+            <circle class="hit" cx="90" cy="555" r="90" />
+            <text class="hit-label" x="90" y="555" text-anchor="middle" dy="0.35em">WINGS</text>
           </a>
-          <g class="hits-orbit">
-            <a class="hotspot" data-hotspot="n" data-fx="flutter" href="coins/raven.html" aria-label="Scarab">
-              <circle class="hit" cx="453.56" cy="145" r="72" />
-              <circle class="ripple" cx="453.56" cy="145" r="28" />
-              <text class="hit-label" x="453.56" y="145" text-anchor="middle" dy="0.35em">SCARAB</text>
-            </a>
-            <a class="hotspot" data-hotspot="nw" data-fx="ghost" href="coins/archive.html" aria-label="Fibonacci spiral">
-              <circle class="hit" cx="148" cy="167" r="90" />
-              <circle class="ripple" cx="148" cy="167" r="31.5" />
-              <text class="hit-label" x="148" y="167" text-anchor="middle" dy="0.35em">SPIRAL</text>
-            </a>
-            <a class="hotspot" data-hotspot="w" data-fx="shear" href="coins/orbit.html" aria-label="Quatrefoil">
-              <circle class="hit" cx="91.8" cy="353" r="85" />
-              <circle class="ripple" cx="91.8" cy="353" r="29.75" />
-              <text class="hit-label" x="91.8" y="353" text-anchor="middle" dy="0.35em">QUATRE</text>
-            </a>
-            <a class="hotspot" data-hotspot="sw" data-fx="flutter" href="coins/wings.html" aria-label="Triskele">
-              <circle class="hit" cx="90" cy="555" r="90" />
-              <circle class="ripple" cx="90" cy="555" r="31.5" />
-              <text class="hit-label" x="90" y="555" text-anchor="middle" dy="0.35em">TRISKELE</text>
-            </a>
-            <a class="hotspot" data-hotspot="s" data-fx="wave" href="coins/fund.html" aria-label="Caduceus / Eye">
-              <circle class="hit" cx="462" cy="820" r="90" />
-              <circle class="ripple" cx="462" cy="820" r="31.5" />
-              <text class="hit-label" x="462" y="820" text-anchor="middle" dy="0.35em">CADUCEUS</text>
-            </a>
-            <a class="hotspot" data-hotspot="se" data-fx="drip" href="coins/nest.html" aria-label="Flower of Life">
-              <circle class="hit" cx="672.71" cy="750.29" r="105" />
-              <circle class="ripple" cx="672.71" cy="750.29" r="36.75" />
-              <text class="hit-label" x="672.71" y="750.29" text-anchor="middle" dy="0.35em">LIFE</text>
-            </a>
-            <a class="hotspot" data-hotspot="e" data-fx="shimmer" href="coins/torus.html" aria-label="Seed of Life">
-              <circle class="hit" cx="821.16" cy="582.19" r="100" />
-              <circle class="ripple" cx="821.16" cy="582.19" r="35" />
-              <text class="hit-label" x="821.16" y="582.19" text-anchor="middle" dy="0.35em">SEED</text>
-            </a>
-            <a class="hotspot" data-hotspot="ne" data-fx="bloom" href="coins/flower.html" aria-label="Flower">
-              <circle class="hit" cx="820.1" cy="342.59" r="100" />
-              <circle class="ripple" cx="820.1" cy="342.59" r="35" />
-              <text class="hit-label" x="820.1" y="342.59" text-anchor="middle" dy="0.35em">FLOWER</text>
-            </a>
-          </g>
-        </svg>
-      </div>
-      <p class="hint">Hover or tap a node · opens coin brief</p>
-    </section>
-
-    <aside class="stage-void" aria-label="Blackhole Universe">
-      <div class="void-stack">
-        <div class="blackhole" aria-hidden="true">
-          <span class="bh-disk"></span>
-          <span class="bh-photon"></span>
-          <span class="bh-core"></span>
-          <span class="bh-lens"></span>
-        </div>
-        <h1 class="void-title">
-          <span>BLACKHOLE</span>
-          <span>UNIVERSE</span>
-        </h1>
-      </div>
-    </aside>
+          <a class="hotspot" data-hotspot="s" href="coins/fund.html" aria-label="Fund coin brief">
+            <circle class="hit" cx="462" cy="820" r="90" />
+            <text class="hit-label" x="462" y="820" text-anchor="middle" dy="0.35em">FUND</text>
+          </a>
+          <a class="hotspot" data-hotspot="se" href="coins/nest.html" aria-label="Nest coin brief">
+            <circle class="hit" cx="672.71" cy="750.29" r="105" />
+            <text class="hit-label" x="672.71" y="750.29" text-anchor="middle" dy="0.35em">NEST</text>
+          </a>
+          <a class="hotspot" data-hotspot="e" href="coins/torus.html" aria-label="Torus coin brief">
+            <circle class="hit" cx="821.16" cy="582.19" r="100" />
+            <text class="hit-label" x="821.16" y="582.19" text-anchor="middle" dy="0.35em">TORUS</text>
+          </a>
+          <a class="hotspot" data-hotspot="ne" href="coins/flower.html" aria-label="Flower coin brief">
+            <circle class="hit" cx="820.1" cy="342.59" r="100" />
+            <text class="hit-label" x="820.1" y="342.59" text-anchor="middle" dy="0.35em">FLOWER</text>
+          </a>
+        </g>
+      </svg>
+    </div>
+    <p class="hint">Hover or tap a node · opens coin brief</p>
   </main>
 
   <footer class="foot">
@@ -177,6 +87,6 @@
   </footer>
 
   <script src="theme.js" defer></script>
-  <script src="app.js?v=5" defer></script>
+  <script src="app.js" defer></script>
 </body>
 </html>
