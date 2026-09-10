@@ -18,7 +18,7 @@
       } catch (e) {}
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=36" />
+  <link rel="stylesheet" href="styles.css?v=37" />
 </head>
 <body>
   <header class="top">
@@ -66,9 +66,11 @@
           <span class="motion-speed-val" data-motion-colour-speed-val>100%</span>
         </div>
         <input class="motion-speed" data-motion-colour-speed type="range" min="1" max="100" value="100" step="1" aria-label="Colour speed" />
+        <button type="button" class="motion-reset" data-motion-place aria-pressed="false" style="margin-top:0.75rem">Place</button>
+        <p class="motion-hint" style="margin-top:0.35rem">Place on: drag symbols. Spin/size stay where they stand.</p>
       </div>
       <button type="button" class="motion-reset" data-motion-reset>Reset</button>
-      <p class="motion-hint">Motion = slow whole orbit. Symbol: pick shapes, then Animation / Colour / Size / speeds.</p>
+      <p class="motion-hint">Motion = slow whole orbit. Symbol: Animation / Colour / Size / speeds. Place = drag.</p>
     </div>
   </aside>
 
@@ -147,8 +149,8 @@
     <span class="muted">Mints TBD · not financial advice</span>
   </footer>
 
-  <script src="theme.js?v=36" defer></script>
-  <script src="motion.js?v=36" defer></script>
-  <script src="app.js?v=36" defer></script>
+  <script src="theme.js?v=37" defer></script>
+  <script src="motion.js?v=37" defer></script>
+  <script src="app.js?v=37" defer></script>
 </body>
 </html>

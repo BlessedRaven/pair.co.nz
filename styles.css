@@ -535,7 +535,7 @@ html[data-ring="off"][data-theme="vibe-light"] .mark.is-ready {
   transform-origin: center;
   will-change: transform;
   animation: none;
-  transform: scale(var(--sym-scale, 1));
+  transform: translate(var(--sym-x, 0px), var(--sym-y, 0px)) scale(var(--sym-scale, 1));
 }
 
 .mark-host svg.sigil .sym[data-anim="off"],
@@ -547,12 +547,12 @@ html[data-ring="off"][data-theme="vibe-light"] .mark.is-ready {
 .mark-host svg.sigil .center[data-anim="off"][data-colour="off"] {
   animation: none !important;
   filter: none;
-  transform: scale(var(--sym-scale, 1));
+  transform: translate(var(--sym-x, 0px), var(--sym-y, 0px)) scale(var(--sym-scale, 1));
 }
 
 .mark-host svg.sigil .sym[data-anim="off"][data-colour="vibe"],
 .mark-host svg.sigil .center[data-anim="off"][data-colour="vibe"] {
-  transform: scale(var(--sym-scale, 1));
+  transform: translate(var(--sym-x, 0px), var(--sym-y, 0px)) scale(var(--sym-scale, 1));
 }
 
 /* Per-symbol colour — smooth cycle; speed via --glow-dur */
@@ -632,19 +632,14 @@ html[data-ring="off"][data-theme="vibe-light"] .mark.is-ready {
 
 
 @keyframes pair-sym-spin {
-  from { transform: rotate(0deg) scale(var(--sym-scale, 1)); }
-  to { transform: rotate(360deg) scale(var(--sym-scale, 1)); }
+  from { transform: translate(var(--sym-x, 0px), var(--sym-y, 0px)) rotate(0deg) scale(var(--sym-scale, 1)); }
+  to { transform: translate(var(--sym-x, 0px), var(--sym-y, 0px)) rotate(360deg) scale(var(--sym-scale, 1)); }
 }
 
 @keyframes pair-sym-spin-ccw {
-  from { transform: rotate(0deg) scale(var(--sym-scale, 1)); }
-  to { transform: rotate(-360deg) scale(var(--sym-scale, 1)); }
+  from { transform: translate(var(--sym-x, 0px), var(--sym-y, 0px)) rotate(0deg) scale(var(--sym-scale, 1)); }
+  to { transform: translate(var(--sym-x, 0px), var(--sym-y, 0px)) rotate(-360deg) scale(var(--sym-scale, 1)); }
 }
-  to { transform: rotate(-360deg) scale(var(--sym-scale, 1)); }
-}
-  to { transform: rotate(-360deg); }
-}
-
 
 .hits {
   position: absolute;
@@ -896,4 +891,19 @@ body:has(.brief) .top {
   .hits .hit-label {
     transition: none;
   }
+}
+
+
+/* Place mode — drag symbols */
+html[data-place="on"] .mark-host svg.sigil .sym,
+html[data-place="on"] .mark-host svg.sigil .center {
+  cursor: grab;
+  pointer-events: auto;
+}
+html[data-place="on"] .mark-host svg.sigil .sym:active,
+html[data-place="on"] .mark-host svg.sigil .center:active {
+  cursor: grabbing;
+}
+html[data-place="on"] .hits {
+  pointer-events: none;
 }

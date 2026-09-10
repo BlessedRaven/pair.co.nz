@@ -1,7 +1,7 @@
 (() => {
-  const STORE_KEY = "pair-sym-motion-v11";
-  const SELECTED_KEY = "pair-motion-selected-v11";
-  const RING_KEY = "pair-motion-ring-v11";
+  const STORE_KEY = "pair-sym-motion-v12";
+  const SELECTED_KEY = "pair-motion-selected-v12";
+  const RING_KEY = "pair-motion-ring-v12";
 
   const SYMBOLS = [
     { id: "gol", label: "GOL" },
@@ -110,13 +110,17 @@
   };
 
   const ensure = (id) => {
-    if (!store[id]) store[id] = { anim: "off", speed: 100, colour: "off", colourSpeed: 100, size: 100 };
+    if (!store[id]) store[id] = { anim: "off", speed: 100, colour: "off", colourSpeed: 100, size: 100, x: 0, y: 0 };
     const a = store[id].anim;
     if (a !== "cw" && a !== "ccw" && a !== "off") store[id].anim = "off";
     if (store[id].colour !== "vibe") store[id].colour = "off";
     store[id].speed = clampPct(store[id].speed);
     store[id].colourSpeed = clampPct(store[id].colourSpeed == null ? 100 : store[id].colourSpeed);
     store[id].size = clampSize(store[id].size == null ? 100 : store[id].size);
+    let x = Number(store[id].x);
+    let y = Number(store[id].y);
+    store[id].x = Number.isFinite(x) ? x : 0;
+    store[id].y = Number.isFinite(y) ? y : 0;
     return store[id];
   };
   SYMBOLS.forEach((s) => ensure(s.id));
@@ -155,6 +159,8 @@
     el.style.animation = "";
     el.style.animationDuration = "";
     el.style.setProperty("--sym-scale", String(clampSize(cfg.size) / 100));
+    el.style.setProperty("--sym-x", cfg.x + "px");
+    el.style.setProperty("--sym-y", cfg.y + "px");
     if (cfg.anim === "off" && cfg.colour !== "vibe") {
       el.style.animation = "none";
       el.style.removeProperty("--spin-dur");
@@ -172,6 +178,8 @@
       el.style.removeProperty("--glow-dur");
     }
     el.style.setProperty("--sym-scale", String(clampSize(cfg.size) / 100));
+    el.style.setProperty("--sym-x", cfg.x + "px");
+    el.style.setProperty("--sym-y", cfg.y + "px");
   };
 
   const applyAll = () => {
@@ -354,7 +362,7 @@
       e.stopPropagation();
       store = {};
       SYMBOLS.forEach((s) => {
-        store[s.id] = { anim: "off", speed: 100, colour: "off", colourSpeed: 100, size: 100 };
+        store[s.id] = { anim: "off", speed: 100, colour: "off", colourSpeed: 100, size: 100, x: 0, y: 0 };
       });
       writeStore(store);
       selected = new Set();
@@ -364,6 +372,77 @@
       applyAll();
       renderLists();
     });
+  }
+
+
+  // Place mode: drag symbols; spin/size apply where they stand
+  let placeOn = false;
+  const placeBtn = document.querySelector("[data-motion-place]");
+  const setPlace = (on) => {
+    placeOn = !!on;
+    document.documentElement.setAttribute("data-place", placeOn ? "on" : "off");
+    if (placeBtn) placeBtn.setAttribute("aria-pressed", placeOn ? "true" : "false");
+  };
+  setPlace(false);
+  if (placeBtn) {
+    placeBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setPlace(!placeOn);
+    });
+  }
+
+  const svgPoint = (svg, clientX, clientY) => {
+    const pt = svg.createSVGPoint();
+    pt.x = clientX;
+    pt.y = clientY;
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return { x: 0, y: 0 };
+    return pt.matrixTransform(ctm.inverse());
+  };
+
+  let drag = null;
+  const onPointerDown = (e) => {
+    if (!placeOn) return;
+    const el = e.target.closest(".mark-host svg.sigil .sym, .mark-host svg.sigil .center");
+    if (!el) return;
+    const id = el.getAttribute("data-sym");
+    if (!SYMBOLS.some((s) => s.id === id)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const svg = el.ownerSVGElement;
+    const p = svgPoint(svg, e.clientX, e.clientY);
+    const cfg = ensure(id);
+    drag = { id, el, svg, lastX: p.x, lastY: p.y };
+    selected = new Set([id]);
+    writeSelected(selected);
+    renderLists();
+    el.setPointerCapture?.(e.pointerId);
+  };
+  const onPointerMove = (e) => {
+    if (!drag) return;
+    const p = svgPoint(drag.svg, e.clientX, e.clientY);
+    const dx = p.x - drag.lastX;
+    const dy = p.y - drag.lastY;
+    drag.lastX = p.x;
+    drag.lastY = p.y;
+    const cfg = ensure(drag.id);
+    cfg.x = Math.round((cfg.x + dx) * 10) / 10;
+    cfg.y = Math.round((cfg.y + dy) * 10) / 10;
+    writeStore(store);
+    applyToDom(drag.id);
+  };
+  const onPointerUp = () => {
+    drag = null;
+  };
+  document.addEventListener("pointerdown", onPointerDown, true);
+  document.addEventListener("pointermove", onPointerMove, true);
+  document.addEventListener("pointerup", onPointerUp, true);
+  document.addEventListener("pointercancel", onPointerUp, true);
+
+  // Reset also clears place offsets (already in store reset) and turns place off
+  const _reset = document.querySelector("[data-motion-reset]");
+  if (_reset) {
+    _reset.addEventListener("click", () => setPlace(false));
   }
 
   document.documentElement.setAttribute("data-colour", "off");
