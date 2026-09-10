@@ -23,22 +23,32 @@
 
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  // Spin/size origin only — position offsets live on outer .sym-slot
   const pinOrigin = (el) => {
     try {
       const bb = el.getBBox();
       if (!bb.width && !bb.height) return;
-      el.style.transformBox = "view-box";
-      el.style.transformOrigin = `${bb.x + bb.width / 2}px ${bb.y + bb.height / 2}px`;
+      el.style.transformBox = "fill-box";
+      el.style.transformOrigin = "center";
     } catch (err) {
       /* ignore */
     }
   };
 
+  const makeSlot = (id) => {
+    const slot = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    slot.setAttribute("class", "sym-slot");
+    slot.setAttribute("data-sym-slot", id);
+    return slot;
+  };
+
   const wrapOne = (orbit, el, id) => {
+    const slot = makeSlot(id);
     const wrap = document.createElementNS("http://www.w3.org/2000/svg", "g");
     wrap.setAttribute("class", "sym");
     wrap.setAttribute("data-sym", id);
-    orbit.insertBefore(wrap, el);
+    orbit.insertBefore(slot, el);
+    slot.appendChild(wrap);
     wrap.appendChild(el);
     pinOrigin(wrap);
     return wrap;
@@ -46,10 +56,12 @@
 
   const wrapDetached = (orbit, ref, el, id) => {
     if (!el) return null;
+    const slot = makeSlot(id);
     const wrap = document.createElementNS("http://www.w3.org/2000/svg", "g");
     wrap.setAttribute("class", "sym");
     wrap.setAttribute("data-sym", id);
-    orbit.insertBefore(wrap, ref);
+    orbit.insertBefore(slot, ref);
+    slot.appendChild(wrap);
     wrap.appendChild(el);
     pinOrigin(wrap);
     return wrap;
@@ -74,10 +86,12 @@
     if (sunDisk) wrapDetached(orbit, cluster, sunDisk, "sun");
     if (keyEl) wrapDetached(orbit, cluster, keyEl, "key");
     if (beanNodes.length) {
+      const slot = makeSlot("bean");
       const beanWrap = document.createElementNS("http://www.w3.org/2000/svg", "g");
       beanWrap.setAttribute("class", "sym");
       beanWrap.setAttribute("data-sym", "bean");
-      orbit.insertBefore(beanWrap, cluster);
+      orbit.insertBefore(slot, cluster);
+      slot.appendChild(beanWrap);
       beanNodes.forEach((n) => beanWrap.appendChild(n));
       pinOrigin(beanWrap);
     }
@@ -130,9 +144,12 @@
     const defs = src.querySelector("defs");
     if (defs) svg.appendChild(document.importNode(defs, true));
 
+    // Torus also gets a slot so Pin offsets don't fight scale/spin
+    const centerSlot = makeSlot("torus");
     const center = document.createElementNS("http://www.w3.org/2000/svg", "g");
     center.setAttribute("class", "center");
     center.setAttribute("data-sym", "torus");
+    centerSlot.appendChild(center);
 
     const orbit = document.createElementNS("http://www.w3.org/2000/svg", "g");
     orbit.setAttribute("class", "orbit");
@@ -151,7 +168,7 @@
     });
 
     svg.appendChild(orbit);
-    svg.appendChild(center);
+    svg.appendChild(centerSlot);
     host.innerHTML = "";
     host.appendChild(svg);
     wrapOrbitSyms(orbit);

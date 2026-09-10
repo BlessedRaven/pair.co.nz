@@ -1,7 +1,7 @@
 (() => {
-  const STORE_KEY = "pair-sym-motion-v12";
-  const SELECTED_KEY = "pair-motion-selected-v12";
-  const RING_KEY = "pair-motion-ring-v12";
+  const STORE_KEY = "pair-sym-motion-v13";
+  const SELECTED_KEY = "pair-motion-selected-v13";
+  const RING_KEY = "pair-motion-ring-v13";
 
   const SYMBOLS = [
     { id: "gol", label: "GOL" },
@@ -150,23 +150,48 @@
     toggle.setAttribute("aria-pressed", ringOn ? "true" : "false");
   };
 
+  const findSlot = (id) =>
+    document.querySelector('.mark-host svg.sigil [data-sym-slot="' + id + '"]');
+
+  const findHit = (id) => document.querySelector('.hits [data-hotspot="' + id + '"]');
+
+  // Pose (pin x/y + size) — never restarts spin/orbit animations
+  const applyPose = (id) => {
+    const cfg = ensure(id);
+    const el = findEl(id);
+    const slot = findSlot(id);
+    const x = cfg.x || 0;
+    const y = cfg.y || 0;
+    if (slot) {
+      if (x || y) slot.setAttribute("transform", "translate(" + x + " " + y + ")");
+      else slot.removeAttribute("transform");
+    }
+    if (el) {
+      el.style.setProperty("--sym-scale", String(clampSize(cfg.size) / 100));
+      el.style.removeProperty("--sym-x");
+      el.style.removeProperty("--sym-y");
+    }
+    const hit = findHit(id);
+    if (hit) {
+      if (x || y) hit.setAttribute("transform", "translate(" + x + " " + y + ")");
+      else hit.removeAttribute("transform");
+    }
+  };
+
   const applyToDom = (id) => {
     const cfg = ensure(id);
     const el = findEl(id);
     if (!el) return;
     el.dataset.anim = cfg.anim;
     el.dataset.colour = cfg.colour === "vibe" ? "vibe" : "off";
-    el.style.animation = "";
-    el.style.animationDuration = "";
-    el.style.setProperty("--sym-scale", String(clampSize(cfg.size) / 100));
-    el.style.setProperty("--sym-x", cfg.x + "px");
-    el.style.setProperty("--sym-y", cfg.y + "px");
+    applyPose(id);
     if (cfg.anim === "off" && cfg.colour !== "vibe") {
       el.style.animation = "none";
       el.style.removeProperty("--spin-dur");
       el.style.removeProperty("--glow-dur");
       return;
     }
+    el.style.animation = "";
     if (cfg.anim !== "off") {
       el.style.setProperty("--spin-dur", periodSec(cfg.speed) + "s");
     } else {
@@ -177,9 +202,6 @@
     } else {
       el.style.removeProperty("--glow-dur");
     }
-    el.style.setProperty("--sym-scale", String(clampSize(cfg.size) / 100));
-    el.style.setProperty("--sym-x", cfg.x + "px");
-    el.style.setProperty("--sym-y", cfg.y + "px");
   };
 
   const applyAll = () => {
@@ -334,9 +356,14 @@
 
   sizeEl.addEventListener("input", () => {
     const size = clampSize(sizeEl.value);
-    forSelected((id, cfg) => {
-      cfg.size = size;
+    const ids = selectedList();
+    if (!ids.length) return;
+    ids.forEach((id) => {
+      ensure(id);
+      store[id].size = size;
+      applyPose(id);
     });
+    writeStore(store);
     sizeVal.textContent = size + "%";
   });
 
@@ -375,19 +402,19 @@
   }
 
 
-  // Place mode: drag symbols; spin/size apply where they stand
-  let placeOn = false;
-  const placeBtn = document.querySelector("[data-motion-place]");
-  const setPlace = (on) => {
-    placeOn = !!on;
-    document.documentElement.setAttribute("data-place", placeOn ? "on" : "off");
-    if (placeBtn) placeBtn.setAttribute("aria-pressed", placeOn ? "true" : "false");
+  // Pin mode: drag symbols; spin/size apply where they stand
+  let pinOn = false;
+  const pinBtn = document.querySelector("[data-motion-pin]");
+  const setPin = (on) => {
+    pinOn = !!on;
+    document.documentElement.setAttribute("data-pin", pinOn ? "on" : "off");
+    if (pinBtn) pinBtn.setAttribute("aria-pressed", pinOn ? "true" : "false");
   };
-  setPlace(false);
-  if (placeBtn) {
-    placeBtn.addEventListener("click", (e) => {
+  setPin(false);
+  if (pinBtn) {
+    pinBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      setPlace(!placeOn);
+      setPin(!pinOn);
     });
   }
 
@@ -402,7 +429,7 @@
 
   let drag = null;
   const onPointerDown = (e) => {
-    if (!placeOn) return;
+    if (!pinOn) return;
     const el = e.target.closest(".mark-host svg.sigil .sym, .mark-host svg.sigil .center");
     if (!el) return;
     const id = el.getAttribute("data-sym");
@@ -429,7 +456,7 @@
     cfg.x = Math.round((cfg.x + dx) * 10) / 10;
     cfg.y = Math.round((cfg.y + dy) * 10) / 10;
     writeStore(store);
-    applyToDom(drag.id);
+    applyPose(drag.id);
   };
   const onPointerUp = () => {
     drag = null;
@@ -442,7 +469,7 @@
   // Reset also clears place offsets (already in store reset) and turns place off
   const _reset = document.querySelector("[data-motion-reset]");
   if (_reset) {
-    _reset.addEventListener("click", () => setPlace(false));
+    _reset.addEventListener("click", () => setPin(false));
   }
 
   document.documentElement.setAttribute("data-colour", "off");
