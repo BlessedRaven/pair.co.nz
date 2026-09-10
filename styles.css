@@ -586,6 +586,75 @@ html[data-ring="off"][data-theme="vibe-light"] .mark.is-ready {
     pair-sym-glow var(--glow-dur, 8s) linear infinite;
 }
 
+/* Static rainbow colour glows */
+.mark-host svg.sigil .sym[data-colour="red"],
+.mark-host svg.sigil .center[data-colour="red"] {
+  filter:
+    drop-shadow(0 0 1.2px #ff2d55)
+    drop-shadow(0 0 8px rgba(255, 45, 85, 0.75))
+    drop-shadow(0 0 18px rgba(255, 45, 85, 0.28));
+}
+.mark-host svg.sigil .sym[data-colour="orange"],
+.mark-host svg.sigil .center[data-colour="orange"] {
+  filter:
+    drop-shadow(0 0 1.2px #ff8a00)
+    drop-shadow(0 0 8px rgba(255, 138, 0, 0.75))
+    drop-shadow(0 0 18px rgba(255, 138, 0, 0.28));
+}
+.mark-host svg.sigil .sym[data-colour="yellow"],
+.mark-host svg.sigil .center[data-colour="yellow"] {
+  filter:
+    drop-shadow(0 0 1.2px #ffd60a)
+    drop-shadow(0 0 8px rgba(255, 214, 10, 0.75))
+    drop-shadow(0 0 18px rgba(255, 214, 10, 0.28));
+}
+.mark-host svg.sigil .sym[data-colour="green"],
+.mark-host svg.sigil .center[data-colour="green"] {
+  filter:
+    drop-shadow(0 0 1.2px #32d74b)
+    drop-shadow(0 0 8px rgba(50, 215, 75, 0.75))
+    drop-shadow(0 0 18px rgba(50, 215, 75, 0.28));
+}
+.mark-host svg.sigil .sym[data-colour="blue"],
+.mark-host svg.sigil .center[data-colour="blue"] {
+  filter:
+    drop-shadow(0 0 1.2px #64d2ff)
+    drop-shadow(0 0 8px rgba(100, 210, 255, 0.75))
+    drop-shadow(0 0 18px rgba(100, 210, 255, 0.28));
+}
+.mark-host svg.sigil .sym[data-colour="indigo"],
+.mark-host svg.sigil .center[data-colour="indigo"] {
+  filter:
+    drop-shadow(0 0 1.2px #5e5ce6)
+    drop-shadow(0 0 8px rgba(94, 92, 230, 0.75))
+    drop-shadow(0 0 18px rgba(94, 92, 230, 0.28));
+}
+.mark-host svg.sigil .sym[data-colour="violet"],
+.mark-host svg.sigil .center[data-colour="violet"] {
+  filter:
+    drop-shadow(0 0 1.2px #bf5af2)
+    drop-shadow(0 0 8px rgba(191, 90, 242, 0.75))
+    drop-shadow(0 0 18px rgba(191, 90, 242, 0.28));
+}
+
+.mark-host svg.sigil .sym[data-anim="off"][data-colour="red"],
+.mark-host svg.sigil .center[data-anim="off"][data-colour="red"],
+.mark-host svg.sigil .sym[data-anim="off"][data-colour="orange"],
+.mark-host svg.sigil .center[data-anim="off"][data-colour="orange"],
+.mark-host svg.sigil .sym[data-anim="off"][data-colour="yellow"],
+.mark-host svg.sigil .center[data-anim="off"][data-colour="yellow"],
+.mark-host svg.sigil .sym[data-anim="off"][data-colour="green"],
+.mark-host svg.sigil .center[data-anim="off"][data-colour="green"],
+.mark-host svg.sigil .sym[data-anim="off"][data-colour="blue"],
+.mark-host svg.sigil .center[data-anim="off"][data-colour="blue"],
+.mark-host svg.sigil .sym[data-anim="off"][data-colour="indigo"],
+.mark-host svg.sigil .center[data-anim="off"][data-colour="indigo"],
+.mark-host svg.sigil .sym[data-anim="off"][data-colour="violet"],
+.mark-host svg.sigil .center[data-anim="off"][data-colour="violet"] {
+  animation: none !important;
+  transform: scale(var(--sym-scale, 1));
+}
+
 .mark-host svg.sigil .sym[data-anim="cw"],
 .mark-host svg.sigil .center[data-anim="cw"] {
   animation: pair-sym-spin var(--spin-dur, 72s) linear infinite;
@@ -937,16 +1006,3 @@ html[data-pin="on"] .mark-host svg.sigil .free-layer {
 }
 
 
-/* Orbit swap selection */
-.mark-host svg.sigil .sym[data-orbit-pick="true"],
-.mark-host svg.sigil .center[data-orbit-pick="true"] {
-  filter: drop-shadow(0 0 8px var(--accent)) drop-shadow(0 0 16px rgba(225, 29, 46, 0.45));
-}
-html[data-free-orbit="on"] .hits {
-  pointer-events: none !important;
-}
-html[data-free-orbit="on"] .mark-host svg.sigil .sym,
-html[data-free-orbit="on"] .mark-host svg.sigil .center {
-  cursor: pointer;
-  pointer-events: all;
-}

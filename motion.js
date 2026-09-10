@@ -29,8 +29,16 @@
 
   const COLOURS = [
     { id: "off", label: "None" },
-    { id: "vibe", label: "Colour" },
+    { id: "vibe", label: "Multicolour" },
+    { id: "red", label: "Red" },
+    { id: "orange", label: "Orange" },
+    { id: "yellow", label: "Yellow" },
+    { id: "green", label: "Green" },
+    { id: "blue", label: "Blue" },
+    { id: "indigo", label: "Indigo" },
+    { id: "violet", label: "Violet" },
   ];
+  const COLOUR_IDS = new Set(COLOURS.map((c) => c.id));
 
   const panel = document.querySelector("[data-motion-panel]");
   const toggle = document.querySelector("[data-motion-toggle]");
@@ -114,7 +122,7 @@
     if (!store[id]) store[id] = { anim: "off", speed: 100, colour: "off", colourSpeed: 100, size: 100, x: 0, y: 0, pinned: false, ax: 0, ay: 0 };
     const a = store[id].anim;
     if (a !== "cw" && a !== "ccw" && a !== "off") store[id].anim = "off";
-    if (store[id].colour !== "vibe") store[id].colour = "off";
+    if (!COLOUR_IDS.has(store[id].colour)) store[id].colour = "off";
     store[id].speed = clampPct(store[id].speed);
     store[id].colourSpeed = clampPct(store[id].colourSpeed == null ? 100 : store[id].colourSpeed);
     store[id].size = clampSize(store[id].size == null ? 100 : store[id].size);
@@ -259,6 +267,19 @@
       el.style.removeProperty("--sym-y");
     }
     if (!slot || !el) return;
+    // Motion (ring) needs artist SVG seats inside .orbit — never free-layer transforms
+    if (ringOn) {
+      if (id !== "torus") {
+        const orbit = orbitLayer();
+        const ho = hitsOrbit();
+        if (orbit && slot.parentNode !== orbit) orbit.appendChild(slot);
+        const hit = findHit(id);
+        if (hit && ho && hit.parentNode !== ho) ho.appendChild(hit);
+        if (hit) hit.removeAttribute("transform");
+      }
+      slot.removeAttribute("transform");
+      return;
+    }
     if (cfg.pinned) {
       releaseToFree(id);
       setSlotAbs(slot, el, cfg.ax, cfg.ay);
@@ -272,7 +293,6 @@
         }
       }
     } else if (id === "torus" && (cfg.x || cfg.y)) {
-      // rare: unpinned torus nudge
       slot.setAttribute("transform", "translate(" + cfg.x + " " + cfg.y + ")");
     } else {
       slot.removeAttribute("transform");
@@ -286,7 +306,7 @@
     const el = findEl(id);
     if (!el) return;
     el.dataset.anim = cfg.anim;
-    el.dataset.colour = cfg.colour === "vibe" ? "vibe" : "off";
+    el.dataset.colour = COLOUR_IDS.has(cfg.colour) ? cfg.colour : "off";
     applyPose(id);
     if (cfg.anim === "off" && cfg.colour !== "vibe") {
       el.style.animation = "none";
@@ -383,13 +403,29 @@
     }
   };
 
-    toggle.addEventListener("click", (e) => {
+  const restoreNativeRing = () => {
+    SYMBOLS.forEach((s) => {
+      restoreToOrbit(s.id);
+      const cfg = ensure(s.id);
+      cfg.pinned = false;
+      cfg.ax = 0;
+      cfg.ay = 0;
+      cfg.x = 0;
+      cfg.y = 0;
+    });
+    writeStore(store);
+  };
+
+  toggle.addEventListener("click", (e) => {
     e.stopPropagation();
-    if (typeof freeOrbitOn !== "undefined" && freeOrbitOn) setFreeOrbit(false);
-    ensureMoonsInOrbitGroup(false);
     ringOn = !ringOn;
+    if (ringOn) {
+      if (typeof pinOn !== "undefined" && pinOn) setPin(false);
+      restoreNativeRing();
+    }
     writeRing(ringOn);
     syncRing();
+    applyAll();
   });
 
   if (symbolOpen) {
@@ -453,7 +489,8 @@
     e.stopPropagation();
     const btn = e.target.closest("[data-colour-pick]");
     if (!btn) return;
-    const colour = btn.getAttribute("data-colour-pick") === "vibe" ? "vibe" : "off";
+    const raw = btn.getAttribute("data-colour-pick") || "off";
+    const colour = COLOUR_IDS.has(raw) ? raw : "off";
     forSelected((id, cfg) => {
       cfg.colour = colour;
     });
@@ -502,242 +539,12 @@
       writeSelected(selected);
       ringOn = false;
       writeRing(false);
-      if (freeOrbitOn) setFreeOrbit(false);
       setPin(false);
       applyAll();
       renderLists();
     });
   }
 
-
-  // —— Shared: keep moons inside Blessed Raven .orbit so Motion/Orbit CSS can spin them ——
-  const SVG_CX = 447.56;
-  const SVG_CY = 484.96;
-  const ORBIT_R = 305;
-
-  const syncHitAbs = (id, ax, ay) => {
-    const hit = findHit(id);
-    if (!hit) return;
-    const hc = hit.querySelector("circle.hit");
-    if (!hc) return;
-    const hx = Number(hc.getAttribute("cx")) || 0;
-    const hy = Number(hc.getAttribute("cy")) || 0;
-    hit.setAttribute("transform", "translate(" + (ax - hx) + " " + (ay - hy) + ")");
-  };
-
-  const ensureMoonsInOrbitGroup = (normalizeRing) => {
-    const orbit = orbitLayer();
-    const ho = hitsOrbit();
-    if (!orbit) return;
-    SYMBOLS.forEach((s) => {
-      if (s.id === "torus") return;
-      const el = findEl(s.id);
-      const slot = findSlot(s.id);
-      if (!el || !slot) return;
-      // Prefer live world position so we don't jump
-      let ax, ay;
-      try {
-        const w = worldCenter(el);
-        ax = w.x;
-        ay = w.y;
-      } catch (err) {
-        const cfg = ensure(s.id);
-        ax = cfg.ax || SVG_CX;
-        ay = cfg.ay || SVG_CY;
-      }
-      if (slot.parentNode !== orbit) {
-        orbit.appendChild(slot);
-      }
-      const cfg = ensure(s.id);
-      cfg.pinned = true;
-      cfg.ax = ax;
-      cfg.ay = ay;
-      setSlotAbs(slot, el, ax, ay);
-      const hit = findHit(s.id);
-      if (hit && ho) {
-        if (hit.parentNode !== ho) ho.appendChild(hit);
-        syncHitAbs(s.id, ax, ay);
-      }
-    });
-    // Torus stays out of .orbit — park at portal center when normalizing
-    if (normalizeRing) {
-      const tel = findEl("torus");
-      const tslot = findSlot("torus");
-      if (tel && tslot) {
-        const cfg = ensure("torus");
-        cfg.pinned = true;
-        cfg.ax = SVG_CX;
-        cfg.ay = SVG_CY;
-        setSlotAbs(tslot, tel, SVG_CX, SVG_CY);
-        syncHitAbs("torus", SVG_CX, SVG_CY);
-      }
-    }
-  };
-
-  // Orbit mode: Blessed Raven whole-ring spin + click-to-swap magnetic slide
-  let freeOrbitOn = false;
-  let swapPick = null;
-  const orbitSlots = new Map(); // id -> { ang }
-  const orbitBtn = document.querySelector("[data-motion-orbit]");
-
-  const posOnRing = (ang) => ({
-    ax: SVG_CX + ORBIT_R * Math.cos(ang),
-    ay: SVG_CY + ORBIT_R * Math.sin(ang),
-  });
-
-  const placeMoonAbs = (id, ang) => {
-    const el = findEl(id);
-    const slot = findSlot(id);
-    if (!el || !slot) return;
-    const p = posOnRing(ang);
-    const cfg = ensure(id);
-    cfg.pinned = true;
-    cfg.ax = p.ax;
-    cfg.ay = p.ay;
-    setSlotAbs(slot, el, p.ax, p.ay);
-    syncHitAbs(id, p.ax, p.ay);
-    orbitSlots.set(id, { ang });
-  };
-
-  const easeOutCubic = (u) => 1 - Math.pow(1 - u, 3);
-
-  const magneticMove = (id, fromAng, toAng, dur, done) => {
-    const start = performance.now();
-    let d = ((toAng - fromAng + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
-    const step = (now) => {
-      const u = Math.min(1, (now - start) / dur);
-      placeMoonAbs(id, fromAng + d * easeOutCubic(u));
-      if (u < 1) requestAnimationFrame(step);
-      else if (done) done();
-    };
-    requestAnimationFrame(step);
-  };
-
-  const clearSwapPick = () => {
-    if (swapPick) {
-      const el = findEl(swapPick);
-      if (el) el.removeAttribute("data-orbit-pick");
-    }
-    swapPick = null;
-  };
-
-  const tearDownFreeOrbit = () => {
-    clearSwapPick();
-    orbitSlots.clear();
-    document.documentElement.setAttribute("data-free-orbit", "off");
-    // Leave moons in .orbit at current poses; just stop ring unless Motion still wanted
-    // Caller decides ringOn
-  };
-
-  const startFreeOrbit = () => {
-    clearSwapPick();
-    orbitSlots.clear();
-    if (typeof pinOn !== "undefined" && pinOn) setPin(false);
-
-    // Pull every moon back into .orbit at live world positions, park Torus at center
-    ensureMoonsInOrbitGroup(true);
-
-    const moons = SYMBOLS.map((s) => s.id).filter((id) => id !== "torus" && findEl(id) && findSlot(id));
-    const infos = moons
-      .map((id) => {
-        const cfg = ensure(id);
-        return { id, ang: Math.atan2(cfg.ay - SVG_CY, cfg.ax - SVG_CX) };
-      })
-      .sort((a, b) => a.ang - b.ang);
-
-    const n = Math.max(1, infos.length);
-    const startAng = -Math.PI / 2;
-    const targets = infos.map((info, i) => ({
-      id: info.id,
-      from: info.ang,
-      to: startAng + (i * 2 * Math.PI) / n,
-    }));
-
-    // Keep ring paused during magnetic insert, then enable Blessed Raven spin
-    ringOn = false;
-    writeRing(false);
-    syncRing();
-    document.documentElement.setAttribute("data-free-orbit", "on");
-
-    if (!targets.length) {
-      ringOn = true;
-      writeRing(true);
-      syncRing();
-      return;
-    }
-
-    let pending = targets.length;
-    targets.forEach((t) => {
-      magneticMove(t.id, t.from, t.to, 700, () => {
-        pending -= 1;
-        if (pending <= 0) {
-          writeStore(store);
-          ringOn = true;
-          writeRing(true);
-          syncRing();
-        }
-      });
-    });
-  };
-
-  const setFreeOrbit = (on) => {
-    freeOrbitOn = !!on;
-    if (orbitBtn) orbitBtn.setAttribute("aria-pressed", freeOrbitOn ? "true" : "false");
-    if (freeOrbitOn) {
-      startFreeOrbit();
-    } else {
-      tearDownFreeOrbit();
-      // Freeze: turn ring off but keep arranged positions in .orbit
-      ringOn = false;
-      writeRing(false);
-      syncRing();
-      writeStore(store);
-    }
-  };
-
-  if (orbitBtn) {
-    orbitBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      setFreeOrbit(!freeOrbitOn);
-    });
-  }
-
-  // Click two moons to swap slots (Orbit mode)
-  document.addEventListener(
-    "click",
-    (e) => {
-      if (!freeOrbitOn) return;
-      if (e.target.closest("[data-motion-orbit],[data-motion-pin],[data-motion-toggle],[data-panel-open],[data-motion-panel],[data-theme-set],[data-vibe-toggle],[data-vibe-menu]")) return;
-      const el = e.target.closest(".mark-host svg.sigil .sym");
-      if (!el) return;
-      const id = el.getAttribute("data-sym");
-      if (!id || id === "torus" || !orbitSlots.has(id)) return;
-      e.preventDefault();
-      e.stopPropagation();
-      if (!swapPick) {
-        swapPick = id;
-        el.setAttribute("data-orbit-pick", "true");
-        return;
-      }
-      if (swapPick === id) {
-        clearSwapPick();
-        return;
-      }
-      const a = swapPick;
-      const b = id;
-      const angA = orbitSlots.get(a).ang;
-      const angB = orbitSlots.get(b).ang;
-      clearSwapPick();
-      let left = 2;
-      const done = () => {
-        left -= 1;
-        if (left <= 0) writeStore(store);
-      };
-      magneticMove(a, angA, angB, 560, done);
-      magneticMove(b, angB, angA, 560, done);
-    },
-    true
-  );
 
   // Pause Blessed Raven orbit while hovering a symbol (same as blessedraven.com)
   const markEl = document.querySelector("[data-mark]");
@@ -764,8 +571,16 @@
     pinBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       const next = !pinOn;
-      if (next && freeOrbitOn) setFreeOrbit(false);
+      if (next && ringOn) {
+        ringOn = false;
+        writeRing(false);
+        syncRing();
+      }
       setPin(next);
+      if (!next) {
+        // leaving Pin keeps free seats; Motion will restore native when toggled on
+      }
+      applyAll();
     });
   }
 
@@ -816,7 +631,6 @@
   document.addEventListener("pointercancel", onPointerUp, true);
 
   document.documentElement.setAttribute("data-colour", "off");
-  document.documentElement.setAttribute("data-free-orbit", "off");
   renderLists();
   setPanelOpen(false);
   syncRing();
