@@ -1,5 +1,5 @@
 (() => {
-  const STORE_KEY = "pair-sym-motion-v20";
+  const STORE_KEY = "pair-sym-motion-v21";
   const SELECTED_KEY = "pair-motion-selected-v19";
   const RING_KEY = "pair-motion-ring-v19";
 
@@ -119,7 +119,7 @@
   };
 
   const ensure = (id) => {
-    if (!store[id]) store[id] = { anim: "off", speed: 100, colour: "off", colourSpeed: 100, size: 100, x: 0, y: 0, pinned: false, ax: 0, ay: 0, orb: false, orbFn: "shield" };
+    if (!store[id]) store[id] = { anim: "off", speed: 100, colour: "off", colourSpeed: 100, size: 100, x: 0, y: 0, pinned: false, ax: 0, ay: 0, orb: false, orbFn: "shield", orbField: false };
     const a = store[id].anim;
     if (a !== "cw" && a !== "ccw" && a !== "off") store[id].anim = "off";
     if (!COLOUR_IDS.has(store[id].colour)) store[id].colour = "off";
@@ -138,6 +138,7 @@
     store[id].orb = !!store[id].orb;
     const ofn = store[id].orbFn;
     store[id].orbFn = ofn === "orbit" || ofn === "cloud" ? ofn : "shield";
+    store[id].orbField = !!store[id].orbField;
     return store[id];
   };
   SYMBOLS.forEach((s) => ensure(s.id));
@@ -328,6 +329,12 @@
     }
   };
 
+  const ORB_FIELD_COLORS = {
+    shield: { inner: "rgba(140, 210, 255, 0.08)", mid: "rgba(100, 180, 255, 0.28)", edge: "rgba(80, 160, 255, 0.42)", fade: "rgba(80, 160, 255, 0)" },
+    orbit: { inner: "rgba(255, 220, 140, 0.06)", mid: "rgba(255, 190, 80, 0.26)", edge: "rgba(255, 170, 50, 0.4)", fade: "rgba(255, 170, 50, 0)" },
+    cloud: { inner: "rgba(200, 180, 255, 0.1)", mid: "rgba(160, 140, 255, 0.3)", edge: "rgba(130, 110, 255, 0.45)", fade: "rgba(130, 110, 255, 0)" },
+  };
+
   const syncOrbOn = (id) => {
     const el = findEl(id);
     if (!el) return;
@@ -338,9 +345,9 @@
       return;
     }
     const ns = "http://www.w3.org/2000/svg";
-    if (!orb || orb.tagName.toLowerCase() !== "circle") {
+    if (!orb || orb.tagName.toLowerCase() !== "g") {
       if (orb) orb.remove();
-      orb = document.createElementNS(ns, "circle");
+      orb = document.createElementNS(ns, "g");
       orb.setAttribute("class", "sym-orb");
       const firstArt = [...el.children].find(
         (c) => !c.classList.contains("sym-shape-hit") && !c.classList.contains("sym-hitpad") && !c.classList.contains("sym-orb")
@@ -348,6 +355,7 @@
       if (firstArt) el.insertBefore(orb, firstArt);
       else el.appendChild(orb);
     }
+
     const bb = withArtOnly(el, () => {
       try {
         return el.getBBox();
@@ -355,12 +363,70 @@
         return { x: 0, y: 0, width: 40, height: 40 };
       }
     });
-    const pad = cfg.orbFn === "cloud" ? 1.28 : cfg.orbFn === "orbit" ? 1.2 : 1.14;
+    const fn = cfg.orbFn || "shield";
+    const pad = fn === "cloud" ? 1.28 : fn === "orbit" ? 1.2 : 1.14;
+    const cx = bb.x + bb.width / 2;
+    const cy = bb.y + bb.height / 2;
     const r = Math.max(12, (Math.max(bb.width, bb.height) / 2) * pad);
-    orb.setAttribute("cx", bb.x + bb.width / 2);
-    orb.setAttribute("cy", bb.y + bb.height / 2);
-    orb.setAttribute("r", r);
-    orb.setAttribute("data-orb-fn", cfg.orbFn || "shield");
+
+    orb.setAttribute("data-orb-fn", fn);
+    orb.setAttribute("data-orb-field", cfg.orbField ? "on" : "off");
+
+    // Optional translucent field
+    let field = orb.querySelector(".sym-orb-field");
+    let defs = orb.querySelector("defs");
+    if (cfg.orbField) {
+      const gradId = "orb-field-grad-" + id;
+      if (!defs) {
+        defs = document.createElementNS(ns, "defs");
+        orb.insertBefore(defs, orb.firstChild);
+      }
+      let grad = document.getElementById(gradId);
+      if (!grad || grad.parentNode !== defs) {
+        defs.innerHTML = "";
+        grad = document.createElementNS(ns, "radialGradient");
+        grad.setAttribute("id", gradId);
+        for (let i = 0; i < 4; i++) {
+          grad.appendChild(document.createElementNS(ns, "stop"));
+        }
+        defs.appendChild(grad);
+      }
+      const cols = ORB_FIELD_COLORS[fn] || ORB_FIELD_COLORS.shield;
+      const stops = [
+        [0, cols.inner],
+        [0.45, cols.mid],
+        [0.78, cols.edge],
+        [1, cols.fade],
+      ];
+      [...grad.querySelectorAll("stop")].forEach((stop, i) => {
+        const [off, col] = stops[i];
+        stop.setAttribute("offset", off);
+        stop.setAttribute("stop-color", col);
+      });
+      if (!field) {
+        field = document.createElementNS(ns, "circle");
+        field.setAttribute("class", "sym-orb-field");
+        orb.appendChild(field);
+      }
+      field.setAttribute("cx", cx);
+      field.setAttribute("cy", cy);
+      field.setAttribute("r", r);
+      field.setAttribute("fill", "url(#" + gradId + ")");
+    } else if (field) {
+      field.remove();
+      if (defs) defs.remove();
+    }
+
+    // Rim circle (always)
+    let rim = orb.querySelector(".sym-orb-rim");
+    if (!rim) {
+      rim = document.createElementNS(ns, "circle");
+      rim.setAttribute("class", "sym-orb-rim");
+      orb.appendChild(rim);
+    }
+    rim.setAttribute("cx", cx);
+    rim.setAttribute("cy", cy);
+    rim.setAttribute("r", r);
   };
 
   const applyToDom = (id) => {
@@ -466,6 +532,11 @@
       const fn = btn.getAttribute("data-orb-fn");
       btn.setAttribute("aria-selected", selected.size && fn === cfg.orbFn ? "true" : "false");
     });
+    const fieldBtn = document.querySelector("[data-orb-field]");
+    if (fieldBtn) {
+      const anyField = selectedList().some((id) => ensure(id).orbField);
+      fieldBtn.setAttribute("aria-pressed", selected.size && anyField ? "true" : "false");
+    }
   };
 
   const setPanelOpen = (open) => {
@@ -602,6 +673,24 @@
     });
   }
 
+  const orbFieldBtn = document.querySelector("[data-orb-field]");
+  if (orbFieldBtn) {
+    orbFieldBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const ids = selectedList();
+      if (!ids.length) return;
+      const turnOn = !ids.every((id) => ensure(id).orbField);
+      ids.forEach((id) => {
+        const cfg = ensure(id);
+        cfg.orb = true;
+        cfg.orbField = turnOn;
+      });
+      writeStore(store);
+      ids.forEach((id) => applyToDom(id));
+      renderLists();
+    });
+  }
+
 
   const forSelected = (fn) => {
     const ids = selectedList();
@@ -670,7 +759,7 @@
     store = {};
     SYMBOLS.forEach((s) => {
       restoreToOrbit(s.id);
-      store[s.id] = { anim: "off", speed: 100, colour: "off", colourSpeed: 100, size: 100, x: 0, y: 0, pinned: false, ax: 0, ay: 0, orb: false, orbFn: "shield" };
+      store[s.id] = { anim: "off", speed: 100, colour: "off", colourSpeed: 100, size: 100, x: 0, y: 0, pinned: false, ax: 0, ay: 0, orb: false, orbFn: "shield", orbField: false };
     });
     document.querySelectorAll(".mark-host svg.sigil .sym-orb").forEach((n) => n.remove());
     writeStore(store);
@@ -1096,6 +1185,7 @@
           ay: 0,
         orb: false,
         orbFn: "shield",
+        orbField: false,
         };
       });
       writeStore(store);
@@ -1173,6 +1263,7 @@
         ay: 0,
         orb: false,
         orbFn: "shield",
+      orbField: false,
       };
     });
     writeStore(store);

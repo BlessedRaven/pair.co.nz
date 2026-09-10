@@ -18,7 +18,7 @@
       } catch (e) {}
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=59" />
+  <link rel="stylesheet" href="styles.css?v=60" />
 </head>
 <body>
   <header class="top">
@@ -100,7 +100,10 @@
             <button type="button" role="option" class="motion-opt" data-orb-fn="orbit" aria-selected="false">Orbit</button>
             <button type="button" role="option" class="motion-opt" data-orb-fn="cloud" aria-selected="false">Cloud</button>
           </div>
-          <p class="motion-hint" style="margin-top:0.35rem">Simple glowing circle around selected shapes. Shield = forcefield · Orbit = spinning ring · Cloud = soft house glow.</p>
+          <div class="motion-list" style="margin-top:0.4rem" data-orb-opts>
+            <button type="button" class="motion-opt" data-orb-field aria-pressed="false">Glow field</button>
+          </div>
+          <p class="motion-hint" style="margin-top:0.35rem">Circle rim by default. Optional Glow field = translucent aura. Shield / Orbit / Cloud change the feel.</p>
         </div>
       </div>
       <button type="button" class="motion-reset motion-reset-danger" data-motion-reset>Reset</button>
@@ -189,9 +192,9 @@
     <span class="muted">Mints TBD · not financial advice</span>
   </footer>
 
-  <script src="theme.js?v=59" defer></script>
-  <script src="motion.js?v=59" defer></script>
-  <script src="app.js?v=59" defer></script>
+  <script src="theme.js?v=60" defer></script>
+  <script src="motion.js?v=60" defer></script>
+  <script src="app.js?v=60" defer></script>
 
   <div class="cloud-shape-menu" data-cloud-shape-menu hidden role="menu" aria-label="Cloud shape actions">
     <button type="button" role="menuitem" data-cloud-act="hub">Make house (hub)</button>

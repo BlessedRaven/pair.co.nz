@@ -1282,35 +1282,47 @@ html[data-pin="on"] .mark-host svg.sigil .center:active {
   cursor: grabbing;
 }
 
-/* —— Orb: simple glowing circle (Projects → Orb) —— */
+/* —— Orb: rim (+ optional translucent glow field) —— */
 .mark-host svg.sigil .sym-orb {
-  fill: none;
-  stroke: rgba(160, 220, 255, 0.9);
-  stroke-width: 2;
   pointer-events: none;
-  filter: drop-shadow(0 0 5px rgba(120, 200, 255, 0.95)) drop-shadow(0 0 14px rgba(80, 160, 255, 0.5));
   transform-box: fill-box;
   transform-origin: center;
 }
-.mark-host svg.sigil .sym-orb[data-orb-fn="shield"] {
+.mark-host svg.sigil .sym-orb-rim {
+  fill: none;
+  stroke: rgba(160, 220, 255, 0.92);
+  stroke-width: 2;
+  filter: drop-shadow(0 0 5px rgba(120, 200, 255, 0.9)) drop-shadow(0 0 12px rgba(80, 160, 255, 0.45));
+}
+.mark-host svg.sigil .sym-orb-field {
+  stroke: none;
+  opacity: 0.85;
+  animation: orb-field-breathe 3s ease-in-out infinite;
+}
+.mark-host svg.sigil .sym-orb[data-orb-fn="shield"] .sym-orb-rim {
   animation: orb-pulse 2.6s ease-in-out infinite;
 }
 .mark-host svg.sigil .sym-orb[data-orb-fn="orbit"] {
-  stroke-dasharray: 10 8;
   animation: orb-spin 12s linear infinite;
-  filter: drop-shadow(0 0 6px rgba(255, 210, 120, 0.9)) drop-shadow(0 0 14px rgba(255, 170, 60, 0.45));
-  stroke: rgba(255, 220, 140, 0.95);
 }
-.mark-host svg.sigil .sym-orb[data-orb-fn="cloud"] {
+.mark-host svg.sigil .sym-orb[data-orb-fn="orbit"] .sym-orb-rim {
+  stroke-dasharray: 10 8;
+  stroke: rgba(255, 220, 140, 0.95);
+  filter: drop-shadow(0 0 6px rgba(255, 210, 120, 0.9)) drop-shadow(0 0 14px rgba(255, 170, 60, 0.45));
+}
+.mark-host svg.sigil .sym-orb[data-orb-fn="cloud"] .sym-orb-rim {
   stroke-width: 2.4;
-  stroke: rgba(200, 180, 255, 0.88);
-  filter: drop-shadow(0 0 8px rgba(170, 150, 255, 0.95)) drop-shadow(0 0 22px rgba(130, 110, 255, 0.45));
+  stroke: rgba(200, 180, 255, 0.9);
+  filter: drop-shadow(0 0 8px rgba(170, 150, 255, 0.95)) drop-shadow(0 0 20px rgba(130, 110, 255, 0.45));
   animation: orb-pulse 3.4s ease-in-out infinite;
-  opacity: 0.9;
 }
 @keyframes orb-pulse {
   0%, 100% { opacity: 0.7; }
   50% { opacity: 1; }
+}
+@keyframes orb-field-breathe {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 0.95; }
 }
 @keyframes orb-spin {
   from { transform: rotate(0deg); }
