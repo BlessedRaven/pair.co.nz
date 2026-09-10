@@ -1,6 +1,6 @@
 (() => {
-  const STORE_KEY = "pair-sym-motion-v4";
-  const SELECTED_KEY = "pair-motion-selected-v4";
+  const STORE_KEY = "pair-sym-motion-v5";
+  const SELECTED_KEY = "pair-motion-selected-v5";
 
   const SYMBOLS = [
     { id: "ne", label: "GOL" },
@@ -13,7 +13,6 @@
   const ANIMS = [
     { id: "cw", label: "Clockwise" },
     { id: "ccw", label: "Anti-clockwise" },
-    { id: "vortex", label: "Vortex" },
   ];
 
   const panel = document.querySelector("[data-motion-panel]");
@@ -53,22 +52,20 @@
   const ensure = (id) => {
     if (!store[id]) store[id] = { anim: "cw", speed: 100 };
     const a = store[id].anim;
-    if (a !== "cw" && a !== "ccw" && a !== "vortex") store[id].anim = "cw";
+    if (a !== "cw" && a !== "ccw") store[id].anim = "cw";
     let sp = Number(store[id].speed);
     if (!Number.isFinite(sp)) sp = 100;
-    store[id].speed = Math.max(1, Math.min(200, Math.round(sp)));
+    // migrate old 1-200 scale down into 1-100
+    if (sp > 100) sp = Math.round(sp / 2);
+    store[id].speed = Math.max(1, Math.min(100, Math.round(sp)));
     return store[id];
   };
   SYMBOLS.forEach((s) => ensure(s.id));
 
-  // 1% ~ 150s, 100% ~ 1.5s, 200% ~ 0.75s (vortex-capable)
-  const periodSec = (speedPct, anim) => {
-    const pct = Math.max(1, Math.min(200, Number(speedPct) || 100));
-    if (anim === "vortex") {
-      // Vortex: even snappier — 200% ≈ 0.35s
-      return Math.max(0.28, 70 / pct);
-    }
-    return Math.max(0.45, 150 / pct);
+  // 1% ~ 75s, 100% ~ 0.75s (about 2× faster than prior curve; high end = vortex)
+  const periodSec = (speedPct) => {
+    const pct = Math.max(1, Math.min(100, Number(speedPct) || 100));
+    return Math.max(0.35, 75 / pct);
   };
 
   const formatPct = (pct) => Math.round(Number(pct) || 100) + "%";
@@ -77,11 +74,9 @@
     const cfg = ensure(id);
     const el = document.querySelector('.mark-host svg.sigil .sym[data-sym="' + id + '"]');
     if (!el) return;
-    // vortex uses cw spin, just faster
-    el.dataset.anim = cfg.anim === "vortex" ? "cw" : cfg.anim;
-    if (cfg.anim === "vortex") el.dataset.vortex = "1";
-    else delete el.dataset.vortex;
-    el.style.animationDuration = periodSec(cfg.speed, cfg.anim) + "s";
+    el.dataset.anim = cfg.anim;
+    delete el.dataset.vortex;
+    el.style.animationDuration = periodSec(cfg.speed) + "s";
   };
 
   const applyAll = () => {
@@ -89,7 +84,6 @@
       const id = el.getAttribute("data-sym");
       if (!SYMBOLS.some((s) => s.id === id)) {
         el.dataset.anim = "off";
-        delete el.dataset.vortex;
         el.style.animationDuration = "";
       }
     });
@@ -163,7 +157,6 @@
     if (!btn) return;
     const cfg = ensure(selected);
     cfg.anim = btn.getAttribute("data-anim-pick");
-    if (cfg.anim === "vortex" && cfg.speed < 160) cfg.speed = 200;
     writeStore(store);
     applyToDom(selected);
     renderLists();
