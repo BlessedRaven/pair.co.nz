@@ -1,13 +1,14 @@
 (() => {
-  const STORE_KEY = "pair-sym-motion-v2";
-  const SELECTED_KEY = "pair-motion-selected-v2";
+  const STORE_KEY = "pair-sym-motion-v3";
+  const SELECTED_KEY = "pair-motion-selected-v3";
   const BASE_SEC = 72;
 
-  // Step 1: only these three
   const SYMBOLS = [
-    { id: "ne", label: "Flower" },
+    { id: "ne", label: "GOL" },
     { id: "e", label: "SOL" },
     { id: "se", label: "FOL" },
+    { id: "s", label: "Hermes" },
+    { id: "w", label: "Cloud" },
   ];
 
   const ANIMS = [
@@ -47,14 +48,19 @@
   const ensure = (id) => {
     if (!store[id]) store[id] = { anim: "cw", speed: 100 };
     if (store[id].anim !== "cw" && store[id].anim !== "ccw") store[id].anim = "cw";
+    const sp = Number(store[id].speed);
+    store[id].speed = Number.isFinite(sp) ? Math.max(25, Math.min(800, sp)) : 100;
     return store[id];
   };
   SYMBOLS.forEach((s) => ensure(s.id));
 
+  // speed %: 100 = base 72s period; 800% = 8x faster
   const periodSec = (speedPct) => {
-    const mult = Math.max(0.5, Math.min(4, (Number(speedPct) || 100) / 100));
-    return BASE_SEC / mult;
+    const pct = Math.max(25, Math.min(800, Number(speedPct) || 100));
+    return BASE_SEC / (pct / 100);
   };
+
+  const formatPct = (pct) => Math.round(Number(pct) || 100) + "%";
 
   const applyToDom = (id) => {
     const cfg = ensure(id);
@@ -65,7 +71,6 @@
   };
 
   const applyAll = () => {
-    // Freeze every outer symbol, then enable only the three we care about
     document.querySelectorAll(".mark-host svg.sigil .sym").forEach((el) => {
       const id = el.getAttribute("data-sym");
       if (!SYMBOLS.some((s) => s.id === id)) {
@@ -101,7 +106,7 @@
       );
     }).join("");
     speedEl.value = String(cfg.speed);
-    speedVal.textContent = Number((cfg.speed / 100).toFixed(2)) + "x";
+    speedVal.textContent = formatPct(cfg.speed);
   };
 
   const setOpen = (open) => {
@@ -151,7 +156,7 @@
     cfg.speed = Number(speedEl.value) || 100;
     writeStore(store);
     applyToDom(selected);
-    speedVal.textContent = Number((cfg.speed / 100).toFixed(2)) + "x";
+    speedVal.textContent = formatPct(cfg.speed);
   });
 
   renderLists();
