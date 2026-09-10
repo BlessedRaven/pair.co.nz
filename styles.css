@@ -434,14 +434,28 @@ body {
 }
 
 html[data-ring="off"] .mark-host svg.sigil .orbit,
-html[data-ring="off"] .hits .hits-orbit,
-html[data-ring="off"] .mark.is-ready {
+html[data-ring="off"] .hits .hits-orbit {
   animation: none !important;
 }
 
+/* Stop breathe scale when ring is off, but never kill colour glow */
 html[data-ring="off"] .mark.is-ready {
+  animation: none !important;
   opacity: 1;
   transform: none;
+}
+
+html[data-ring="off"][data-theme="vibe"] .mark.is-ready,
+html[data-colour="vibe"] .mark.is-ready {
+  animation: pair-glow 15s linear infinite !important;
+  opacity: 1;
+  transform: none;
+}
+
+/* Colour mix: vibe glow on dark/light bases too */
+html[data-colour="vibe"][data-theme="dark"] .mark.is-ready,
+html[data-colour="vibe"][data-theme="light"] .mark.is-ready {
+  animation: pair-glow 15s linear infinite;
 }
 
 @keyframes pair-orbit-spin {

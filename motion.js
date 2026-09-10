@@ -25,13 +25,20 @@
     { id: "ccw", label: "Anti-clockwise" },
   ];
 
+  const COLOURS = [
+    { id: "off", label: "None" },
+    { id: "vibe", label: "Vibe" },
+  ];
+  const COLOUR_KEY = "pair-colour";
+
   const panel = document.querySelector("[data-motion-panel]");
   const toggle = document.querySelector("[data-motion-toggle]");
   const symList = document.querySelector("[data-motion-symbols]");
   const animList = document.querySelector("[data-motion-anims]");
   const speedEl = document.querySelector("[data-motion-speed]");
   const speedVal = document.querySelector("[data-motion-speed-val]");
-  if (!panel || !toggle || !symList || !animList || !speedEl || !speedVal) return;
+  const colourList = document.querySelector("[data-motion-colours]");
+  if (!panel || !toggle || !symList || !animList || !speedEl || !speedVal || !colourList) return;
 
   panel.addEventListener("click", (e) => e.stopPropagation());
   panel.addEventListener("pointerdown", (e) => e.stopPropagation());
@@ -117,6 +124,25 @@
     syncRing();
   };
 
+  const readColour = () => {
+    try {
+      return localStorage.getItem(COLOUR_KEY) === "vibe" ? "vibe" : "off";
+    } catch {
+      return "off";
+    }
+  };
+
+  const applyColour = (colour) => {
+    const c = colour === "vibe" ? "vibe" : "off";
+    document.documentElement.setAttribute("data-colour", c);
+    try {
+      localStorage.setItem(COLOUR_KEY, c);
+    } catch {}
+    colourList.querySelectorAll("[data-colour-pick]").forEach((btn) => {
+      btn.setAttribute("aria-selected", btn.getAttribute("data-colour-pick") === c ? "true" : "false");
+    });
+  };
+
   const renderLists = () => {
     const cfg = ensure(selected);
     symList.innerHTML = SYMBOLS.map(function (s) {
@@ -144,6 +170,18 @@
     speedEl.value = String(cfg.speed);
     speedVal.textContent = formatPct(cfg.speed);
     speedEl.disabled = cfg.anim === "off";
+    const colour = readColour();
+    colourList.innerHTML = COLOURS.map(function (c) {
+      return (
+        '<button type="button" role="option" class="motion-opt" data-colour-pick="' +
+        c.id +
+        '" aria-selected="' +
+        (c.id === colour ? "true" : "false") +
+        '">' +
+        c.label +
+        "</button>"
+      );
+    }).join("");
   };
 
   const setOpen = (open) => {
@@ -207,6 +245,17 @@
     renderLists();
   });
 
+  colourList.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const btn = e.target.closest("[data-colour-pick]");
+    if (!btn) return;
+    applyColour(btn.getAttribute("data-colour-pick"));
+  });
+
+  document.addEventListener("pair:colour-changed", () => {
+    renderLists();
+  });
+
   speedEl.addEventListener("input", () => {
     const cfg = ensure(selected);
     cfg.speed = Number(speedEl.value) || 100;
@@ -235,6 +284,7 @@
 
   // Start from a clean stopped state until user opts in
   document.documentElement.setAttribute("data-ring", "off");
+  applyColour(readColour());
   renderLists();
   setOpen(false);
 

@@ -13,10 +13,16 @@
         if (t === "light" || t === "vibe" || t === "dark") {
           document.documentElement.setAttribute("data-theme", t);
         }
+        var c = localStorage.getItem("pair-colour");
+        if (c === "vibe" || t === "vibe") {
+          document.documentElement.setAttribute("data-colour", "vibe");
+        } else {
+          document.documentElement.setAttribute("data-colour", "off");
+        }
       } catch (e) {}
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=28" />
+  <link rel="stylesheet" href="styles.css?v=29" />
 </head>
 <body>
   <header class="top">
@@ -44,6 +50,8 @@
       <div class="motion-block" data-panel-section="animation">
         <p class="motion-label">Animation</p>
         <div class="motion-list" data-motion-anims role="listbox" aria-label="Animation"></div>
+        <p class="motion-label" style="margin-top:0.65rem">Colour</p>
+        <div class="motion-list" data-motion-colours role="listbox" aria-label="Colour"></div>
       </div>
       <div class="motion-block">
         <div class="motion-speed-row">
@@ -132,8 +140,8 @@
     <span class="muted">Mints TBD · not financial advice</span>
   </footer>
 
-  <script src="theme.js?v=28" defer></script>
-  <script src="motion.js?v=28" defer></script>
-  <script src="app.js?v=28" defer></script>
+  <script src="theme.js?v=29" defer></script>
+  <script src="motion.js?v=29" defer></script>
+  <script src="app.js?v=29" defer></script>
 </body>
 </html>

@@ -1,5 +1,6 @@
 (() => {
   const THEME_KEY = "pair-theme";
+  const COLOUR_KEY = "pair-colour";
   const allowed = new Set(["dark", "light", "vibe"]);
 
   const readTheme = () => {
@@ -25,12 +26,20 @@
     try {
       localStorage.setItem(THEME_KEY, t);
     } catch {}
+    // Vibe theme implies colour cycle on
+    if (t === "vibe") {
+      document.documentElement.setAttribute("data-colour", "vibe");
+      try {
+        localStorage.setItem(COLOUR_KEY, "vibe");
+      } catch {}
+      document.dispatchEvent(new CustomEvent("pair:colour-changed"));
+    }
   };
 
   applyTheme(readTheme());
 
   document.addEventListener("click", (e) => {
-    if (e.target.closest("[data-motion-toggle]") || e.target.closest("[data-motion-panel]")) return;
+    if (e.target.closest("[data-motion-toggle]") || e.target.closest("[data-motion-panel]") || e.target.closest("[data-panel-open]")) return;
     const btn = e.target.closest("[data-theme-set]");
     if (!btn) return;
     applyTheme(btn.getAttribute("data-theme-set"));
