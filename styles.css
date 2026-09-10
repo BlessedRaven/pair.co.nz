@@ -494,7 +494,13 @@ body {
 .hits .hits-orbit {
   transform-box: view-box;
   transform-origin: 447.56px 484.96px;
-  animation: pair-orbit-spin 120s linear infinite;
+  animation: pair-orbit-spin 80s linear infinite;
+}
+
+/* Blessed Raven: pause whole-ring while hovering a symbol */
+html[data-ring="on"] .mark.is-hovering .orbit,
+html[data-ring="on"] .mark.is-hovering .hits-orbit {
+  animation-play-state: paused;
 }
 
 html[data-ring="off"] .mark-host svg.sigil .orbit,
@@ -927,16 +933,6 @@ html[data-pin="on"] .mark-host svg.sigil .free-layer {
 .mark-host svg.sigil .sym-hitpad {
   fill: transparent;
   stroke: none;
-  pointer-events: all;
-}
-
-
-/* Free-layout Orbit — JS rotates .live-orbit-spin around Torus (Earth) */
-.mark-host svg.sigil .live-orbit-root,
-.hits .hits-live-orbit-root {
-  pointer-events: none;
-}
-html[data-pin="on"] .mark-host svg.sigil .live-orbit-root {
   pointer-events: all;
 }
 
