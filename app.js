@@ -17,6 +17,21 @@
     "fol",
   ];
 
+  // Primary ring symbols (even spacing). Scarab satellites keep relative offsets.
+  const RING_IDS = [
+    "gol",
+    "flower",
+    "sol",
+    "trinity",
+    "cloud",
+    "pi",
+    "ra",
+    "hermes",
+    "scarab",
+    "fol",
+  ];
+  const SCARAB_SATS = ["sun", "key", "bean"];
+
   const host = document.querySelector("[data-mark-host]");
   const mark = document.querySelector("[data-mark]");
   if (!host || !mark) return;
@@ -50,23 +65,6 @@
     return wrap;
   };
 
-  const addGuideCircle = (el) => {
-    try {
-      const bb = el.getBBox();
-      const cx = bb.x + bb.width / 2;
-      const cy = bb.y + bb.height / 2;
-      const r = Math.max(bb.width, bb.height) * 0.55;
-      const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-      circle.setAttribute("class", "cls-1");
-      circle.setAttribute("cx", String(cx));
-      circle.setAttribute("cy", String(cy));
-      circle.setAttribute("r", String(r));
-      return circle;
-    } catch (err) {
-      return null;
-    }
-  };
-
   const wrapDetached = (orbit, ref, el, id) => {
     if (!el) return null;
     const wrap = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -79,9 +77,6 @@
   };
 
   const splitScarabCluster = (orbit, cluster) => {
-    // cluster children: [bodyWrap, upperWrap]
-    // bodyWrap kids: [scarabPathsG, sunDiskCircle]
-    // upperWrap kids: [keyShaftG, beanA, beanB]
     const parts = Array.from(cluster.children);
     if (parts.length < 2) {
       wrapOne(orbit, cluster, "scarab");
@@ -96,7 +91,6 @@
     const keyEl = upperKids[0] || null;
     const beanNodes = upperKids.slice(1);
 
-    // Insert new wraps before the intact cluster, moving nodes out of it
     wrapDetached(orbit, cluster, scarabEl, "scarab");
     if (sunDisk) wrapDetached(orbit, cluster, sunDisk, "sun");
     if (keyEl) wrapDetached(orbit, cluster, keyEl, "key");
@@ -119,12 +113,110 @@
         splitScarabCluster(orbit, el);
         return;
       }
-      if (id === "flower") {
-        const guide = addGuideCircle(el);
-        wrapOne(orbit, el, id, guide ? { before: [guide] } : null);
-        return;
-      }
+      // Flower stays free-standing — no guide circle
       wrapOne(orbit, el, id);
+    });
+  };
+
+  const centerOf = (el) => {
+    const bb = el.getBBox();
+    return { x: bb.x + bb.width / 2, y: bb.y + bb.height / 2, bb };
+  };
+
+  const findSym = (id) =>
+    document.querySelector('.mark-host svg.sigil .sym[data-sym="' + id + '"]');
+
+  const translateEl = (el, dx, dy) => {
+    if (!el || (!dx && !dy)) return;
+    const prev = el.getAttribute("transform") || "";
+    el.setAttribute("transform", (prev + " translate(" + dx + " " + dy + ")").trim());
+  };
+
+  const syncHotspot = (id, x, y) => {
+    const a = document.querySelector('.hits [data-hotspot="' + id + '"]');
+    if (!a) return;
+    const hit = a.querySelector("circle.hit");
+    const label = a.querySelector("text.hit-label");
+    if (hit) {
+      hit.setAttribute("cx", String(x));
+      hit.setAttribute("cy", String(y));
+    }
+    if (label) {
+      label.setAttribute("x", String(x));
+      label.setAttribute("y", String(y));
+    }
+  };
+
+  const layoutEvenOrbit = () => {
+    const infos = [];
+    RING_IDS.forEach((id) => {
+      const el = findSym(id);
+      if (!el) return;
+      try {
+        const c = centerOf(el);
+        const dx = c.x - CX;
+        const dy = c.y - CY;
+        infos.push({
+          id,
+          el,
+          ang: Math.atan2(dy, dx),
+          r: Math.hypot(dx, dy) || 1,
+          c,
+        });
+      } catch (err) {
+        /* ignore */
+      }
+    });
+    if (infos.length < 3) return;
+
+    infos.sort((a, b) => a.ang - b.ang);
+    const R = infos.reduce((s, i) => s + i.r, 0) / infos.length;
+    // Keep relative angular order; pin first slot near current first angle
+    const start = infos[0].ang;
+    const n = infos.length;
+
+    // Scarab satellites: relative offsets before scarab moves
+    const scarabInfo = infos.find((i) => i.id === "scarab");
+    const satOffsets = [];
+    if (scarabInfo) {
+      SCARAB_SATS.forEach((sid) => {
+        const el = findSym(sid);
+        if (!el) return;
+        try {
+          const c = centerOf(el);
+          satOffsets.push({
+            id: sid,
+            el,
+            ox: c.x - scarabInfo.c.x,
+            oy: c.y - scarabInfo.c.y,
+          });
+        } catch (err) {
+          /* ignore */
+        }
+      });
+    }
+
+    infos.forEach((info, i) => {
+      const ang = start + (i * 2 * Math.PI) / n;
+      const tx = CX + R * Math.cos(ang);
+      const ty = CY + R * Math.sin(ang);
+      const dx = tx - info.c.x;
+      const dy = ty - info.c.y;
+      translateEl(info.el, dx, dy);
+      pinOrigin(info.el);
+      syncHotspot(info.id, tx, ty);
+
+      if (info.id === "scarab") {
+        satOffsets.forEach((sat) => {
+          try {
+            translateEl(sat.el, dx, dy);
+            pinOrigin(sat.el);
+            syncHotspot(sat.id, tx + sat.ox, ty + sat.oy);
+          } catch (err) {
+            /* ignore */
+          }
+        });
+      }
     });
   };
 
@@ -186,6 +278,7 @@
     host.innerHTML = "";
     host.appendChild(svg);
     wrapOrbitSyms(orbit);
+    layoutEvenOrbit();
     pinOrigin(center);
     mark.classList.add("is-ready");
     document.dispatchEvent(new CustomEvent("pair:syms-ready"));

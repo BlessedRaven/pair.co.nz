@@ -1,7 +1,7 @@
 (() => {
-  const STORE_KEY = "pair-sym-motion-v9";
-  const SELECTED_KEY = "pair-motion-selected-v9";
-  const RING_KEY = "pair-motion-ring-v9";
+  const STORE_KEY = "pair-sym-motion-v10";
+  const SELECTED_KEY = "pair-motion-selected-v10";
+  const RING_KEY = "pair-motion-ring-v10";
 
   const SYMBOLS = [
     { id: "gol", label: "GOL" },
@@ -38,8 +38,10 @@
   const animList = document.querySelector("[data-motion-anims]");
   const speedEl = document.querySelector("[data-motion-speed]");
   const speedVal = document.querySelector("[data-motion-speed-val]");
+  const colourSpeedEl = document.querySelector("[data-motion-colour-speed]");
+  const colourSpeedVal = document.querySelector("[data-motion-colour-speed-val]");
   const colourList = document.querySelector("[data-motion-colours]");
-  if (!panel || !toggle || !symList || !animList || !speedEl || !speedVal || !colourList) return;
+  if (!panel || !toggle || !symList || !animList || !speedEl || !speedVal || !colourList || !colourSpeedEl || !colourSpeedVal) return;
 
   panel.addEventListener("click", (e) => e.stopPropagation());
   panel.addEventListener("pointerdown", (e) => e.stopPropagation());
@@ -92,25 +94,36 @@
   let selected = readSelected();
   let ringOn = readRing();
 
+  const clampPct = (sp) => {
+    let n = Number(sp);
+    if (!Number.isFinite(n)) n = 100;
+    if (n > 100) n = Math.round(n / 2);
+    return Math.max(1, Math.min(100, Math.round(n)));
+  };
+
   const ensure = (id) => {
-    if (!store[id]) store[id] = { anim: "off", speed: 100, colour: "off" };
+    if (!store[id]) store[id] = { anim: "off", speed: 100, colour: "off", colourSpeed: 100 };
     const a = store[id].anim;
     if (a !== "cw" && a !== "ccw" && a !== "off") store[id].anim = "off";
     if (store[id].colour !== "vibe") store[id].colour = "off";
-    let sp = Number(store[id].speed);
-    if (!Number.isFinite(sp)) sp = 100;
-    if (sp > 100) sp = Math.round(sp / 2);
-    store[id].speed = Math.max(1, Math.min(100, Math.round(sp)));
+    store[id].speed = clampPct(store[id].speed);
+    store[id].colourSpeed = clampPct(store[id].colourSpeed == null ? 100 : store[id].colourSpeed);
     return store[id];
   };
   SYMBOLS.forEach((s) => ensure(s.id));
 
   const periodSec = (speedPct) => {
-    const pct = Math.max(1, Math.min(100, Number(speedPct) || 100));
+    const pct = clampPct(speedPct);
     return Math.max(0.35, 75 / pct);
   };
 
-  const formatPct = (pct) => Math.round(Number(pct) || 100) + "%";
+  // Colour cycle: slower curve so 100% ≈ 8s, 50% ≈ 16s, 1% ≈ soft crawl
+  const glowPeriodSec = (speedPct) => {
+    const pct = clampPct(speedPct);
+    return Math.max(1.2, 48 / pct);
+  };
+
+  const formatPct = (pct) => clampPct(pct) + "%";
 
   const findEl = (id) => {
     if (id === "torus") {
@@ -134,12 +147,19 @@
     el.style.animationDuration = "";
     if (cfg.anim === "off" && cfg.colour !== "vibe") {
       el.style.animation = "none";
+      el.style.removeProperty("--spin-dur");
+      el.style.removeProperty("--glow-dur");
       return;
     }
     if (cfg.anim !== "off") {
       el.style.setProperty("--spin-dur", periodSec(cfg.speed) + "s");
     } else {
       el.style.removeProperty("--spin-dur");
+    }
+    if (cfg.colour === "vibe") {
+      el.style.setProperty("--glow-dur", glowPeriodSec(cfg.colourSpeed) + "s");
+    } else {
+      el.style.removeProperty("--glow-dur");
     }
   };
 
@@ -160,7 +180,7 @@
 
   const primaryCfg = () => {
     const ids = selectedList();
-    if (!ids.length) return { anim: "off", speed: 100, colour: "off" };
+    if (!ids.length) return { anim: "off", speed: 100, colour: "off", colourSpeed: 100 };
     return ensure(ids[ids.length - 1]);
   };
 
@@ -203,6 +223,9 @@
     speedEl.value = String(cfg.speed);
     speedVal.textContent = formatPct(cfg.speed);
     speedEl.disabled = !selected.size || cfg.anim === "off";
+    colourSpeedEl.value = String(cfg.colourSpeed);
+    colourSpeedVal.textContent = formatPct(cfg.colourSpeed);
+    colourSpeedEl.disabled = !selected.size || cfg.colour !== "vibe";
   };
 
   const setPanelOpen = (open) => {
@@ -213,7 +236,6 @@
     }
   };
 
-  // Motion = slow whole-sigil ring orbit on/off (no panel)
   toggle.addEventListener("click", (e) => {
     e.stopPropagation();
     ringOn = !ringOn;
@@ -221,7 +243,6 @@
     syncRing();
   });
 
-  // Symbol opens panel (symbols + animation + colour + speed)
   if (symbolOpen) {
     symbolOpen.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -290,11 +311,19 @@
   });
 
   speedEl.addEventListener("input", () => {
-    const speed = Number(speedEl.value) || 100;
+    const speed = clampPct(speedEl.value);
     forSelected((id, cfg) => {
       cfg.speed = speed;
     });
     speedVal.textContent = formatPct(speed);
+  });
+
+  colourSpeedEl.addEventListener("input", () => {
+    const colourSpeed = clampPct(colourSpeedEl.value);
+    forSelected((id, cfg) => {
+      cfg.colourSpeed = colourSpeed;
+    });
+    colourSpeedVal.textContent = formatPct(colourSpeed);
   });
 
   const resetBtn = document.querySelector("[data-motion-reset]");
@@ -303,7 +332,7 @@
       e.stopPropagation();
       store = {};
       SYMBOLS.forEach((s) => {
-        store[s.id] = { anim: "off", speed: 100, colour: "off" };
+        store[s.id] = { anim: "off", speed: 100, colour: "off", colourSpeed: 100 };
       });
       writeStore(store);
       selected = new Set();

@@ -34,7 +34,7 @@
   };
 
   const applyTheme = (theme, opts) => {
-    const keepMenu = opts && opts.keepMenu;
+    const keepMenu = !!(opts && opts.keepMenu);
     const t = migrate(theme);
     document.documentElement.setAttribute("data-theme", t);
     const meta = document.querySelector('meta[name="theme-color"]');
@@ -63,6 +63,30 @@
   applyTheme(readTheme());
 
   document.addEventListener("click", (e) => {
+    const vibeToggle = e.target.closest("[data-vibe-toggle]");
+    if (vibeToggle) {
+      e.preventDefault();
+      e.stopPropagation();
+      const cur = readTheme();
+      const vibeOn = cur === "vibe-dark" || cur === "vibe-light";
+      if (!vibeOn) applyTheme(readLastVibe(), { keepMenu: true });
+      const menu = document.querySelector("[data-vibe-menu]");
+      const open = menu ? menu.hidden : true;
+      vibeOpen(open);
+      return;
+    }
+
+    const themeBtn = e.target.closest("[data-theme-set]");
+    if (themeBtn) {
+      e.stopPropagation();
+      const next = themeBtn.getAttribute("data-theme-set");
+      const isVibePick = next === "vibe-dark" || next === "vibe-light";
+      applyTheme(next, { keepMenu: isVibePick });
+      if (isVibePick) vibeOpen(true);
+      else vibeOpen(false);
+      return;
+    }
+
     if (
       e.target.closest("[data-motion-toggle]") ||
       e.target.closest("[data-motion-panel]") ||
@@ -71,26 +95,7 @@
       vibeOpen(false);
       return;
     }
-    const vibeToggle = e.target.closest("[data-vibe-toggle]");
-    if (vibeToggle) {
-      e.stopPropagation();
-      const cur = readTheme();
-      const vibeOn = cur === "vibe-dark" || cur === "vibe-light";
-      if (!vibeOn) {
-        applyTheme(readLastVibe(), { keepMenu: true });
-      }
-      const menu = document.querySelector("[data-vibe-menu]");
-      vibeOpen(menu ? menu.hidden : true);
-      return;
-    }
-    const btn = e.target.closest("[data-theme-set]");
-    if (btn) {
-      const next = btn.getAttribute("data-theme-set");
-      const isVibePick = next === "vibe-dark" || next === "vibe-light";
-      applyTheme(next, { keepMenu: isVibePick });
-      if (isVibePick) vibeOpen(true);
-      return;
-    }
+
     if (!e.target.closest("[data-vibe-wrap]")) vibeOpen(false);
   });
 })();

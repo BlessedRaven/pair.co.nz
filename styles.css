@@ -172,7 +172,7 @@ body {
   position: absolute;
   top: calc(100% + 0.35rem);
   left: 0;
-  z-index: 8;
+  z-index: 40;
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
@@ -396,20 +396,11 @@ body {
     drop-shadow(0 0 5px rgba(18, 18, 18, 0.18));
 }
 
-/* Vibe themes: breathe only — colour lives per selected symbol */
+/* Vibe themes: full-sigil colour cycle (independent of Motion / Symbol Colour) */
 [data-theme="vibe"] .mark.is-ready,
-[data-theme="vibe-dark"] .mark.is-ready {
-  animation: pair-breathe 8s ease-in-out infinite;
-  filter:
-    drop-shadow(0 0 1px rgba(255, 255, 255, 0.95))
-    drop-shadow(0 0 5px rgba(255, 255, 255, 0.35));
-}
-
+[data-theme="vibe-dark"] .mark.is-ready,
 [data-theme="vibe-light"] .mark.is-ready {
-  animation: pair-breathe 8s ease-in-out infinite;
-  filter:
-    drop-shadow(0 0 1px rgba(18, 18, 18, 0.55))
-    drop-shadow(0 0 5px rgba(18, 18, 18, 0.18));
+  animation: pair-glow 9s linear infinite;
 }
 
 @keyframes pair-breathe {
@@ -518,10 +509,11 @@ html[data-ring="off"] .mark.is-ready {
   transform: none;
 }
 
+/* Ring off: keep vibe colour cycle, just stop breathe/scale side-effects */
 html[data-ring="off"][data-theme="vibe"] .mark.is-ready,
 html[data-ring="off"][data-theme="vibe-dark"] .mark.is-ready,
 html[data-ring="off"][data-theme="vibe-light"] .mark.is-ready {
-  animation: none !important;
+  animation: pair-glow 9s linear infinite !important;
   opacity: 1;
   transform: none;
 }
@@ -556,24 +548,24 @@ html[data-ring="off"][data-theme="vibe-light"] .mark.is-ready {
   filter: none;
 }
 
-/* Per-symbol colour (vibe glow) — only elements with data-colour=vibe */
+/* Per-symbol colour — smooth cycle; speed via --glow-dur */
 .mark-host svg.sigil .sym[data-colour="vibe"],
 .mark-host svg.sigil .center[data-colour="vibe"] {
-  animation: pair-sym-glow 15s linear infinite;
+  animation: pair-sym-glow var(--glow-dur, 8s) linear infinite;
 }
 
 .mark-host svg.sigil .sym[data-anim="cw"][data-colour="vibe"],
 .mark-host svg.sigil .center[data-anim="cw"][data-colour="vibe"] {
   animation:
     pair-sym-spin var(--spin-dur, 72s) linear infinite,
-    pair-sym-glow 15s linear infinite;
+    pair-sym-glow var(--glow-dur, 8s) linear infinite;
 }
 
 .mark-host svg.sigil .sym[data-anim="ccw"][data-colour="vibe"],
 .mark-host svg.sigil .center[data-anim="ccw"][data-colour="vibe"] {
   animation:
     pair-sym-spin-ccw var(--spin-dur, 72s) linear infinite,
-    pair-sym-glow 15s linear infinite;
+    pair-sym-glow var(--glow-dur, 8s) linear infinite;
 }
 
 .mark-host svg.sigil .sym[data-anim="cw"],
@@ -587,47 +579,47 @@ html[data-ring="off"][data-theme="vibe-light"] .mark.is-ready {
 }
 
 @keyframes pair-sym-glow {
-  0%, 14% {
+  0% {
     filter:
-      drop-shadow(0 0 1.5px #ff2d55)
-      drop-shadow(0 0 6px rgba(255, 45, 85, 0.85))
-      drop-shadow(0 0 14px rgba(255, 138, 0, 0.3));
+      drop-shadow(0 0 1.2px #ff2d55)
+      drop-shadow(0 0 8px rgba(255, 45, 85, 0.75))
+      drop-shadow(0 0 18px rgba(255, 45, 85, 0.28));
   }
-  16.5%, 30.5% {
+  16.66% {
     filter:
-      drop-shadow(0 0 1.5px #ff8a00)
-      drop-shadow(0 0 6px rgba(255, 138, 0, 0.85))
-      drop-shadow(0 0 14px rgba(255, 214, 10, 0.3));
+      drop-shadow(0 0 1.2px #ff8a00)
+      drop-shadow(0 0 8px rgba(255, 138, 0, 0.75))
+      drop-shadow(0 0 18px rgba(255, 138, 0, 0.28));
   }
-  33%, 47% {
+  33.33% {
     filter:
-      drop-shadow(0 0 1.5px #ffd60a)
-      drop-shadow(0 0 6px rgba(255, 214, 10, 0.85))
-      drop-shadow(0 0 14px rgba(50, 215, 75, 0.3));
+      drop-shadow(0 0 1.2px #ffd60a)
+      drop-shadow(0 0 8px rgba(255, 214, 10, 0.75))
+      drop-shadow(0 0 18px rgba(255, 214, 10, 0.28));
   }
-  49.5%, 63.5% {
+  50% {
     filter:
-      drop-shadow(0 0 1.5px #32d74b)
-      drop-shadow(0 0 6px rgba(50, 215, 75, 0.85))
-      drop-shadow(0 0 14px rgba(100, 210, 255, 0.3));
+      drop-shadow(0 0 1.2px #32d74b)
+      drop-shadow(0 0 8px rgba(50, 215, 75, 0.75))
+      drop-shadow(0 0 18px rgba(50, 215, 75, 0.28));
   }
-  66%, 80% {
+  66.66% {
     filter:
-      drop-shadow(0 0 1.5px #64d2ff)
-      drop-shadow(0 0 6px rgba(100, 210, 255, 0.85))
-      drop-shadow(0 0 14px rgba(191, 90, 242, 0.3));
+      drop-shadow(0 0 1.2px #64d2ff)
+      drop-shadow(0 0 8px rgba(100, 210, 255, 0.75))
+      drop-shadow(0 0 18px rgba(100, 210, 255, 0.28));
   }
-  82.5%, 96.5% {
+  83.33% {
     filter:
-      drop-shadow(0 0 1.5px #bf5af2)
-      drop-shadow(0 0 6px rgba(191, 90, 242, 0.85))
-      drop-shadow(0 0 14px rgba(255, 45, 85, 0.3));
+      drop-shadow(0 0 1.2px #bf5af2)
+      drop-shadow(0 0 8px rgba(191, 90, 242, 0.75))
+      drop-shadow(0 0 18px rgba(191, 90, 242, 0.28));
   }
   100% {
     filter:
-      drop-shadow(0 0 1.5px #ff2d55)
-      drop-shadow(0 0 6px rgba(255, 45, 85, 0.85))
-      drop-shadow(0 0 14px rgba(255, 138, 0, 0.3));
+      drop-shadow(0 0 1.2px #ff2d55)
+      drop-shadow(0 0 8px rgba(255, 45, 85, 0.75))
+      drop-shadow(0 0 18px rgba(255, 45, 85, 0.28));
   }
 }
 

@@ -18,7 +18,7 @@
       } catch (e) {}
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=31" />
+  <link rel="stylesheet" href="styles.css?v=32" />
 </head>
 <body>
   <header class="top">
@@ -52,13 +52,18 @@
         <p class="motion-label" style="margin-top:0.65rem">Colour</p>
         <div class="motion-list" data-motion-colours role="listbox" aria-label="Colour"></div>
         <div class="motion-speed-row" style="margin-top:0.65rem">
-          <p class="motion-label">Speed</p>
+          <p class="motion-label">Spin speed</p>
           <span class="motion-speed-val" data-motion-speed-val>100%</span>
         </div>
-        <input class="motion-speed" data-motion-speed type="range" min="1" max="100" value="100" step="1" aria-label="Animation speed" />
+        <input class="motion-speed" data-motion-speed type="range" min="1" max="100" value="100" step="1" aria-label="Spin speed" />
+        <div class="motion-speed-row" style="margin-top:0.65rem">
+          <p class="motion-label">Colour speed</p>
+          <span class="motion-speed-val" data-motion-colour-speed-val>100%</span>
+        </div>
+        <input class="motion-speed" data-motion-colour-speed type="range" min="1" max="100" value="100" step="1" aria-label="Colour speed" />
       </div>
       <button type="button" class="motion-reset" data-motion-reset>Reset</button>
-      <p class="motion-hint">Motion button = slow whole orbit. Here: pick symbols, then Animation / Colour / Speed. Multi-select OK.</p>
+      <p class="motion-hint">Motion = slow whole orbit. Symbol: pick shapes, then Animation / Colour / speeds.</p>
     </div>
   </aside>
 
@@ -137,8 +142,8 @@
     <span class="muted">Mints TBD · not financial advice</span>
   </footer>
 
-  <script src="theme.js?v=31" defer></script>
-  <script src="motion.js?v=31" defer></script>
-  <script src="app.js?v=31" defer></script>
+  <script src="theme.js?v=32" defer></script>
+  <script src="motion.js?v=32" defer></script>
+  <script src="app.js?v=32" defer></script>
 </body>
 </html>
