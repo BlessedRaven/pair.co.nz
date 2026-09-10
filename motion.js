@@ -558,15 +558,248 @@
     });
   }
 
-    // Pin mode (top bar): drag any symbol — free agent, stays where dropped
+  // Pin mode: Free drag (+ magnetic repel) or Orbit (gravity hub + moons)
+  const SVG_CX = 447.56;
+  const SVG_CY = 484.96;
+  const ORBIT_R = 290;
+  const MIN_SEP = 92;
+  const ORBIT_PERIOD_MS = 70000; // ~70s full revolution
+
   let pinOn = false;
+  let pinMode = "free"; // free | orbit
+  let hubId = null;
+  let moonAngles = new Map(); // id -> radians
+  let moonRadii = new Map(); // id -> radius
+  let orbitRaf = 0;
+  let orbitLastTs = 0;
+  let drag = null;
+
   const pinBtn = document.querySelector("[data-motion-pin]");
+  const pinMenu = document.querySelector("[data-pin-menu]");
+  const pinModeBtns = () => document.querySelectorAll("[data-pin-mode]");
+
+  const placeAbs = (id) => {
+    const el = findEl(id);
+    const slot = findSlot(id);
+    if (!el || !slot) return;
+    const cfg = ensure(id);
+    cfg.pinned = true;
+    releaseToFree(id);
+    setSlotAbs(slot, el, cfg.ax, cfg.ay);
+    const hit = findHit(id);
+    if (hit) {
+      const hc = hit.querySelector("circle.hit");
+      if (hc) {
+        const hx = Number(hc.getAttribute("cx")) || 0;
+        const hy = Number(hc.getAttribute("cy")) || 0;
+        hit.setAttribute("transform", "translate(" + (cfg.ax - hx) + " " + (cfg.ay - hy) + ")");
+      }
+    }
+  };
+
+  const ensurePinnedAtWorld = (id) => {
+    const el = findEl(id);
+    if (!el) return null;
+    const cfg = ensure(id);
+    if (!cfg.pinned || !(cfg.ax || cfg.ay)) {
+      try {
+        const w = worldCenter(el);
+        cfg.ax = w.x;
+        cfg.ay = w.y;
+      } catch (err) {
+        cfg.ax = SVG_CX;
+        cfg.ay = SVG_CY;
+      }
+    }
+    cfg.pinned = true;
+    placeAbs(id);
+    return cfg;
+  };
+
+  const clearHubMarks = () => {
+    document.querySelectorAll(".mark-host svg.sigil [data-gravity-hub]").forEach((el) => {
+      el.removeAttribute("data-gravity-hub");
+    });
+  };
+
+  const markHub = (id) => {
+    clearHubMarks();
+    const el = findEl(id);
+    if (el) el.setAttribute("data-gravity-hub", "true");
+  };
+
+  const stopOrbitLoop = () => {
+    if (orbitRaf) {
+      cancelAnimationFrame(orbitRaf);
+      orbitRaf = 0;
+    }
+    orbitLastTs = 0;
+  };
+
+  const syncPinOrbitAttr = () => {
+    document.documentElement.setAttribute(
+      "data-pin-orbit",
+      pinOn && pinMode === "orbit" ? "on" : "off"
+    );
+  };
+
+  const pinMenuOpen = (open) => {
+    if (!pinMenu || !pinBtn) return;
+    pinMenu.hidden = !open;
+    pinBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  };
+
+  const syncPinModeBtns = () => {
+    pinModeBtns().forEach((btn) => {
+      const m = btn.getAttribute("data-pin-mode");
+      btn.setAttribute("aria-pressed", m === pinMode ? "true" : "false");
+    });
+  };
+
+  const applyRepelFrom = (srcId, sx, sy) => {
+    SYMBOLS.forEach((s) => {
+      if (s.id === srcId) return;
+      if (hubId && s.id === hubId && pinMode === "orbit") return; // hub stays put unless dragged
+      const el = findEl(s.id);
+      if (!el) return;
+      const cfg = ensure(s.id);
+      if (!cfg.pinned) ensurePinnedAtWorld(s.id);
+      let dx = cfg.ax - sx;
+      let dy = cfg.ay - sy;
+      let d = Math.hypot(dx, dy);
+      if (d < 0.001) {
+        dx = 0.01;
+        dy = 0;
+        d = 0.01;
+      }
+      if (d >= MIN_SEP) return;
+      const push = (MIN_SEP - d) * 0.65;
+      cfg.ax = Math.round((cfg.ax + (dx / d) * push) * 10) / 10;
+      cfg.ay = Math.round((cfg.ay + (dy / d) * push) * 10) / 10;
+      cfg.pinned = true;
+      placeAbs(s.id);
+      if (pinMode === "orbit" && s.id !== hubId && moonAngles.has(s.id)) {
+        const hx = ensure(hubId).ax;
+        const hy = ensure(hubId).ay;
+        moonAngles.set(s.id, Math.atan2(cfg.ay - hy, cfg.ax - hx));
+        moonRadii.set(s.id, Math.max(120, Math.hypot(cfg.ax - hx, cfg.ay - hy)));
+      }
+    });
+  };
+
+  const seedOrbitFromHub = (id) => {
+    hubId = id;
+    markHub(id);
+    const hubCfg = ensurePinnedAtWorld(id);
+    if (!hubCfg) return;
+    const hx = hubCfg.ax;
+    const hy = hubCfg.ay;
+    moonAngles.clear();
+    moonRadii.clear();
+    const moons = SYMBOLS.map((s) => s.id).filter((mid) => mid !== id && findEl(mid));
+    // Capture current angles, then ease toward even spacing
+    const infos = moons.map((mid) => {
+      const cfg = ensurePinnedAtWorld(mid);
+      return {
+        id: mid,
+        ang: Math.atan2(cfg.ay - hy, cfg.ax - hx),
+      };
+    });
+    infos.sort((a, b) => a.ang - b.ang);
+    const n = Math.max(1, infos.length);
+    const startAng = -Math.PI / 2;
+    infos.forEach((info, i) => {
+      const target = startAng + (i * 2 * Math.PI) / n;
+      moonAngles.set(info.id, target);
+      moonRadii.set(info.id, ORBIT_R);
+      const cfg = ensure(info.id);
+      cfg.ax = hx + Math.cos(target) * ORBIT_R;
+      cfg.ay = hy + Math.sin(target) * ORBIT_R;
+      cfg.pinned = true;
+      placeAbs(info.id);
+    });
+    writeStore(store);
+  };
+
+  const tickOrbit = (ts) => {
+    if (!pinOn || pinMode !== "orbit" || !hubId) {
+      stopOrbitLoop();
+      return;
+    }
+    if (!orbitLastTs) orbitLastTs = ts;
+    const dt = Math.min(0.05, (ts - orbitLastTs) / 1000);
+    orbitLastTs = ts;
+    const hubCfg = ensure(hubId);
+    const hx = hubCfg.ax;
+    const hy = hubCfg.ay;
+    const omega = (Math.PI * 2) / (ORBIT_PERIOD_MS / 1000);
+    const draggingId = drag ? drag.id : null;
+    moonAngles.forEach((ang, id) => {
+      if (id === draggingId) return;
+      const r = moonRadii.get(id) || ORBIT_R;
+      const next = ang + omega * dt;
+      moonAngles.set(id, next);
+      const cfg = ensure(id);
+      cfg.ax = hx + Math.cos(next) * r;
+      cfg.ay = hy + Math.sin(next) * r;
+      cfg.pinned = true;
+      placeAbs(id);
+    });
+    orbitRaf = requestAnimationFrame(tickOrbit);
+  };
+
+  const startOrbitLoop = () => {
+    stopOrbitLoop();
+    if (!pinOn || pinMode !== "orbit" || !hubId) return;
+    orbitLastTs = 0;
+    orbitRaf = requestAnimationFrame(tickOrbit);
+  };
+
+  const setPinMode = (mode) => {
+    pinMode = mode === "orbit" ? "orbit" : "free";
+    syncPinModeBtns();
+    syncPinOrbitAttr();
+    if (pinMode === "orbit") {
+      // Default hub: torus if present, else first symbol; arrange moons
+      const prefer = findEl("torus") ? "torus" : (SYMBOLS[0] && SYMBOLS[0].id);
+      if (prefer) seedOrbitFromHub(prefer);
+      startOrbitLoop();
+    } else {
+      stopOrbitLoop();
+      clearHubMarks();
+      hubId = null;
+      moonAngles.clear();
+      moonRadii.clear();
+    }
+  };
+
   const setPin = (on) => {
     pinOn = !!on;
     document.documentElement.setAttribute("data-pin", pinOn ? "on" : "off");
     if (pinBtn) pinBtn.setAttribute("aria-pressed", pinOn ? "true" : "false");
+    if (!pinOn) {
+      pinMenuOpen(false);
+      stopOrbitLoop();
+      clearHubMarks();
+      hubId = null;
+      moonAngles.clear();
+      moonRadii.clear();
+      pinMode = "free";
+      syncPinModeBtns();
+      syncPinOrbitAttr();
+    } else {
+      syncPinOrbitAttr();
+      if (pinMode === "orbit") {
+        if (!hubId) setPinMode("orbit");
+        else startOrbitLoop();
+      }
+    }
   };
+
   setPin(false);
+  syncPinModeBtns();
+  syncPinOrbitAttr();
+
   if (pinBtn) {
     pinBtn.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -577,28 +810,64 @@
         syncRing();
       }
       setPin(next);
-      if (!next) {
-        // leaving Pin keeps free seats; Motion will restore native when toggled on
+      if (next) {
+        pinMenuOpen(true);
+        // freeze seats into free-layer at current world poses for easy drag
+        SYMBOLS.forEach((s) => ensurePinnedAtWorld(s.id));
+        writeStore(store);
       }
       applyAll();
     });
   }
 
-  let drag = null;
+  pinModeBtns().forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!pinOn) {
+        if (ringOn) {
+          ringOn = false;
+          writeRing(false);
+          syncRing();
+        }
+        setPin(true);
+        SYMBOLS.forEach((s) => ensurePinnedAtWorld(s.id));
+        writeStore(store);
+      }
+      setPinMode(btn.getAttribute("data-pin-mode"));
+      pinMenuOpen(true);
+      applyAll();
+    });
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!pinMenu || pinMenu.hidden) return;
+    if (e.target.closest("[data-pin-wrap]")) return;
+    pinMenuOpen(false);
+  });
+
   const onPointerDown = (e) => {
     if (!pinOn) return;
     const el = e.target.closest(".mark-host svg.sigil .sym, .mark-host svg.sigil .center");
     if (!el) return;
     const id = el.getAttribute("data-sym");
-    // hitpad is inside .sym — already covered by closest(.sym)
     if (!SYMBOLS.some((s) => s.id === id)) return;
     e.preventDefault();
     e.stopPropagation();
     const svg = el.ownerSVGElement;
     const p = svgPoint(svg, e.clientX, e.clientY);
-    releaseToFree(id);
+    ensurePinnedAtWorld(id);
     const cfg = ensure(id);
-    drag = { id, el, svg, lastX: p.x, lastY: p.y };
+    drag = {
+      id,
+      el,
+      svg,
+      lastX: p.x,
+      lastY: p.y,
+      startX: p.x,
+      startY: p.y,
+      moved: false,
+      pointerId: e.pointerId,
+    };
     selected = new Set([id]);
     writeSelected(selected);
     writeStore(store);
@@ -607,24 +876,68 @@
       el.setPointerCapture(e.pointerId);
     } catch (err) {}
   };
+
   const onPointerMove = (e) => {
     if (!drag) return;
     e.preventDefault();
     const p = svgPoint(drag.svg, e.clientX, e.clientY);
     const dx = p.x - drag.lastX;
     const dy = p.y - drag.lastY;
+    if (Math.hypot(p.x - drag.startX, p.y - drag.startY) > 4) drag.moved = true;
     drag.lastX = p.x;
     drag.lastY = p.y;
     const cfg = ensure(drag.id);
     cfg.pinned = true;
     cfg.ax = Math.round((cfg.ax + dx) * 10) / 10;
     cfg.ay = Math.round((cfg.ay + dy) * 10) / 10;
+    placeAbs(drag.id);
+    applyRepelFrom(drag.id, cfg.ax, cfg.ay);
+
+    if (pinMode === "orbit" && hubId) {
+      if (drag.id === hubId) {
+        // hub moves — moons keep angles/radii relative
+        const hx = cfg.ax;
+        const hy = cfg.ay;
+        moonAngles.forEach((ang, mid) => {
+          const r = moonRadii.get(mid) || ORBIT_R;
+          const mcfg = ensure(mid);
+          mcfg.ax = hx + Math.cos(ang) * r;
+          mcfg.ay = hy + Math.sin(ang) * r;
+          mcfg.pinned = true;
+          placeAbs(mid);
+        });
+      } else if (moonAngles.has(drag.id) || drag.id !== hubId) {
+        const hx = ensure(hubId).ax;
+        const hy = ensure(hubId).ay;
+        moonAngles.set(drag.id, Math.atan2(cfg.ay - hy, cfg.ax - hx));
+        moonRadii.set(drag.id, Math.max(110, Math.hypot(cfg.ax - hx, cfg.ay - hy)));
+      }
+    }
     writeStore(store);
-    applyPose(drag.id);
   };
-  const onPointerUp = () => {
+
+  const onPointerUp = (e) => {
+    if (!drag) return;
+    const d = drag;
     drag = null;
+    // Click without much move in Orbit mode → set gravity hub
+    if (pinMode === "orbit" && !d.moved) {
+      seedOrbitFromHub(d.id);
+      startOrbitLoop();
+    } else if (pinMode === "orbit" && hubId && d.id !== hubId) {
+      // snap radius gently toward ring after drag
+      const hx = ensure(hubId).ax;
+      const hy = ensure(hubId).ay;
+      const cfg = ensure(d.id);
+      const ang = Math.atan2(cfg.ay - hy, cfg.ax - hx);
+      const r = Math.max(110, Math.min(420, Math.hypot(cfg.ax - hx, cfg.ay - hy)));
+      moonAngles.set(d.id, ang);
+      moonRadii.set(d.id, r);
+      if (!orbitRaf) startOrbitLoop();
+    }
+    writeStore(store);
   };
+
   document.addEventListener("pointerdown", onPointerDown, true);
   document.addEventListener("pointermove", onPointerMove, true);
   document.addEventListener("pointerup", onPointerUp, true);
