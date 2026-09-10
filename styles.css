@@ -939,3 +939,18 @@ html[data-pin="on"] .mark-host svg.sigil .free-layer {
 html[data-pin="on"] .mark-host svg.sigil .live-orbit-root {
   pointer-events: all;
 }
+
+
+/* Orbit swap selection */
+.mark-host svg.sigil .sym[data-orbit-pick="true"],
+.mark-host svg.sigil .center[data-orbit-pick="true"] {
+  filter: drop-shadow(0 0 8px var(--accent)) drop-shadow(0 0 16px rgba(225, 29, 46, 0.45));
+}
+html[data-free-orbit="on"] .hits {
+  pointer-events: none !important;
+}
+html[data-free-orbit="on"] .mark-host svg.sigil .sym,
+html[data-free-orbit="on"] .mark-host svg.sigil .center {
+  cursor: pointer;
+  pointer-events: all;
+}

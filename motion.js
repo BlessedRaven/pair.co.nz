@@ -1,7 +1,7 @@
 (() => {
-  const STORE_KEY = "pair-sym-motion-v17";
-  const SELECTED_KEY = "pair-motion-selected-v17";
-  const RING_KEY = "pair-motion-ring-v17";
+  const STORE_KEY = "pair-sym-motion-v18";
+  const SELECTED_KEY = "pair-motion-selected-v18";
+  const RING_KEY = "pair-motion-ring-v18";
 
   const SYMBOLS = [
     { id: "gol", label: "GOL" },
@@ -508,166 +508,102 @@
   }
 
 
-  // Orbit mode: Torus = Earth; moons magnetic-slide onto a circular path and orbit like lunar motion
+  // Orbit mode: Blessed Raven ring spin (same CSS as Motion) + click-to-swap magnetic slide
   const SVG_CX = 447.56;
   const SVG_CY = 484.96;
-  const ORBIT_PERIOD_MS = 90000; // slow moon-like period
+  const ORBIT_R = 300;
   let freeOrbitOn = false;
-  let freeOrbitCenterId = "torus";
-  let orbitRaf = null;
-  let orbitAngle = 0;
-  let orbitLastTs = 0;
-  let orbitEarth = { x: SVG_CX, y: SVG_CY };
+  let swapPick = null; // first symbol id for swap
   const orbitBtn = document.querySelector("[data-motion-orbit]");
+  const orbitSlots = new Map(); // id -> { ang }
 
-  const setSlotLocal = (slot, el, lx, ly) => {
-    const c = artCenter(el);
-    slot.setAttribute("transform", "translate(" + (lx - c.x) + " " + (ly - c.y) + ")");
+  const syncHitAbs = (id, ax, ay) => {
+    const hit = findHit(id);
+    if (!hit) return;
+    const hc = hit.querySelector("circle.hit");
+    if (!hc) return;
+    const hx = Number(hc.getAttribute("cx")) || 0;
+    const hy = Number(hc.getAttribute("cy")) || 0;
+    hit.setAttribute("transform", "translate(" + (ax - hx) + " " + (ay - hy) + ")");
   };
 
-  const stopOrbitRaf = () => {
-    if (orbitRaf) cancelAnimationFrame(orbitRaf);
-    orbitRaf = null;
-    orbitLastTs = 0;
+  const posOnRing = (ang) => ({
+    ax: SVG_CX + ORBIT_R * Math.cos(ang),
+    ay: SVG_CY + ORBIT_R * Math.sin(ang),
+  });
+
+  const placeMoonAbs = (id, ang) => {
+    const el = findEl(id);
+    const slot = findSlot(id);
+    if (!el || !slot) return;
+    const p = posOnRing(ang);
+    const cfg = ensure(id);
+    cfg.pinned = true;
+    cfg.ax = p.ax;
+    cfg.ay = p.ay;
+    setSlotAbs(slot, el, p.ax, p.ay);
+    syncHitAbs(id, p.ax, p.ay);
+    orbitSlots.set(id, { ang });
   };
 
-  const orbitTick = (now) => {
-    if (!freeOrbitOn) return;
-    if (!orbitLastTs) orbitLastTs = now;
-    const dt = Math.min(64, now - orbitLastTs);
-    orbitLastTs = now;
-    orbitAngle = (orbitAngle + (360 * dt) / ORBIT_PERIOD_MS) % 360;
-    const spin = document.querySelector(".mark-host svg.sigil .live-orbit-spin");
-    const hitSpin = document.querySelector(".hits .hits-live-orbit-spin");
-    if (spin) spin.setAttribute("transform", "rotate(" + orbitAngle + ")");
-    if (hitSpin) hitSpin.setAttribute("transform", "rotate(" + orbitAngle + ")");
-    orbitRaf = requestAnimationFrame(orbitTick);
-  };
+  const easeOutCubic = (u) => 1 - Math.pow(1 - u, 3);
 
-  const ensureOrbitRoot = (parent, rootCls, spinCls, ex, ey) => {
-    let root = parent.querySelector(":scope > ." + rootCls);
-    if (!root) {
-      root = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      root.setAttribute("class", rootCls);
-      parent.appendChild(root);
-    }
-    root.setAttribute("transform", "translate(" + ex + " " + ey + ")");
-    let spin = root.querySelector(":scope > ." + spinCls);
-    if (!spin) {
-      spin = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      spin.setAttribute("class", spinCls);
-      root.appendChild(spin);
-    }
-    return { root, spin };
-  };
-
-  const tearDownFreeOrbit = () => {
-    stopOrbitRaf();
-    const free = freeLayer();
-    const hf = hitsFree();
-    const roots = [
-      document.querySelector(".mark-host svg.sigil .live-orbit-root"),
-      document.querySelector(".hits .hits-live-orbit-root"),
-    ];
-    const ids = [];
-    roots.forEach((root, idx) => {
-      if (!root) return;
-      const nodes = root.querySelectorAll(idx === 0 ? "[data-sym-slot]" : "[data-hotspot]");
-      Array.from(nodes).forEach((node) => {
-        if (idx === 0) {
-          const id = node.getAttribute("data-sym-slot");
-          ids.push(id);
-          const el = findEl(id);
-          if (el) {
-            const w = worldCenter(el);
-            const cfg = ensure(id);
-            cfg.pinned = true;
-            cfg.ax = w.x;
-            cfg.ay = w.y;
-          }
-          if (free) free.appendChild(node);
-        } else if (hf) {
-          hf.appendChild(node);
-        }
-      });
-      root.remove();
-    });
-    // also clear legacy spin groups if any
-    document.querySelectorAll(".live-orbit-spin, .hits-live-orbit-spin, .live-orbit-root, .hits-live-orbit-root").forEach((n) => {
-      if (n.parentNode && !n.closest(".live-orbit-root") && n.classList.contains("live-orbit-spin")) n.remove();
-    });
-    ids.forEach((id) => applyPose(id));
-    if (freeOrbitCenterId) applyPose(freeOrbitCenterId);
-    document.documentElement.setAttribute("data-free-orbit", "off");
-    orbitAngle = 0;
-  };
-
-  const magneticSlideThenOrbit = (earth, moons) => {
-    // moons: [{id, ang, r, ax, ay}] target world positions already set on cfg
+  const magneticMove = (id, fromAng, toAng, dur, done) => {
     const start = performance.now();
-    const dur = 780;
-    const from = moons.map((m) => {
-      const cfg = ensure(m.id);
-      return { id: m.id, x0: cfg.ax, y0: cfg.ay, x1: m.ax, y1: m.ay, lx: m.lx, ly: m.ly };
-    });
-
+    // shortest angular delta
+    let d = ((toAng - fromAng + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
     const step = (now) => {
-      const u = Math.min(1, (now - start) / dur);
-      const e = 1 - Math.pow(1 - u, 3); // ease-out cubic — magnetic slide
-      from.forEach((t) => {
-        const cfg = ensure(t.id);
-        cfg.ax = t.x0 + (t.x1 - t.x0) * e;
-        cfg.ay = t.y0 + (t.y1 - t.y0) * e;
-        applyPose(t.id);
-      });
-      if (u < 1) {
-        requestAnimationFrame(step);
-        return;
+      if (!freeOrbitOn && !done) {
+        /* allow finish even if turned off mid-swap */
       }
-      // Lock into Earth-centered spin group (moon local coords)
-      const free = freeLayer();
-      const hf = hitsFree();
-      if (!free) return;
-      const { spin } = ensureOrbitRoot(free, "live-orbit-root", "live-orbit-spin", earth.x, earth.y);
-      const hitPack = hf ? ensureOrbitRoot(hf, "hits-live-orbit-root", "hits-live-orbit-spin", earth.x, earth.y) : null;
-      spin.setAttribute("transform", "rotate(0)");
-      if (hitPack) hitPack.spin.setAttribute("transform", "rotate(0)");
-
-      from.forEach((t) => {
-        const slot = findSlot(t.id);
-        const el = findEl(t.id);
-        if (slot && el) {
-          spin.appendChild(slot);
-          setSlotLocal(slot, el, t.lx, t.ly);
-        }
-        const hit = findHit(t.id);
-        if (hit && hitPack) {
-          hitPack.spin.appendChild(hit);
-          const hc = hit.querySelector("circle.hit");
-          if (hc) {
-            const hx = Number(hc.getAttribute("cx")) || 0;
-            const hy = Number(hc.getAttribute("cy")) || 0;
-            // local moon position relative to earth
-            hit.setAttribute("transform", "translate(" + (t.lx - hx) + " " + (t.ly - hy) + ")");
-          }
-        }
-        const cfg = ensure(t.id);
-        cfg.ax = t.x1;
-        cfg.ay = t.y1;
-      });
-      writeStore(store);
-      orbitAngle = 0;
-      orbitLastTs = 0;
-      orbitRaf = requestAnimationFrame(orbitTick);
+      const u = Math.min(1, (now - start) / dur);
+      const e = easeOutCubic(u);
+      const ang = fromAng + d * e;
+      placeMoonAbs(id, ang);
+      if (u < 1) requestAnimationFrame(step);
+      else if (done) done();
     };
     requestAnimationFrame(step);
   };
 
-  const startFreeOrbit = () => {
-    stopOrbitRaf();
-    tearDownFreeOrbit();
+  const tearDownFreeOrbit = () => {
+    swapPick = null;
+    document.querySelectorAll("[data-orbit-pick]").forEach((el) => el.removeAttribute("data-orbit-pick"));
+    const free = freeLayer();
+    const hf = hitsFree();
+    const orbit = orbitLayer();
+    const ho = hitsOrbit();
+    // Bake current world positions then park in free-layer (stop ring)
+    const ids = [...orbitSlots.keys()];
+    ids.forEach((id) => {
+      const el = findEl(id);
+      const slot = findSlot(id);
+      if (el) {
+        const w = worldCenter(el);
+        const cfg = ensure(id);
+        cfg.pinned = true;
+        cfg.ax = w.x;
+        cfg.ay = w.y;
+      }
+      if (slot && free && slot.parentNode !== free) free.appendChild(slot);
+      const hit = findHit(id);
+      if (hit && hf && hit.parentNode !== hf) hf.appendChild(hit);
+      applyPose(id);
+    });
+    orbitSlots.clear();
+    // Restore any leftover original-orbit children poses
+    ringOn = false;
+    writeRing(false);
+    syncRing();
+    document.documentElement.setAttribute("data-free-orbit", "off");
+    document.documentElement.classList.remove("orbit-swap");
+  };
 
-    // Snapshot current world positions as free agents
+  const startFreeOrbit = () => {
+    tearDownFreeOrbit();
+    freeOrbitOn = true; // tearDown cleared flag path — set after
+
+    // Snapshot + release everything except keep torus as Earth at center
     SYMBOLS.forEach((s) => {
       const el = findEl(s.id);
       if (!el) return;
@@ -680,73 +616,86 @@
       applyPose(s.id);
     });
 
-    // Earth = Torus (center mass). Fall back to SVG portal center.
-    freeOrbitCenterId = "torus";
-    const earthEl = findEl("torus");
-    if (earthEl) {
-      const w = worldCenter(earthEl);
-      orbitEarth = { x: w.x, y: w.y };
+    // Pin Torus to portal center (Earth)
+    const torusEl = findEl("torus");
+    const torusSlot = findSlot("torus");
+    if (torusEl && torusSlot) {
       const cfg = ensure("torus");
       cfg.pinned = true;
-      cfg.ax = w.x;
-      cfg.ay = w.y;
-      applyPose("torus");
-    } else {
-      orbitEarth = { x: SVG_CX, y: SVG_CY };
+      cfg.ax = SVG_CX;
+      cfg.ay = SVG_CY;
+      setSlotAbs(torusSlot, torusEl, SVG_CX, SVG_CY);
+      syncHitAbs("torus", SVG_CX, SVG_CY);
+      // torus stays OUT of rotating .orbit (already outside in free/center slot)
+      const free = freeLayer();
+      if (free && torusSlot.parentNode !== free) {
+        // center slot may be sibling of free — leave torus where it lives if not in orbit
+        const orbit = orbitLayer();
+        if (torusSlot.parentNode === orbit && free) free.appendChild(torusSlot);
+      }
     }
 
-    const moons = SYMBOLS.map((s) => s.id).filter((id) => id !== "torus" && findEl(id));
+    const moons = SYMBOLS.map((s) => s.id).filter((id) => id !== "torus" && findEl(id) && findSlot(id));
+    // Sort by current angle around center for stable order
     const infos = moons
       .map((id) => {
         const cfg = ensure(id);
-        const dx = cfg.ax - orbitEarth.x;
-        const dy = cfg.ay - orbitEarth.y;
-        return { id, ang: Math.atan2(dy, dx), r: Math.hypot(dx, dy) || 240 };
+        return { id, ang: Math.atan2(cfg.ay - SVG_CY, cfg.ax - SVG_CX) };
       })
       .sort((a, b) => a.ang - b.ang);
-    if (!infos.length) {
+
+    const n = infos.length || 1;
+    const startAng = -Math.PI / 2; // top
+    const orbit = orbitLayer();
+    const ho = hitsOrbit();
+    const free = freeLayer();
+    const hf = hitsFree();
+
+    // Magnetic slide onto uniform ring, then parent into Blessed Raven .orbit group
+    const targets = infos.map((info, i) => ({
+      id: info.id,
+      from: ensure(info.id).ax != null ? Math.atan2(ensure(info.id).ay - SVG_CY, ensure(info.id).ax - SVG_CX) : startAng,
+      to: startAng + (i * 2 * Math.PI) / n,
+    }));
+
+    let pending = targets.length;
+    if (!pending) {
       document.documentElement.setAttribute("data-free-orbit", "on");
+      ringOn = true;
+      writeRing(true);
+      syncRing();
       return;
     }
 
-    // Shared moon radius (magnetic ring) — average of current distances, clamped
-    const Ravg = infos.reduce((s, i) => s + i.r, 0) / infos.length;
-    const R = Math.max(200, Math.min(360, Ravg));
-    const startAng = infos[0].ang;
-    const n = infos.length;
-
-    const targets = infos.map((info, i) => {
-      const ang = startAng + (i * 2 * Math.PI) / n;
-      const lx = R * Math.cos(ang);
-      const ly = R * Math.sin(ang);
-      return {
-        id: info.id,
-        ang,
-        r: R,
-        lx,
-        ly,
-        ax: orbitEarth.x + lx,
-        ay: orbitEarth.y + ly,
-      };
+    targets.forEach((t) => {
+      magneticMove(t.id, t.from, t.to, 720, () => {
+        const slot = findSlot(t.id);
+        const hit = findHit(t.id);
+        if (slot && orbit) orbit.appendChild(slot);
+        if (hit && ho) ho.appendChild(hit);
+        placeMoonAbs(t.id, t.to);
+        pending -= 1;
+        if (pending <= 0) {
+          // Blessed Raven spin — exact same CSS Motion uses
+          ringOn = true;
+          writeRing(true);
+          syncRing();
+          document.documentElement.setAttribute("data-free-orbit", "on");
+          writeStore(store);
+        }
+      });
     });
-
-    document.documentElement.setAttribute("data-free-orbit", "on");
-    writeStore(store);
-    magneticSlideThenOrbit(orbitEarth, targets);
   };
 
   const setFreeOrbit = (on) => {
-    freeOrbitOn = !!on;
-    if (orbitBtn) orbitBtn.setAttribute("aria-pressed", freeOrbitOn ? "true" : "false");
-    if (freeOrbitOn) {
-      if (ringOn) {
-        ringOn = false;
-        writeRing(false);
-        syncRing();
-      }
+    const next = !!on;
+    if (orbitBtn) orbitBtn.setAttribute("aria-pressed", next ? "true" : "false");
+    if (next) {
       if (typeof pinOn !== "undefined" && pinOn) setPin(false);
+      freeOrbitOn = true;
       startFreeOrbit();
     } else {
+      freeOrbitOn = false;
       tearDownFreeOrbit();
       writeStore(store);
     }
@@ -758,6 +707,53 @@
       setFreeOrbit(!freeOrbitOn);
     });
   }
+
+  // Click-to-swap while Orbit is on (magnetic slide between ring slots)
+  const clearSwapPick = () => {
+    if (swapPick) {
+      const el = findEl(swapPick);
+      if (el) el.removeAttribute("data-orbit-pick");
+    }
+    swapPick = null;
+  };
+
+  document.addEventListener(
+    "click",
+    (e) => {
+      if (!freeOrbitOn) return;
+      if (e.target.closest("[data-motion-orbit], [data-motion-pin], [data-motion-toggle], [data-panel-open], [data-motion-panel], [data-theme-set], [data-vibe-toggle]")) return;
+      const el = e.target.closest(".mark-host svg.sigil .sym, .mark-host svg.sigil .center");
+      if (!el) return;
+      const id = el.getAttribute("data-sym");
+      if (!id || id === "torus" || !orbitSlots.has(id)) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (!swapPick) {
+        swapPick = id;
+        el.setAttribute("data-orbit-pick", "true");
+        return;
+      }
+      if (swapPick === id) {
+        clearSwapPick();
+        return;
+      }
+
+      const a = swapPick;
+      const b = id;
+      const angA = orbitSlots.get(a).ang;
+      const angB = orbitSlots.get(b).ang;
+      clearSwapPick();
+      let left = 2;
+      const done = () => {
+        left -= 1;
+        if (left <= 0) writeStore(store);
+      };
+      magneticMove(a, angA, angB, 560, done);
+      magneticMove(b, angB, angA, 560, done);
+    },
+    true
+  );
 
     // Pin mode (top bar): drag any symbol — free agent, stays where dropped
   let pinOn = false;
