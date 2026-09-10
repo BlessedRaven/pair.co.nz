@@ -18,7 +18,7 @@
       } catch (e) {}
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=63" />
+  <link rel="stylesheet" href="styles.css?v=64" />
 </head>
 <body>
   <header class="top">
@@ -46,12 +46,18 @@
         <span class="pin-wrap" data-pin-wrap>
           <button type="button" data-motion-pin aria-pressed="false" aria-expanded="false" aria-haspopup="true" title="Pin: drag symbols">Pin</button>
           <span class="pin-menu" data-pin-menu hidden>
-            <button type="button" data-pin-repel aria-pressed="true">Repel</button>
-            <button type="button" data-pin-cloud-orbit aria-pressed="false" title="Orbit mode: any hub; Torus hub-only">Orbit mode</button>
+            <button type="button" data-pin-repel aria-pressed="false" title="Hard separation on drag">Repel</button>
+            <button type="button" data-pin-stack aria-pressed="true" title="Allow shapes to stack / overlap">Stack</button>
             <button type="button" data-pin-layout-reset>Reset</button>
           </span>
         </span>
-        <button type="button" data-drag-toggle aria-pressed="false" title="Shapes always drag site-wide; also pan the void">Drag</button>
+        <span class="orbit-wrap pin-wrap" data-orbit-wrap>
+          <button type="button" data-orbit-toggle aria-pressed="false" aria-expanded="false" aria-haspopup="true" title="Multi-hub orbit mode">Orbit</button>
+          <span class="pin-menu" data-orbit-menu hidden>
+            <button type="button" data-orbit-clear>Clear orbits</button>
+            <p class="orbit-hint">Tap a shape: hub / orbiter / free. Torus = hub only. Many hubs OK.</p>
+          </span>
+        </span>
         <button type="button" class="top-reset" data-motion-reset title="Reset all symbol play">Reset</button>
       </div>
     </div>
@@ -179,12 +185,13 @@
         <g class="hits-free"></g>
       </svg>
     </div>
-    <p class="hint">Drag shapes · Link/Zoom bottom-right · Pin = Repel + Orbit mode</p>
+    <p class="hint">Pin = optional Repel or Stack · Orbit = multi-hub · Link/Drag/Zoom bottom-right</p>
   </main>
 
 
   <div class="site-bar" data-site-bar role="toolbar" aria-label="Site">
     <button type="button" data-link-toggle aria-pressed="true" title="Tap a shape (no drag) to open its coin brief">Link</button>
+    <button type="button" data-drag-toggle aria-pressed="false" title="Shapes always drag; also pan the void">Drag</button>
     <span class="zoom-wrap" data-zoom-wrap>
       <button type="button" data-zoom-toggle aria-pressed="false" aria-expanded="false" aria-haspopup="true" title="Zoom mode: click-drag on empty space">Zoom</button>
       <span class="zoom-menu" data-zoom-menu hidden>
@@ -202,15 +209,15 @@
     <span class="muted">Mints TBD · not financial advice</span>
   </footer>
 
-  <script src="theme.js?v=63" defer></script>
-  <script src="motion.js?v=63" defer></script>
-  <script src="app.js?v=63" defer></script>
+  <script src="theme.js?v=64" defer></script>
+  <script src="motion.js?v=64" defer></script>
+  <script src="app.js?v=64" defer></script>
 
   <div class="cloud-shape-menu" data-cloud-shape-menu hidden role="menu" aria-label="Orbit shape actions">
-    <button type="button" role="menuitem" data-cloud-act="hub">Make hub (orbited)</button>
-    <button type="button" role="menuitem" data-cloud-act="all-shapes">All orbiters</button>
+    <button type="button" role="menuitem" data-cloud-act="hub">Be orbited (hub)</button>
+    <button type="button" role="menuitem" data-cloud-act="orbit-hub">Orbit selected hub</button>
+    <button type="button" role="menuitem" data-cloud-act="free">Free</button>
     <button type="button" role="menuitem" data-cloud-act="reset-shape">Reset shape</button>
-    <button type="button" role="menuitem" data-cloud-act="reset-all">Reset</button>
   </div>
 
 </body>
