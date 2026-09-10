@@ -286,21 +286,48 @@ body {
   filter: var(--sigil-filter);
 }
 
+/* Outer symbols + hotspots: full 360° slow orbit (Blessed Raven) */
 .mark-host svg.sigil .orbit,
 .hits .hits-orbit {
   transform-box: view-box;
   transform-origin: 447.56px 484.96px;
-  animation: pair-orbit 52s ease-in-out infinite;
+  animation: pair-orbit-spin 80s linear infinite;
 }
 
-@keyframes pair-orbit {
-  0%,
-  100% {
-    transform: rotate(-2.6deg);
+@keyframes pair-orbit-spin {
+  from {
+    transform: rotate(0deg);
   }
-  50% {
-    transform: rotate(2.6deg);
+  to {
+    transform: rotate(360deg);
   }
+}
+
+/* Each outer symbol spins forever on its own center — quatrefoil-style, orbit-slow */
+.mark-host svg.sigil .sym {
+  transform-box: fill-box;
+  transform-origin: center;
+  will-change: transform;
+  animation: pair-sym-spin 80s linear infinite;
+}
+
+.mark-host svg.sigil .sym[data-sym="n"] { animation: pair-sym-spin 76s linear infinite; }
+.mark-host svg.sigil .sym[data-sym="ne"] { animation: pair-sym-spin-ccw 80s linear infinite; } /* quatrefoil */
+.mark-host svg.sigil .sym[data-sym="e"] { animation: pair-sym-spin 72s linear infinite; }
+.mark-host svg.sigil .sym[data-sym="se"] { animation: pair-sym-spin-ccw 84s linear infinite; }
+.mark-host svg.sigil .sym[data-sym="s"] { animation: pair-sym-spin 78s linear infinite; }
+.mark-host svg.sigil .sym[data-sym="sw"] { animation: pair-sym-spin-ccw 80s linear infinite; }
+.mark-host svg.sigil .sym[data-sym="w"] { animation: pair-sym-spin 88s linear infinite; }
+.mark-host svg.sigil .sym[data-sym="nw"] { animation: pair-sym-spin-ccw 74s linear infinite; }
+
+@keyframes pair-sym-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pair-sym-spin-ccw {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
 }
 
 .hits {
@@ -524,7 +551,8 @@ body:has(.brief) .top {
 @media (prefers-reduced-motion: reduce) {
   .mark.is-ready,
   .mark-host svg.sigil .orbit,
-  .hits .hits-orbit {
+  .hits .hits-orbit,
+  .mark-host svg.sigil .sym {
     animation: none !important;
   }
 

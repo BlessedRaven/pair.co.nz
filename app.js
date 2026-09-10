@@ -1,11 +1,79 @@
 (() => {
   const CX = 447.56;
   const CY = 484.96;
+  const HOTSPOTS = [
+    { id: "n", x: 453.56, y: 145 },
+    { id: "nw", x: 148, y: 167 },
+    { id: "w", x: 91.8, y: 353 },
+    { id: "sw", x: 90, y: 555 },
+    { id: "s", x: 462, y: 820 },
+    { id: "se", x: 672.71, y: 750.29 },
+    { id: "e", x: 821.16, y: 582.19 },
+    { id: "ne", x: 820.1, y: 342.59 },
+  ];
+
   const host = document.querySelector("[data-mark-host]");
   const mark = document.querySelector("[data-mark]");
   if (!host || !mark) return;
 
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const pinOrigin = (el) => {
+    try {
+      const bb = el.getBBox();
+      if (!bb.width && !bb.height) return;
+      el.style.transformBox = "view-box";
+      el.style.transformOrigin = `${bb.x + bb.width / 2}px ${bb.y + bb.height / 2}px`;
+    } catch (err) {
+      /* ignore */
+    }
+  };
+
+  const wrapOrbitSyms = (orbit) => {
+    const items = [];
+    Array.from(orbit.children).forEach((el) => {
+      let bb;
+      try {
+        bb = el.getBBox();
+      } catch (err) {
+        return;
+      }
+      if (!bb.width && !bb.height) return;
+      items.push({
+        el,
+        cx: bb.x + bb.width / 2,
+        cy: bb.y + bb.height / 2,
+      });
+    });
+
+    const pairs = [];
+    items.forEach((it, i) => {
+      HOTSPOTS.forEach((h) => {
+        pairs.push({ i, id: h.id, d: Math.hypot(it.cx - h.x, it.cy - h.y) });
+      });
+    });
+    pairs.sort((a, b) => a.d - b.d);
+
+    const usedItems = new Set();
+    const usedIds = new Set();
+    const itemId = new Map();
+    for (const p of pairs) {
+      if (usedItems.has(p.i) || usedIds.has(p.id)) continue;
+      if (p.d > 220) continue;
+      usedItems.add(p.i);
+      usedIds.add(p.id);
+      itemId.set(p.i, p.id);
+    }
+
+    items.forEach((it, i) => {
+      const wrap = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      wrap.setAttribute("class", "sym");
+      wrap.setAttribute("data-sym", itemId.get(i) || `_x${i}`);
+      orbit.insertBefore(wrap, it.el);
+      wrap.appendChild(it.el);
+      pinOrigin(wrap);
+    });
+  };
 
   const mount = async () => {
     let raw;
@@ -63,6 +131,7 @@
     svg.appendChild(center);
     host.innerHTML = "";
     host.appendChild(svg);
+    wrapOrbitSyms(orbit);
     mark.classList.add("is-ready");
     if (reduced) mark.classList.add("reduced");
   };
