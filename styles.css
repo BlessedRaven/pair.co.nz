@@ -105,7 +105,7 @@ body {
 .mark.is-ready {
   animation:
     pair-breathe 8s ease-in-out infinite,
-    pair-glow 3.6s linear infinite;
+    pair-glow 5.4s linear infinite;
 }
 
 /* Tiny breathe only — never large enough to clip */
