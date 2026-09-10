@@ -563,15 +563,18 @@
   const SVG_CY = 484.96;
   const CLOUD_ID = "cloud";
   const REPEL_PAD = 1.12; // radii must not overlap (extra padding)
-  const CLOUD_ORBIT_GAP = 28;
-  const CLOUD_ORBIT_PERIOD = 55; // seconds for one revolution (base)
-  const ORBIT_REF = 200;
+  const CLOUD_ORBIT_GAP = 36;
+  const CLOUD_ORBIT_PERIOD = 60; // seconds for one clean revolution (rigid ring)
 
   let pinOn = false;
   let repelOn = true;
   let cloudOrbitOn = false;
   let drag = null;
-  let cloudMoons = new Map(); // id -> { ang, r }
+  // hubId is Cloud for now; later any selected symbol can become the hub
+  let hubId = CLOUD_ID;
+  let ringIds = []; // moons in even angular order
+  let ringRadius = 0; // single shared radius — perfect circle
+  let ringPhase = -Math.PI / 2; // shared rotation phase
   let cloudRaf = 0;
   let cloudLastTs = 0;
 
@@ -657,6 +660,11 @@
         for (let j = i + 1; j < ids.length; j++) {
           const a = ids[i];
           const b = ids[j];
+          // Rigid cloud-orbit ring owns spacing — don't shove moons off the circle
+          if (cloudOrbitOn) {
+            const onRing = (id) => id === hubId || ringIds.indexOf(id) >= 0;
+            if (onRing(a) && onRing(b)) continue;
+          }
           const ca = ensure(a);
           const cb = ensure(b);
           const need = (artRadius(a) + artRadius(b)) * REPEL_PAD;
@@ -681,10 +689,10 @@
           } else if (priorityId === b) {
             wa = 1.95;
             wb = 0.05;
-          } else if (cloudOrbitOn && a === CLOUD_ID) {
+          } else if (cloudOrbitOn && a === hubId) {
             wa = 0.1;
             wb = 1.9;
-          } else if (cloudOrbitOn && b === CLOUD_ID) {
+          } else if (cloudOrbitOn && b === hubId) {
             wa = 1.9;
             wb = 0.1;
           }
@@ -707,7 +715,8 @@
       cloudRaf = 0;
     }
     cloudLastTs = 0;
-    cloudMoons.clear();
+    ringIds = [];
+    ringRadius = 0;
     document.querySelectorAll(".mark-host svg.sigil [data-cloud-hub]").forEach((el) => {
       el.removeAttribute("data-cloud-hub");
       el.style.removeProperty("--tidal-rot");
@@ -718,37 +727,63 @@
     });
   };
 
+  const layoutRing = () => {
+    const hub = ensure(hubId);
+    const n = ringIds.length;
+    if (!n || !ringRadius) return;
+    ringIds.forEach((id, i) => {
+      if (drag && drag.id === id) return;
+      const ang = ringPhase + (i * 2 * Math.PI) / n;
+      const cfg = ensure(id);
+      cfg.ax = hub.ax + Math.cos(ang) * ringRadius;
+      cfg.ay = hub.ay + Math.sin(ang) * ringRadius;
+      cfg.pinned = true;
+      placeAbs(id);
+      const el = findEl(id);
+      if (el) {
+        el.setAttribute("data-cloud-moon", "true");
+        el.style.setProperty("--tidal-rot", ang + Math.PI / 2 + "rad");
+      }
+    });
+  };
+
   const rebuildCloudMoons = () => {
-    cloudMoons.clear();
-    const cloudEl = findEl(CLOUD_ID);
-    if (!cloudEl) return;
-    const hub = ensurePinnedAtWorld(CLOUD_ID);
-    cloudEl.setAttribute("data-cloud-hub", "true");
-    const hubR = artRadius(CLOUD_ID);
+    const hubEl = findEl(hubId);
+    if (!hubEl) return;
+    const hub = ensurePinnedAtWorld(hubId);
+    hubEl.setAttribute("data-cloud-hub", "true");
+    document.querySelectorAll(".mark-host svg.sigil [data-cloud-moon]").forEach((el) => {
+      el.removeAttribute("data-cloud-moon");
+      el.style.removeProperty("--tidal-rot");
+    });
+
+    const hubR = artRadius(hubId);
     const smaller = [];
     SYMBOLS.forEach((s) => {
-      if (s.id === CLOUD_ID) return;
+      if (s.id === hubId) return;
       if (!findEl(s.id)) return;
       const r = artRadius(s.id);
       if (r < hubR * 0.98) smaller.push({ id: s.id, r });
     });
-    smaller.sort((a, b) => a.r - b.r);
-    const n = Math.max(1, smaller.length);
-    smaller.forEach((m, i) => {
-      const ang = -Math.PI / 2 + (i * 2 * Math.PI) / n;
-      // orbital radius: hub size + moon size + gap (farther if larger moon)
-      const orbR = hubR + m.r + CLOUD_ORBIT_GAP + m.r * 0.35;
-      cloudMoons.set(m.id, { ang, r: orbR, sizeR: m.r });
-      const el = findEl(m.id);
-      if (el) el.setAttribute("data-cloud-moon", "true");
-      const cfg = ensure(m.id);
-      cfg.ax = hub.ax + Math.cos(ang) * orbR;
-      cfg.ay = hub.ay + Math.sin(ang) * orbR;
-      cfg.pinned = true;
-      placeAbs(m.id);
-      // tidal lock: face hub (rotate opposite to orbit angle)
-      if (el) el.style.setProperty("--tidal-rot", ang + Math.PI / 2 + "rad");
-    });
+    // Stable order by size then id — even slots around the circle
+    smaller.sort((a, b) => a.r - b.r || a.id.localeCompare(b.id));
+    ringIds = smaller.map((m) => m.id);
+    const n = ringIds.length;
+    if (!n) {
+      ringRadius = 0;
+      writeStore(store);
+      return;
+    }
+
+    const maxMoonR = Math.max.apply(null, smaller.map((m) => m.r));
+    // Fit: clear of hub, and even chord spacing so moons never overlap
+    const clearHub = hubR + maxMoonR + CLOUD_ORBIT_GAP;
+    const sinHalf = Math.sin(Math.PI / n);
+    const clearMoons = sinHalf > 0.001 ? (maxMoonR * REPEL_PAD) / sinHalf : clearHub;
+    ringRadius = Math.max(clearHub, clearMoons);
+
+    // Keep current phase; just snap onto perfect even angles
+    layoutRing();
     writeStore(store);
   };
 
@@ -760,29 +795,24 @@
     if (!cloudLastTs) cloudLastTs = ts;
     const dt = Math.min(0.05, (ts - cloudLastTs) / 1000);
     cloudLastTs = ts;
-    const hub = ensure(CLOUD_ID);
-    const dragging = drag ? drag.id : null;
-    // Base omega; smaller moons orbit a bit faster (Kepler-ish toy)
-    cloudMoons.forEach((moon, id) => {
-      if (id === dragging || CLOUD_ID === dragging) return;
-      const speedScale = Math.sqrt(ORBIT_REF / Math.max(moon.r, 80));
-      const omega = ((Math.PI * 2) / CLOUD_ORBIT_PERIOD) * speedScale;
-      moon.ang += omega * dt;
-      const cfg = ensure(id);
-      cfg.ax = hub.ax + Math.cos(moon.ang) * moon.r;
-      cfg.ay = hub.ay + Math.sin(moon.ang) * moon.r;
-      cfg.pinned = true;
-      placeAbs(id);
-      const el = findEl(id);
-      if (el) el.style.setProperty("--tidal-rot", moon.ang + Math.PI / 2 + "rad");
-    });
-    if (repelOn && !dragging) resolveRepel(CLOUD_ID);
+
+    // Rigid ring: one shared omega — perfect spacing stays perfect
+    if (!(drag && (drag.id === hubId || ringIds.indexOf(drag.id) >= 0))) {
+      const omega = (Math.PI * 2) / CLOUD_ORBIT_PERIOD;
+      ringPhase += omega * dt;
+      layoutRing();
+    } else if (drag && drag.id === hubId) {
+      // Hub moving — moons stay locked relative via layoutRing
+      layoutRing();
+    }
     cloudRaf = requestAnimationFrame(tickCloudOrbit);
   };
 
   const startCloudOrbit = () => {
     if (cloudRaf) cancelAnimationFrame(cloudRaf);
     cloudLastTs = 0;
+    hubId = CLOUD_ID; // prototype hub; later: selected symbol
+    ringPhase = -Math.PI / 2;
     rebuildCloudMoons();
     cloudRaf = requestAnimationFrame(tickCloudOrbit);
   };
@@ -933,24 +963,10 @@
     cfg.ay = Math.round((cfg.ay + dy) * 10) / 10;
     placeAbs(drag.id);
 
-    if (cloudOrbitOn && drag.id === CLOUD_ID) {
-      // carry moons with cloud
-      cloudMoons.forEach((moon, id) => {
-        const mcfg = ensure(id);
-        mcfg.ax = cfg.ax + Math.cos(moon.ang) * moon.r;
-        mcfg.ay = cfg.ay + Math.sin(moon.ang) * moon.r;
-        mcfg.pinned = true;
-        placeAbs(id);
-      });
-    } else if (cloudOrbitOn && cloudMoons.has(drag.id)) {
-      const hub = ensure(CLOUD_ID);
-      const moon = cloudMoons.get(drag.id);
-      moon.ang = Math.atan2(cfg.ay - hub.ay, cfg.ax - hub.ax);
-      moon.r = Math.max(
-        artRadius(CLOUD_ID) + artRadius(drag.id) + CLOUD_ORBIT_GAP,
-        Math.hypot(cfg.ax - hub.ax, cfg.ay - hub.ay)
-      );
+    if (cloudOrbitOn && drag.id === hubId) {
+      layoutRing();
     }
+    // While dragging a moon, allow free move; ring snaps even again on release
 
     if (repelOn) resolveRepel(drag.id);
     writeStore(store);
@@ -961,27 +977,18 @@
     const id = drag.id;
     drag = null;
     if (cloudOrbitOn) {
-      const hub = ensure(CLOUD_ID);
-      if (id !== CLOUD_ID && findEl(id)) {
-        const hubR = artRadius(CLOUD_ID);
-        const r = artRadius(id);
-        if (r < hubR * 0.98) {
-          const cfg = ensure(id);
-          const ang = Math.atan2(cfg.ay - hub.ay, cfg.ax - hub.ax);
-          const orbR = Math.max(hubR + r + CLOUD_ORBIT_GAP, Math.hypot(cfg.ax - hub.ax, cfg.ay - hub.ay));
-          cloudMoons.set(id, { ang, r: orbR, sizeR: r });
-          const el = findEl(id);
-          if (el) el.setAttribute("data-cloud-moon", "true");
-        } else {
-          cloudMoons.delete(id);
-          const el = findEl(id);
-          if (el) {
-            el.removeAttribute("data-cloud-moon");
-            el.style.removeProperty("--tidal-rot");
-          }
+      // Snap back to perfect even circular spacing (phase from drop angle if a moon was dragged)
+      if (id !== hubId && ringIds.indexOf(id) >= 0) {
+        const hub = ensure(hubId);
+        const cfg = ensure(id);
+        const dropAng = Math.atan2(cfg.ay - hub.ay, cfg.ax - hub.ax);
+        const idx = ringIds.indexOf(id);
+        const n = ringIds.length;
+        if (n > 0 && idx >= 0) {
+          ringPhase = dropAng - (idx * 2 * Math.PI) / n;
         }
       }
-      if (repelOn) resolveRepel(id === CLOUD_ID ? CLOUD_ID : id);
+      rebuildCloudMoons();
       if (!cloudRaf) cloudRaf = requestAnimationFrame(tickCloudOrbit);
     } else if (repelOn) {
       resolveRepel(id);
