@@ -17,23 +17,6 @@
     "fol",
   ];
 
-  // Clockwise from top — fixed circular orbit (matches portal reading order)
-  const RING_ORDER = [
-    "scarab",
-    "flower",
-    "gol",
-    "sol",
-    "fol",
-    "hermes",
-    "ra",
-    "trinity",
-    "cloud",
-    "pi",
-  ];
-  const SCARAB_SATS = ["sun", "key", "bean"];
-  const ORBIT_R = 368;
-  const SYM_TARGET = 92; // visual size normalize (max bbox side)
-
   const host = document.querySelector("[data-mark-host]");
   const mark = document.querySelector("[data-mark]");
   if (!host || !mark) return;
@@ -51,18 +34,12 @@
     }
   };
 
-  const wrapOne = (orbit, el, id, extra) => {
+  const wrapOne = (orbit, el, id) => {
     const wrap = document.createElementNS("http://www.w3.org/2000/svg", "g");
     wrap.setAttribute("class", "sym");
     wrap.setAttribute("data-sym", id);
     orbit.insertBefore(wrap, el);
-    if (extra && extra.before) {
-      extra.before.forEach((node) => wrap.appendChild(node));
-    }
     wrap.appendChild(el);
-    if (extra && extra.after) {
-      extra.after.forEach((node) => wrap.appendChild(node));
-    }
     pinOrigin(wrap);
     return wrap;
   };
@@ -117,113 +94,6 @@
       }
       // Flower stays free-standing — no guide circle
       wrapOne(orbit, el, id);
-    });
-  };
-
-  const centerOf = (el) => {
-    const bb = el.getBBox();
-    return { x: bb.x + bb.width / 2, y: bb.y + bb.height / 2, bb };
-  };
-
-  const findSym = (id) =>
-    document.querySelector('.mark-host svg.sigil .sym[data-sym="' + id + '"]');
-
-  const translateEl = (el, dx, dy) => {
-    if (!el || (!dx && !dy)) return;
-    const prev = el.getAttribute("transform") || "";
-    el.setAttribute("transform", (prev + " translate(" + dx + " " + dy + ")").trim());
-  };
-
-  const syncHotspot = (id, x, y) => {
-    const a = document.querySelector('.hits [data-hotspot="' + id + '"]');
-    if (!a) return;
-    const hit = a.querySelector("circle.hit");
-    const label = a.querySelector("text.hit-label");
-    if (hit) {
-      hit.setAttribute("cx", String(x));
-      hit.setAttribute("cy", String(y));
-    }
-    if (label) {
-      label.setAttribute("x", String(x));
-      label.setAttribute("y", String(y));
-    }
-  };
-
-  const layoutEvenOrbit = () => {
-    const n = RING_ORDER.length;
-    const startAng = -Math.PI / 2; // scarab at top
-
-    const scarabEl = findSym("scarab");
-    let scarabC = null;
-    const satOffsets = [];
-    if (scarabEl) {
-      try {
-        scarabC = centerOf(scarabEl);
-        SCARAB_SATS.forEach((sid) => {
-          const el = findSym(sid);
-          if (!el) return;
-          try {
-            const c = centerOf(el);
-            satOffsets.push({
-              id: sid,
-              el,
-              ox: c.x - scarabC.x,
-              oy: c.y - scarabC.y,
-            });
-          } catch (err) {}
-        });
-      } catch (err) {}
-    }
-
-    RING_ORDER.forEach((id, i) => {
-      const el = findSym(id);
-      if (!el) return;
-      try {
-        // Always measure untransformed geometry (clear prior layout transforms)
-        el.removeAttribute("transform");
-        const c = centerOf(el);
-        const ang = startAng + (i * 2 * Math.PI) / n;
-        const tx = CX + ORBIT_R * Math.cos(ang);
-        const ty = CY + ORBIT_R * Math.sin(ang);
-        const dx = tx - c.x;
-        const dy = ty - c.y;
-        // Normalize visual weight so large circles don't look cramped
-        const side = Math.max(c.bb.width, c.bb.height) || SYM_TARGET;
-        const s = Math.min(1.15, Math.max(0.55, SYM_TARGET / side));
-        el.setAttribute(
-          "transform",
-          "translate(" + tx + " " + ty + ") scale(" + s + ") translate(" + -c.x + " " + -c.y + ")"
-        );
-        pinOrigin(el);
-        syncHotspot(id, tx, ty);
-
-        if (id === "scarab") {
-          // Keep sun/key/bean stacked above scarab; fit to top + match scarab visual scale
-          const topPad = 28;
-          let fit = 1;
-          satOffsets.forEach((sat) => {
-            if (sat.oy < 0) {
-              const need = -sat.oy * s;
-              if (need > 0) fit = Math.min(fit, Math.max(0.35, (ty - topPad) / need));
-            }
-          });
-          const ss = s * fit;
-          satOffsets.forEach((sat) => {
-            try {
-              sat.el.removeAttribute("transform");
-              const sc = centerOf(sat.el);
-              const nx = tx + sat.ox * ss;
-              const ny = ty + sat.oy * ss;
-              sat.el.setAttribute(
-                "transform",
-                "translate(" + nx + " " + ny + ") scale(" + s + ") translate(" + -sc.x + " " + -sc.y + ")"
-              );
-              pinOrigin(sat.el);
-              syncHotspot(sat.id, nx, ny);
-            } catch (err) {}
-          });
-        }
-      } catch (err) {}
     });
   };
 
@@ -285,7 +155,6 @@
     host.innerHTML = "";
     host.appendChild(svg);
     wrapOrbitSyms(orbit);
-    layoutEvenOrbit();
     pinOrigin(center);
     mark.classList.add("is-ready");
     document.dispatchEvent(new CustomEvent("pair:syms-ready"));
