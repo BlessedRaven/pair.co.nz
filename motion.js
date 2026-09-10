@@ -170,6 +170,24 @@
     speedVal.textContent = formatPct(cfg.speed);
   });
 
+  const resetBtn = document.querySelector("[data-motion-reset]");
+  if (resetBtn) {
+    resetBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      store = {};
+      SYMBOLS.forEach((s) => {
+        store[s.id] = { anim: "cw", speed: 100 };
+      });
+      writeStore(store);
+      selected = "e";
+      try {
+        localStorage.setItem(SELECTED_KEY, selected);
+      } catch {}
+      applyAll();
+      renderLists();
+    });
+  }
+
   renderLists();
   setOpen(false);
 

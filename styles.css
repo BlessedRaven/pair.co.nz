@@ -247,6 +247,32 @@ body {
   cursor: pointer;
 }
 
+.motion-reset {
+  appearance: none;
+  width: 100%;
+  margin: 0.15rem 0 0.55rem;
+  padding: 0.42rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--fg) 22%, transparent);
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.62rem;
+  font-weight: 650;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.motion-reset:hover {
+  background: color-mix(in srgb, var(--fg) 10%, transparent);
+}
+
+.motion-reset:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .motion-hint {
   margin: 0.15rem 0 0;
   font-size: 0.58rem;
