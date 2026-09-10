@@ -1,7 +1,7 @@
 (() => {
-  const STORE_KEY = "pair-sym-motion-v15";
-  const SELECTED_KEY = "pair-motion-selected-v15";
-  const RING_KEY = "pair-motion-ring-v15";
+  const STORE_KEY = "pair-sym-motion-v16";
+  const SELECTED_KEY = "pair-motion-selected-v16";
+  const RING_KEY = "pair-motion-ring-v16";
 
   const SYMBOLS = [
     { id: "gol", label: "GOL" },
@@ -500,6 +500,7 @@
       writeSelected(selected);
       ringOn = false;
       writeRing(false);
+      if (freeOrbitOn) setFreeOrbit(false);
       setPin(false);
       applyAll();
       renderLists();
@@ -507,7 +508,170 @@
   }
 
 
-  // Pin mode (top bar): drag any symbol — free agent, stays where dropped
+  // Orbit mode: uniformly orbit free-agent symbols around whichever is in the center
+  const SVG_CX = 447.56;
+  const SVG_CY = 484.96;
+  let freeOrbitOn = false;
+  let freeOrbitCenterId = null;
+  const orbitBtn = document.querySelector("[data-motion-orbit]");
+
+  const ensureSpinGroup = (parent, cls) => {
+    let g = parent && parent.querySelector(":scope > ." + cls);
+    if (!g) {
+      g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      g.setAttribute("class", cls);
+      if (parent) parent.appendChild(g);
+    }
+    return g;
+  };
+
+  const tearDownFreeOrbit = () => {
+    const spin = document.querySelector(".mark-host svg.sigil .live-orbit-spin");
+    const hitSpin = document.querySelector(".hits .hits-live-orbit-spin");
+    const free = freeLayer();
+    const hf = hitsFree();
+    const ids = [];
+    if (spin) {
+      Array.from(spin.querySelectorAll("[data-sym-slot]")).forEach((slot) => {
+        const id = slot.getAttribute("data-sym-slot");
+        ids.push(id);
+        const el = findEl(id);
+        if (el) {
+          const w = worldCenter(el);
+          const cfg = ensure(id);
+          cfg.pinned = true;
+          cfg.ax = w.x;
+          cfg.ay = w.y;
+        }
+        if (free) free.appendChild(slot);
+      });
+      spin.remove();
+    }
+    if (hitSpin) {
+      Array.from(hitSpin.querySelectorAll("[data-hotspot]")).forEach((hit) => {
+        if (hf) hf.appendChild(hit);
+      });
+      hitSpin.remove();
+    }
+    ids.forEach((id) => applyPose(id));
+    if (freeOrbitCenterId) applyPose(freeOrbitCenterId);
+    freeOrbitCenterId = null;
+    document.documentElement.setAttribute("data-free-orbit", "off");
+  };
+
+  const startFreeOrbit = () => {
+    tearDownFreeOrbit();
+    // Snapshot every symbol into free agents at current world position
+    SYMBOLS.forEach((s) => {
+      const el = findEl(s.id);
+      if (!el) return;
+      const w = worldCenter(el);
+      const cfg = ensure(s.id);
+      cfg.pinned = true;
+      cfg.ax = w.x;
+      cfg.ay = w.y;
+      releaseToFree(s.id);
+      applyPose(s.id);
+    });
+    writeStore(store);
+
+    // Center = symbol closest to SVG portal center
+    let best = null;
+    let bestD = Infinity;
+    SYMBOLS.forEach((s) => {
+      if (!findEl(s.id)) return;
+      const cfg = ensure(s.id);
+      const d = (cfg.ax - SVG_CX) * (cfg.ax - SVG_CX) + (cfg.ay - SVG_CY) * (cfg.ay - SVG_CY);
+      if (d < bestD) {
+        bestD = d;
+        best = s.id;
+      }
+    });
+    if (!best) return;
+    freeOrbitCenterId = best;
+    const cc = ensure(best);
+
+    const others = SYMBOLS.map((s) => s.id).filter((id) => id !== best && findEl(id));
+    const infos = others
+      .map((id) => {
+        const cfg = ensure(id);
+        const dx = cfg.ax - cc.ax;
+        const dy = cfg.ay - cc.ay;
+        return { id, ang: Math.atan2(dy, dx), r: Math.hypot(dx, dy) || 220 };
+      })
+      .sort((a, b) => a.ang - b.ang);
+    if (!infos.length) return;
+
+    const Ravg = infos.reduce((s, i) => s + i.r, 0) / infos.length;
+    const R = Math.max(160, Math.min(380, Ravg));
+    const startAng = infos[0].ang;
+    const n = infos.length;
+
+    const free = freeLayer();
+    const hf = hitsFree();
+    if (!free) return;
+    const spin = ensureSpinGroup(free, "live-orbit-spin");
+    spin.style.transformOrigin = cc.ax + "px " + cc.ay + "px";
+    const hitSpin = hf ? ensureSpinGroup(hf, "hits-live-orbit-spin") : null;
+    if (hitSpin) hitSpin.style.transformOrigin = cc.ax + "px " + cc.ay + "px";
+
+    infos.forEach((info, i) => {
+      const ang = startAng + (i * 2 * Math.PI) / n;
+      const ax = cc.ax + R * Math.cos(ang);
+      const ay = cc.ay + R * Math.sin(ang);
+      const cfg = ensure(info.id);
+      cfg.pinned = true;
+      cfg.ax = ax;
+      cfg.ay = ay;
+      const slot = findSlot(info.id);
+      const el = findEl(info.id);
+      if (slot && el) {
+        spin.appendChild(slot);
+        setSlotAbs(slot, el, ax, ay);
+      }
+      const hit = findHit(info.id);
+      if (hit && hitSpin) {
+        hitSpin.appendChild(hit);
+        const hc = hit.querySelector("circle.hit");
+        if (hc) {
+          const hx = Number(hc.getAttribute("cx")) || 0;
+          const hy = Number(hc.getAttribute("cy")) || 0;
+          hit.setAttribute("transform", "translate(" + (ax - hx) + " " + (ay - hy) + ")");
+        }
+      }
+    });
+
+    // Center stays fixed in free-layer
+    applyPose(best);
+    writeStore(store);
+    document.documentElement.setAttribute("data-free-orbit", "on");
+  };
+
+  const setFreeOrbit = (on) => {
+    freeOrbitOn = !!on;
+    if (orbitBtn) orbitBtn.setAttribute("aria-pressed", freeOrbitOn ? "true" : "false");
+    if (freeOrbitOn) {
+      // Free-layout orbit replaces legacy Motion ring
+      if (ringOn) {
+        ringOn = false;
+        writeRing(false);
+        syncRing();
+      }
+      if (pinOn) setPin(false);
+      startFreeOrbit();
+    } else {
+      tearDownFreeOrbit();
+    }
+  };
+
+  if (orbitBtn) {
+    orbitBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setFreeOrbit(!freeOrbitOn);
+    });
+  }
+
+    // Pin mode (top bar): drag any symbol — free agent, stays where dropped
   let pinOn = false;
   const pinBtn = document.querySelector("[data-motion-pin]");
   const setPin = (on) => {
@@ -519,7 +683,9 @@
   if (pinBtn) {
     pinBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      setPin(!pinOn);
+      const next = !pinOn;
+      if (next && freeOrbitOn) setFreeOrbit(false);
+      setPin(next);
     });
   }
 
@@ -570,6 +736,7 @@
   document.addEventListener("pointercancel", onPointerUp, true);
 
   document.documentElement.setAttribute("data-colour", "off");
+  document.documentElement.setAttribute("data-free-orbit", "off");
   renderLists();
   setPanelOpen(false);
   syncRing();

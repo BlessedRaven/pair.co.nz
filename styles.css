@@ -929,3 +929,15 @@ html[data-pin="on"] .mark-host svg.sigil .free-layer {
   stroke: none;
   pointer-events: all;
 }
+
+
+/* Free-layout Orbit mode — rotate around chosen center (viewBox origin) */
+.mark-host svg.sigil .live-orbit-spin,
+.hits .hits-live-orbit-spin {
+  transform-box: view-box;
+  animation: pair-orbit-spin 120s linear infinite;
+}
+html[data-free-orbit="off"] .mark-host svg.sigil .live-orbit-spin,
+html[data-free-orbit="off"] .hits .hits-live-orbit-spin {
+  animation: none !important;
+}
