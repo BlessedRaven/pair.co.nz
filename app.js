@@ -31,7 +31,8 @@
     "pi",
   ];
   const SCARAB_SATS = ["sun", "key", "bean"];
-  const ORBIT_R = 348;
+  const ORBIT_R = 368;
+  const SYM_TARGET = 92; // visual size normalize (max bbox side)
 
   const host = document.querySelector("[data-mark-host]");
   const mark = document.querySelector("[data-mark]");
@@ -186,29 +187,36 @@
         const ty = CY + ORBIT_R * Math.sin(ang);
         const dx = tx - c.x;
         const dy = ty - c.y;
-        el.setAttribute("transform", "translate(" + dx + " " + dy + ")");
+        // Normalize visual weight so large circles don't look cramped
+        const side = Math.max(c.bb.width, c.bb.height) || SYM_TARGET;
+        const s = Math.min(1.15, Math.max(0.55, SYM_TARGET / side));
+        el.setAttribute(
+          "transform",
+          "translate(" + tx + " " + ty + ") scale(" + s + ") translate(" + -c.x + " " + -c.y + ")"
+        );
         pinOrigin(el);
         syncHotspot(id, tx, ty);
 
         if (id === "scarab") {
-          // Keep sun/key/bean stacked above scarab, but scale so they stay in view
-          const topPad = 30;
-          let scale = 1;
+          // Keep sun/key/bean stacked above scarab; fit to top + match scarab visual scale
+          const topPad = 28;
+          let fit = 1;
           satOffsets.forEach((sat) => {
             if (sat.oy < 0) {
-              const need = -sat.oy;
-              if (need > 0) scale = Math.min(scale, Math.max(0.35, (ty - topPad) / need));
+              const need = -sat.oy * s;
+              if (need > 0) fit = Math.min(fit, Math.max(0.35, (ty - topPad) / need));
             }
           });
+          const ss = s * fit;
           satOffsets.forEach((sat) => {
             try {
               sat.el.removeAttribute("transform");
               const sc = centerOf(sat.el);
-              const nx = tx + sat.ox * scale;
-              const ny = ty + sat.oy * scale;
+              const nx = tx + sat.ox * ss;
+              const ny = ty + sat.oy * ss;
               sat.el.setAttribute(
                 "transform",
-                "translate(" + (nx - sc.x) + " " + (ny - sc.y) + ")"
+                "translate(" + nx + " " + ny + ") scale(" + s + ") translate(" + -sc.x + " " + -sc.y + ")"
               );
               pinOrigin(sat.el);
               syncHotspot(sat.id, nx, ny);
