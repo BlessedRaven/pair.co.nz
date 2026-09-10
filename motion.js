@@ -1,7 +1,7 @@
 (() => {
-  const STORE_KEY = "pair-sym-motion-v10";
-  const SELECTED_KEY = "pair-motion-selected-v10";
-  const RING_KEY = "pair-motion-ring-v10";
+  const STORE_KEY = "pair-sym-motion-v11";
+  const SELECTED_KEY = "pair-motion-selected-v11";
+  const RING_KEY = "pair-motion-ring-v11";
 
   const SYMBOLS = [
     { id: "gol", label: "GOL" },
@@ -40,8 +40,10 @@
   const speedVal = document.querySelector("[data-motion-speed-val]");
   const colourSpeedEl = document.querySelector("[data-motion-colour-speed]");
   const colourSpeedVal = document.querySelector("[data-motion-colour-speed-val]");
+  const sizeEl = document.querySelector("[data-motion-size]");
+  const sizeVal = document.querySelector("[data-motion-size-val]");
   const colourList = document.querySelector("[data-motion-colours]");
-  if (!panel || !toggle || !symList || !animList || !speedEl || !speedVal || !colourList || !colourSpeedEl || !colourSpeedVal) return;
+  if (!panel || !toggle || !symList || !animList || !speedEl || !speedVal || !colourList || !colourSpeedEl || !colourSpeedVal || !sizeEl || !sizeVal) return;
 
   panel.addEventListener("click", (e) => e.stopPropagation());
   panel.addEventListener("pointerdown", (e) => e.stopPropagation());
@@ -101,13 +103,20 @@
     return Math.max(1, Math.min(100, Math.round(n)));
   };
 
+  const clampSize = (sp) => {
+    let n = Number(sp);
+    if (!Number.isFinite(n)) n = 100;
+    return Math.max(25, Math.min(200, Math.round(n)));
+  };
+
   const ensure = (id) => {
-    if (!store[id]) store[id] = { anim: "off", speed: 100, colour: "off", colourSpeed: 100 };
+    if (!store[id]) store[id] = { anim: "off", speed: 100, colour: "off", colourSpeed: 100, size: 100 };
     const a = store[id].anim;
     if (a !== "cw" && a !== "ccw" && a !== "off") store[id].anim = "off";
     if (store[id].colour !== "vibe") store[id].colour = "off";
     store[id].speed = clampPct(store[id].speed);
     store[id].colourSpeed = clampPct(store[id].colourSpeed == null ? 100 : store[id].colourSpeed);
+    store[id].size = clampSize(store[id].size == null ? 100 : store[id].size);
     return store[id];
   };
   SYMBOLS.forEach((s) => ensure(s.id));
@@ -145,6 +154,7 @@
     el.dataset.colour = cfg.colour === "vibe" ? "vibe" : "off";
     el.style.animation = "";
     el.style.animationDuration = "";
+    el.style.setProperty("--sym-scale", String(clampSize(cfg.size) / 100));
     if (cfg.anim === "off" && cfg.colour !== "vibe") {
       el.style.animation = "none";
       el.style.removeProperty("--spin-dur");
@@ -161,6 +171,7 @@
     } else {
       el.style.removeProperty("--glow-dur");
     }
+    el.style.setProperty("--sym-scale", String(clampSize(cfg.size) / 100));
   };
 
   const applyAll = () => {
@@ -180,7 +191,7 @@
 
   const primaryCfg = () => {
     const ids = selectedList();
-    if (!ids.length) return { anim: "off", speed: 100, colour: "off", colourSpeed: 100 };
+    if (!ids.length) return { anim: "off", speed: 100, colour: "off", colourSpeed: 100, size: 100 };
     return ensure(ids[ids.length - 1]);
   };
 
@@ -220,6 +231,9 @@
         "</button>"
       );
     }).join("");
+    sizeEl.value = String(cfg.size);
+    sizeVal.textContent = clampSize(cfg.size) + "%";
+    sizeEl.disabled = !selected.size;
     speedEl.value = String(cfg.speed);
     speedVal.textContent = formatPct(cfg.speed);
     speedEl.disabled = !selected.size || cfg.anim === "off";
@@ -310,6 +324,14 @@
     });
   });
 
+  sizeEl.addEventListener("input", () => {
+    const size = clampSize(sizeEl.value);
+    forSelected((id, cfg) => {
+      cfg.size = size;
+    });
+    sizeVal.textContent = size + "%";
+  });
+
   speedEl.addEventListener("input", () => {
     const speed = clampPct(speedEl.value);
     forSelected((id, cfg) => {
@@ -332,7 +354,7 @@
       e.stopPropagation();
       store = {};
       SYMBOLS.forEach((s) => {
-        store[s.id] = { anim: "off", speed: 100, colour: "off", colourSpeed: 100 };
+        store[s.id] = { anim: "off", speed: 100, colour: "off", colourSpeed: 100, size: 100 };
       });
       writeStore(store);
       selected = new Set();

@@ -535,6 +535,7 @@ html[data-ring="off"][data-theme="vibe-light"] .mark.is-ready {
   transform-origin: center;
   will-change: transform;
   animation: none;
+  transform: scale(var(--sym-scale, 1));
 }
 
 .mark-host svg.sigil .sym[data-anim="off"],
@@ -546,6 +547,12 @@ html[data-ring="off"][data-theme="vibe-light"] .mark.is-ready {
 .mark-host svg.sigil .center[data-anim="off"][data-colour="off"] {
   animation: none !important;
   filter: none;
+  transform: scale(var(--sym-scale, 1));
+}
+
+.mark-host svg.sigil .sym[data-anim="off"][data-colour="vibe"],
+.mark-host svg.sigil .center[data-anim="off"][data-colour="vibe"] {
+  transform: scale(var(--sym-scale, 1));
 }
 
 /* Per-symbol colour — smooth cycle; speed via --glow-dur */
@@ -625,12 +632,16 @@ html[data-ring="off"][data-theme="vibe-light"] .mark.is-ready {
 
 
 @keyframes pair-sym-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from { transform: rotate(0deg) scale(var(--sym-scale, 1)); }
+  to { transform: rotate(360deg) scale(var(--sym-scale, 1)); }
 }
 
 @keyframes pair-sym-spin-ccw {
-  from { transform: rotate(0deg); }
+  from { transform: rotate(0deg) scale(var(--sym-scale, 1)); }
+  to { transform: rotate(-360deg) scale(var(--sym-scale, 1)); }
+}
+  to { transform: rotate(-360deg) scale(var(--sym-scale, 1)); }
+}
   to { transform: rotate(-360deg); }
 }
 
