@@ -503,7 +503,7 @@ body {
 .hits .hits-orbit {
   transform-box: view-box;
   transform-origin: 447.56px 484.96px;
-  animation: pair-orbit-spin 80s linear infinite;
+  animation: pair-orbit-spin 120s linear infinite;
 }
 
 html[data-ring="off"] .mark-host svg.sigil .orbit,

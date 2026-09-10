@@ -18,7 +18,7 @@
       } catch (e) {}
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=30" />
+  <link rel="stylesheet" href="styles.css?v=31" />
 </head>
 <body>
   <header class="top">
@@ -35,35 +35,30 @@
             <button type="button" data-theme-set="vibe-light">Vibe Light</button>
           </span>
         </span>
-        <button type="button" data-panel-open="symbol" aria-pressed="false" title="Symbols">Symbol</button>
-        <button type="button" data-panel-open="animation" aria-pressed="false" title="Animations">Animation</button>
-        <button type="button" data-motion-toggle aria-pressed="false" aria-expanded="false" aria-controls="motion-panel" title="Motion controls">Motion</button>
+        <button type="button" data-panel-open="symbol" aria-pressed="false" aria-expanded="false" aria-controls="motion-panel" title="Symbol options">Symbol</button>
+        <button type="button" data-motion-toggle aria-pressed="false" title="Slow whole-sigil orbit">Motion</button>
       </div>
     </div>
   </header>
 
   <aside id="motion-panel" class="motion-panel" hidden data-motion-panel>
     <div class="motion-panel-inner">
-      <p class="motion-kicker">Motion</p>
+      <p class="motion-kicker">Symbol</p>
       <div class="motion-block" data-panel-section="symbol">
         <p class="motion-label">Symbol</p>
         <div class="motion-list" data-motion-symbols role="listbox" aria-label="Symbol"></div>
-      </div>
-      <div class="motion-block" data-panel-section="animation">
-        <p class="motion-label">Animation</p>
+        <p class="motion-label" style="margin-top:0.65rem">Animation</p>
         <div class="motion-list" data-motion-anims role="listbox" aria-label="Animation"></div>
         <p class="motion-label" style="margin-top:0.65rem">Colour</p>
         <div class="motion-list" data-motion-colours role="listbox" aria-label="Colour"></div>
-      </div>
-      <div class="motion-block">
-        <div class="motion-speed-row">
+        <div class="motion-speed-row" style="margin-top:0.65rem">
           <p class="motion-label">Speed</p>
           <span class="motion-speed-val" data-motion-speed-val>100%</span>
         </div>
         <input class="motion-speed" data-motion-speed type="range" min="1" max="100" value="100" step="1" aria-label="Animation speed" />
       </div>
       <button type="button" class="motion-reset" data-motion-reset>Reset</button>
-      <p class="motion-hint">Multi-select symbols (tap again to clear). Colour = vibe glow on selection only.</p>
+      <p class="motion-hint">Motion button = slow whole orbit. Here: pick symbols, then Animation / Colour / Speed. Multi-select OK.</p>
     </div>
   </aside>
 
@@ -142,8 +137,8 @@
     <span class="muted">Mints TBD · not financial advice</span>
   </footer>
 
-  <script src="theme.js?v=30" defer></script>
-  <script src="motion.js?v=30" defer></script>
-  <script src="app.js?v=30" defer></script>
+  <script src="theme.js?v=31" defer></script>
+  <script src="motion.js?v=31" defer></script>
+  <script src="app.js?v=31" defer></script>
 </body>
 </html>

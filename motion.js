@@ -1,6 +1,7 @@
 (() => {
-  const STORE_KEY = "pair-sym-motion-v8";
-  const SELECTED_KEY = "pair-motion-selected-v8";
+  const STORE_KEY = "pair-sym-motion-v9";
+  const SELECTED_KEY = "pair-motion-selected-v9";
+  const RING_KEY = "pair-motion-ring-v9";
 
   const SYMBOLS = [
     { id: "gol", label: "GOL" },
@@ -32,6 +33,7 @@
 
   const panel = document.querySelector("[data-motion-panel]");
   const toggle = document.querySelector("[data-motion-toggle]");
+  const symbolOpen = document.querySelector('[data-panel-open="symbol"]');
   const symList = document.querySelector("[data-motion-symbols]");
   const animList = document.querySelector("[data-motion-anims]");
   const speedEl = document.querySelector("[data-motion-speed]");
@@ -72,8 +74,23 @@
     } catch {}
   };
 
+  const readRing = () => {
+    try {
+      return localStorage.getItem(RING_KEY) === "on";
+    } catch {
+      return false;
+    }
+  };
+
+  const writeRing = (on) => {
+    try {
+      localStorage.setItem(RING_KEY, on ? "on" : "off");
+    } catch {}
+  };
+
   let store = readStore();
   let selected = readSelected();
+  let ringOn = readRing();
 
   const ensure = (id) => {
     if (!store[id]) store[id] = { anim: "off", speed: 100, colour: "off" };
@@ -102,10 +119,9 @@
     return document.querySelector('.mark-host svg.sigil .sym[data-sym="' + id + '"]');
   };
 
-  const anySpinning = () => SYMBOLS.some((s) => ensure(s.id).anim !== "off");
-
   const syncRing = () => {
-    document.documentElement.setAttribute("data-ring", anySpinning() ? "on" : "off");
+    document.documentElement.setAttribute("data-ring", ringOn ? "on" : "off");
+    toggle.setAttribute("aria-pressed", ringOn ? "true" : "false");
   };
 
   const applyToDom = (id) => {
@@ -189,44 +205,44 @@
     speedEl.disabled = !selected.size || cfg.anim === "off";
   };
 
-  const setOpen = (open) => {
+  const setPanelOpen = (open) => {
     panel.hidden = !open;
-    toggle.setAttribute("aria-expanded", open ? "true" : "false");
-    toggle.setAttribute("aria-pressed", open ? "true" : "false");
-    if (!open) {
-      document.querySelectorAll("[data-panel-open]").forEach((b) => b.setAttribute("aria-pressed", "false"));
+    if (symbolOpen) {
+      symbolOpen.setAttribute("aria-pressed", open ? "true" : "false");
+      symbolOpen.setAttribute("aria-expanded", open ? "true" : "false");
     }
   };
 
+  // Motion = slow whole-sigil ring orbit on/off (no panel)
   toggle.addEventListener("click", (e) => {
     e.stopPropagation();
-    setOpen(panel.hidden);
+    ringOn = !ringOn;
+    writeRing(ringOn);
+    syncRing();
   });
 
-  document.querySelectorAll("[data-panel-open]").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
+  // Symbol opens panel (symbols + animation + colour + speed)
+  if (symbolOpen) {
+    symbolOpen.addEventListener("click", (e) => {
       e.stopPropagation();
-      const section = btn.getAttribute("data-panel-open");
-      setOpen(true);
-      document.querySelectorAll("[data-panel-open]").forEach((b) => {
-        b.setAttribute("aria-pressed", b === btn ? "true" : "false");
-      });
-      const el = panel.querySelector('[data-panel-section="' + section + '"]');
-      if (el) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
-      panel.querySelectorAll("[data-panel-section]").forEach((s) => {
-        s.classList.toggle("is-focus", s.getAttribute("data-panel-section") === section);
-      });
+      setPanelOpen(panel.hidden);
     });
-  });
+  }
 
   document.addEventListener("click", (e) => {
     if (panel.hidden) return;
-    if (e.target.closest("[data-motion-panel]") || e.target.closest("[data-motion-toggle]") || e.target.closest("[data-panel-open]")) return;
-    setOpen(false);
+    if (
+      e.target.closest("[data-motion-panel]") ||
+      e.target.closest("[data-panel-open]") ||
+      e.target.closest("[data-motion-toggle]")
+    ) {
+      return;
+    }
+    setPanelOpen(false);
   });
 
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !panel.hidden) setOpen(false);
+    if (e.key === "Escape" && !panel.hidden) setPanelOpen(false);
   });
 
   symList.addEventListener("click", (e) => {
@@ -250,7 +266,6 @@
     });
     writeStore(store);
     ids.forEach((id) => applyToDom(id));
-    syncRing();
     renderLists();
   };
 
@@ -293,16 +308,17 @@
       writeStore(store);
       selected = new Set();
       writeSelected(selected);
+      ringOn = false;
+      writeRing(false);
       applyAll();
       renderLists();
     });
   }
 
-  document.documentElement.setAttribute("data-ring", "off");
-  // clear legacy whole-sigil colour flag
   document.documentElement.setAttribute("data-colour", "off");
   renderLists();
-  setOpen(false);
+  setPanelOpen(false);
+  syncRing();
 
   const tryApply = () => {
     if (document.querySelector(".mark-host svg.sigil .sym, .mark-host svg.sigil .center")) {
