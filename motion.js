@@ -949,7 +949,9 @@
   });
 
   const canvasDragOn = () =>
-    pinOn || document.documentElement.getAttribute("data-drag-mode") === "on";
+    pinOn ||
+    document.documentElement.getAttribute("data-drag-mode") === "on" ||
+    document.documentElement.getAttribute("data-click-mode") === "drag";
 
   const onPointerDown = (e) => {
     if (!canvasDragOn()) return;

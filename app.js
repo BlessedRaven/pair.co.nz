@@ -212,7 +212,32 @@
     host.appendChild(svg);
     wrapOrbitSyms(orbit);
     pinOrigin(center);
-    // Hits come from SVG group bounding boxes (no invisible circles)
+    // Shape hits: clone each painted path as an invisible SVG-accurate hit stroke/fill
+    const installShapeHits = (wrap) => {
+      if (!wrap || wrap.querySelector(".sym-shape-hit")) return;
+      const nodes = wrap.querySelectorAll("path, circle, ellipse, line, polyline, polygon, rect");
+      nodes.forEach((node) => {
+        if (node.classList.contains("sym-shape-hit") || node.classList.contains("sym-hitpad")) return;
+        try {
+          const clone = node.cloneNode(true);
+          clone.setAttribute("class", "sym-shape-hit");
+          clone.removeAttribute("style");
+          const hasFill = (() => {
+            const f = (node.getAttribute("fill") || "").trim().toLowerCase();
+            if (f && f !== "none" && f !== "transparent") return true;
+            try {
+              const cs = window.getComputedStyle(node);
+              return cs.fill && cs.fill !== "none" && cs.fill !== "rgba(0, 0, 0, 0)";
+            } catch (err) {
+              return false;
+            }
+          })();
+          if (hasFill) clone.setAttribute("data-hit-fill", "1");
+          wrap.appendChild(clone);
+        } catch (err) {}
+      });
+    };
+    document.querySelectorAll(".sym, .center").forEach(installShapeHits);
     mark.classList.add("is-ready");
     document.dispatchEvent(new CustomEvent("pair:syms-ready"));
     if (reduced) mark.classList.add("reduced");
@@ -258,11 +283,8 @@
       zoomBtn.setAttribute("aria-pressed", zoomMode ? "true" : "false");
       zoomBtn.setAttribute("aria-expanded", zoomMode && zoomMenu && !zoomMenu.hidden ? "true" : "false");
     }
-    if (zoomMode) {
-      dragMode = false;
-      document.documentElement.setAttribute("data-drag-mode", "off");
-      const db = document.querySelector("[data-drag-toggle]");
-      if (db) db.setAttribute("aria-pressed", "false");
+    if (zoomMode && typeof setClickMode === "function") {
+      // zoom owns empty-space gesture; keep Link as default when leaving drag
     }
   };
 
@@ -379,10 +401,11 @@
     });
   }
 
-  // —— Drag mode: pan the void + (with motion.js) move SVG shapes ——
+  // —— Link vs Drag (mutually exclusive click intents) ——
   const PAN_KEY = "pair-mark-pan-v1";
+  const linkBtn = document.querySelector("[data-link-toggle]");
   const dragBtn = document.querySelector("[data-drag-toggle]");
-  let dragMode = false;
+  let clickMode = "link"; // link | drag
   let panX = 0;
   let panY = 0;
   try {
@@ -401,32 +424,46 @@
   };
   applyPan();
 
-  const setDragMode = (on) => {
-    dragMode = !!on;
-    document.documentElement.setAttribute("data-drag-mode", dragMode ? "on" : "off");
-    if (dragBtn) dragBtn.setAttribute("aria-pressed", dragMode ? "true" : "false");
-    if (dragMode && typeof setZoomMode === "function") {
-      // Zoom and Drag fight over empty-space gestures
+  const syncClickModeUi = () => {
+    document.documentElement.setAttribute("data-click-mode", clickMode);
+    document.documentElement.setAttribute("data-drag-mode", clickMode === "drag" ? "on" : "off");
+    if (linkBtn) linkBtn.setAttribute("aria-pressed", clickMode === "link" ? "true" : "false");
+    if (dragBtn) dragBtn.setAttribute("aria-pressed", clickMode === "drag" ? "true" : "false");
+  };
+
+  const setClickMode = (mode) => {
+    clickMode = mode === "drag" ? "drag" : "link";
+    if (clickMode === "drag") {
       try {
         setZoomMode(false);
         zoomMenuOpen(false);
       } catch (err) {}
     }
+    syncClickModeUi();
   };
-  setDragMode(false);
+  setClickMode("link");
+
+  if (linkBtn) {
+    linkBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setClickMode("link");
+    });
+  }
   if (dragBtn) {
     dragBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      setDragMode(!dragMode);
+      setClickMode(clickMode === "drag" ? "link" : "drag");
     });
   }
 
-  // Pan void when Drag mode on (not on a symbol)
+  // Pan void in Drag mode (or Pin) — not on a shape
   let panDrag = null;
   mark.addEventListener("pointerdown", (e) => {
-    if (!dragMode) return;
-    if (e.target.closest(".sym, .center, [data-motion-panel], header, .themes, .zoom-wrap, .pin-wrap")) return;
+    const operate =
+      clickMode === "drag" || document.documentElement.getAttribute("data-pin") === "on";
+    if (!operate) return;
     if (document.documentElement.getAttribute("data-zoom-mode") === "on") return;
+    if (e.target.closest(".sym, .center, [data-motion-panel], header, .themes, .zoom-wrap, .pin-wrap")) return;
     e.preventDefault();
     panDrag = { x0: e.clientX, y0: e.clientY, panX0: panX, panY0: panY };
     mark.classList.add("is-panning");
@@ -448,17 +485,14 @@
   mark.addEventListener("pointerup", endPan);
   mark.addEventListener("pointercancel", endPan);
 
-  // Double-click void resets pan (shape dblclick ignored)
   mark.addEventListener("dblclick", (e) => {
-    if (e.target.closest(".sym, .center, a.hotspot")) return;
-    if (dragMode || e.altKey) {
-      panX = 0;
-      panY = 0;
-      applyPan();
-    }
+    if (e.target.closest(".sym, .center")) return;
+    panX = 0;
+    panY = 0;
+    applyPan();
   });
 
-  // Coin links: tap SVG shape (no drag) → navigate. Map from hotspot hrefs.
+  // Link mode only: tap shape → coin brief
   const linkBySym = {};
   document.querySelectorAll(".hits [data-hotspot]").forEach((a) => {
     const id = a.getAttribute("data-hotspot");
@@ -469,15 +503,12 @@
   mark.addEventListener(
     "pointerdown",
     (e) => {
+      if (clickMode !== "link") return;
+      if (document.documentElement.getAttribute("data-pin") === "on") return;
       const el = e.target.closest(".mark-host svg.sigil .sym, .mark-host svg.sigil .center");
       if (!el) return;
-      // Pin/Drag modes own the gesture for moving
-      if (dragMode || document.documentElement.getAttribute("data-pin") === "on") return;
-      tap = {
-        id: el.getAttribute("data-sym"),
-        x: e.clientX,
-        y: e.clientY,
-      };
+      // If they hit a shape-hit clone, still resolve the parent .sym
+      tap = { id: el.getAttribute("data-sym"), x: e.clientX, y: e.clientY };
     },
     true
   );
@@ -488,8 +519,8 @@
       const id = tap.id;
       const moved = Math.hypot(e.clientX - tap.x, e.clientY - tap.y) > 6;
       tap = null;
-      if (moved) return;
-      if (dragMode || document.documentElement.getAttribute("data-pin") === "on") return;
+      if (moved || clickMode !== "link") return;
+      if (document.documentElement.getAttribute("data-pin") === "on") return;
       const href = linkBySym[id];
       if (href) window.location.href = href;
     },

@@ -1150,7 +1150,7 @@ html[data-sandbox="on"] .brand::after {
 }
 
 
-/* SVG-shaped hits: art groups are the targets; void is the mark */
+/* SVG paint hits: real path/ellipse/line geometry (not circles) */
 .mark {
   pointer-events: auto;
   touch-action: none;
@@ -1160,35 +1160,64 @@ html[data-sandbox="on"] .brand::after {
 }
 .mark-host svg.sigil .sym,
 .mark-host svg.sigil .center {
-  pointer-events: bounding-box;
+  pointer-events: none;
   cursor: pointer;
 }
-.mark-host svg.sigil .sym *,
-.mark-host svg.sigil .center * {
-  pointer-events: none; /* hit the group bbox, not stray tiny strokes */
+/* Art + shape-hit clones receive events */
+.mark-host svg.sigil .sym > *:not(.sym-shape-hit),
+.mark-host svg.sigil .center > *:not(.sym-shape-hit) {
+  pointer-events: none;
 }
-/* Legacy hitpad circles — disabled */
+.mark-host svg.sigil .sym-shape-hit {
+  fill: none !important;
+  stroke: rgba(0, 0, 0, 0.01) !important;
+  stroke-width: 28 !important;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: stroke;
+  vector-effect: non-scaling-stroke;
+}
+.mark-host svg.sigil .sym-shape-hit[data-hit-fill="1"] {
+  fill: rgba(0, 0, 0, 0.01) !important;
+  stroke: none !important;
+  pointer-events: fill;
+}
 .mark-host svg.sigil .sym-hitpad {
   display: none !important;
   pointer-events: none !important;
 }
-/* Coin brief labels stay visual only; no invisible circle capture */
 .hits {
   pointer-events: none !important;
 }
-html[data-drag-mode="on"] .mark {
+html[data-click-mode="link"] .mark-host svg.sigil .sym,
+html[data-click-mode="link"] .mark-host svg.sigil .center {
+  cursor: pointer;
+}
+html[data-click-mode="drag"] .mark,
+html[data-pin="on"] .mark {
   cursor: grab;
 }
-html[data-drag-mode="on"] .mark-host svg.sigil .sym,
-html[data-drag-mode="on"] .mark-host svg.sigil .center {
-  cursor: grab;
-}
-html[data-drag-mode="on"] .mark.is-panning,
-html[data-drag-mode="on"] .mark-host svg.sigil .sym:active,
-html[data-drag-mode="on"] .mark-host svg.sigil .center:active {
-  cursor: grabbing;
-}
+html[data-click-mode="drag"] .mark-host svg.sigil .sym,
+html[data-click-mode="drag"] .mark-host svg.sigil .center,
 html[data-pin="on"] .mark-host svg.sigil .sym,
 html[data-pin="on"] .mark-host svg.sigil .center {
   cursor: grab;
+}
+html[data-click-mode="drag"] .mark.is-panning,
+html[data-click-mode="drag"] .mark-host svg.sigil .sym:active,
+html[data-click-mode="drag"] .mark-host svg.sigil .center:active,
+html[data-pin="on"] .mark-host svg.sigil .sym:active,
+html[data-pin="on"] .mark-host svg.sigil .center:active {
+  cursor: grabbing;
+}
+
+
+/* hide legacy hotspot circles — SVG art is the only hit surface */
+.hits .hit {
+  fill: none !important;
+  stroke: none !important;
+  opacity: 0 !important;
+}
+.hits .hit-label {
+  display: none !important;
 }
