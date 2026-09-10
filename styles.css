@@ -535,6 +535,20 @@ body:has(.brief) .top {
   }
 }
 
+
+/* Motion toggle off — freeze orbit / spin / breathe (theme still applies) */
+html[data-motion="off"] .mark.is-ready,
+html[data-motion="off"] .mark-host svg.sigil .orbit,
+html[data-motion="off"] .hits .hits-orbit,
+html[data-motion="off"] .mark-host svg.sigil .sym {
+  animation: none !important;
+}
+
+html[data-motion="off"] .mark.is-ready {
+  opacity: 1;
+  transform: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mark.is-ready,
   .mark-host svg.sigil .orbit,
