@@ -1,0 +1,99 @@
+{
+  "site": {
+    "title": "PAIR Portal",
+    "tagline": "Each node is its own coin. Briefs first — mints when ready.",
+    "home": "/"
+  },
+  "coins": [
+    {
+      "id": "pair",
+      "slug": "pair",
+      "name": "PAIR",
+      "ticker": "PAIR",
+      "blurb": "AI nature-scan glasses — compound analysis, resource sense, ecosystem read.",
+      "hotspot": "center",
+      "pumpfun": null,
+      "status": "brief"
+    },
+    {
+      "id": "raven",
+      "slug": "raven",
+      "name": "Blessed Raven",
+      "ticker": "RAVEN",
+      "blurb": "Brand crow — inventions hub megaphone and portal sigil.",
+      "hotspot": "n",
+      "pumpfun": null,
+      "status": "brief"
+    },
+    {
+      "id": "flower",
+      "slug": "flower",
+      "name": "Flower",
+      "ticker": "FLOWER",
+      "blurb": "Sacred-geometry eco-village fund — pods, gardens, solar-first community.",
+      "hotspot": "ne",
+      "pumpfun": null,
+      "status": "brief"
+    },
+    {
+      "id": "torus",
+      "slug": "torus",
+      "name": "Torus",
+      "ticker": "TORUS",
+      "blurb": "Yellow-light / torus cosmology lane — physics story, not medical claims.",
+      "hotspot": "e",
+      "pumpfun": null,
+      "status": "brief"
+    },
+    {
+      "id": "nest",
+      "slug": "nest",
+      "name": "Nest",
+      "ticker": "NEST",
+      "blurb": "Land & base lane — high-country holding for long-horizon buildout.",
+      "hotspot": "se",
+      "pumpfun": null,
+      "status": "brief"
+    },
+    {
+      "id": "fund",
+      "slug": "fund",
+      "name": "Fund",
+      "ticker": "FUND",
+      "blurb": "Serious NZD path for community / land — meme is megaphone, not title deed.",
+      "hotspot": "s",
+      "pumpfun": null,
+      "status": "brief"
+    },
+    {
+      "id": "wings",
+      "slug": "wings",
+      "name": "Wings",
+      "ticker": "WINGS",
+      "blurb": "Open slot — next invention or coin narrative.",
+      "hotspot": "sw",
+      "pumpfun": null,
+      "status": "brief"
+    },
+    {
+      "id": "orbit",
+      "slug": "orbit",
+      "name": "Orbit",
+      "ticker": "ORBIT",
+      "blurb": "Open slot — merger / horizon experiments and sim work.",
+      "hotspot": "w",
+      "pumpfun": null,
+      "status": "brief"
+    },
+    {
+      "id": "archive",
+      "slug": "archive",
+      "name": "Archive",
+      "ticker": "ARC",
+      "blurb": "Memory & docs lane — Drive corpus, briefs, and long notes.",
+      "hotspot": "nw",
+      "pumpfun": null,
+      "status": "brief"
+    }
+  ]
+}

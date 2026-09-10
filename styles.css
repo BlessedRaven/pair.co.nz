@@ -1,0 +1,345 @@
+/* PAIR Portal — dark coin hub (distinct from blessedraven.com white landing) */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: #0a0a0c;
+  --fg: #f2f0ea;
+  --muted: rgba(242, 240, 234, 0.45);
+  --accent: #e11d2e;
+  --glow: rgba(225, 29, 46, 0.35);
+  --hit: rgba(242, 240, 234, 0.08);
+  --hit-stroke: rgba(242, 240, 234, 0.55);
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem 0;
+  max-width: 960px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.brand {
+  color: var(--fg);
+  text-decoration: none;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  font-size: 0.85rem;
+}
+
+.tag {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.landing {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  padding:
+    max(0.5rem, env(safe-area-inset-top))
+    max(0.75rem, env(safe-area-inset-right))
+    max(0.75rem, env(safe-area-inset-bottom))
+    max(0.75rem, env(safe-area-inset-left));
+}
+
+.mark {
+  position: relative;
+  width: min(92vw, calc(78vh * 923.86 / 886.31), 820px);
+  max-width: 100%;
+  aspect-ratio: 923.86 / 886.31;
+  transform-origin: 50% 55%;
+  filter: drop-shadow(0 0 28px var(--glow));
+}
+
+.mark.is-ready {
+  animation: pair-breathe 7.5s ease-in-out infinite;
+}
+
+@keyframes pair-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.94;
+  }
+  50% {
+    transform: scale(1.016);
+    opacity: 1;
+  }
+}
+
+.mark-host,
+.mark-host svg.sigil,
+.mark-host img.sigil-fallback {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.mark-host img.sigil-fallback {
+  object-fit: contain;
+  filter: invert(1);
+}
+
+/* Invert black Illustrator strokes to light on dark */
+.mark-host svg.sigil {
+  filter: invert(1) contrast(1.05);
+}
+
+.mark-host svg.sigil .orbit,
+.hits .hits-orbit {
+  transform-box: view-box;
+  transform-origin: 447.56px 484.96px;
+  animation: pair-orbit 52s ease-in-out infinite;
+}
+
+@keyframes pair-orbit {
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+.hits {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.hits .hotspot {
+  pointer-events: auto;
+  cursor: pointer;
+  outline: none;
+}
+
+.hits .hit {
+  fill: transparent;
+  stroke: transparent;
+  stroke-width: 2;
+  transition: fill 160ms ease, stroke 160ms ease;
+}
+
+.hits .hit-label {
+  fill: var(--fg);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  font-size: 24px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  opacity: 0;
+  pointer-events: none;
+  paint-order: stroke fill;
+  stroke: rgba(10, 10, 12, 0.92);
+  stroke-width: 7px;
+  stroke-linejoin: round;
+  transition: opacity 160ms ease;
+}
+
+.hits .hotspot:hover .hit,
+.hits .hotspot:focus-visible .hit {
+  fill: var(--hit);
+  stroke: var(--hit-stroke);
+}
+
+.hits .hotspot:hover .hit-label,
+.hits .hotspot:focus-visible .hit-label {
+  opacity: 1;
+}
+
+.hits .hotspot-center:hover .hit,
+.hits .hotspot-center:focus-visible .hit {
+  fill: rgba(225, 29, 46, 0.12);
+  stroke: rgba(225, 29, 46, 0.65);
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1rem 1.25rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.foot a {
+  color: var(--fg);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+.foot a:hover,
+.foot a:focus-visible {
+  border-bottom-color: var(--accent);
+  outline: none;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* Coin brief pages */
+.brief {
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: 2.5rem 1.25rem 3rem;
+}
+
+.brief h1 {
+  margin: 0 0 0.35rem;
+  font-size: clamp(1.6rem, 4vw, 2.1rem);
+  letter-spacing: 0.04em;
+}
+
+.ticker {
+  display: inline-block;
+  margin: 0 0 1.25rem;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid rgba(242, 240, 234, 0.22);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+}
+
+.brief p {
+  line-height: 1.55;
+  color: rgba(242, 240, 234, 0.82);
+}
+
+.panel {
+  margin-top: 1.75rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(242, 240, 234, 0.14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.panel h2 {
+  margin: 0 0 0.5rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.panel code {
+  font-size: 0.85rem;
+  word-break: break-all;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 1rem;
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-primary[aria-disabled="true"] {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.btn-ghost {
+  color: var(--fg);
+  border: 1px solid rgba(242, 240, 234, 0.28);
+}
+
+@media (max-width: 640px) {
+  .mark {
+    width: min(96vw, calc(72vh * 923.86 / 886.31));
+  }
+
+  .hits .hit-label {
+    font-size: 28px;
+  }
+
+  .tag {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mark.is-ready,
+  .mark-host svg.sigil .orbit,
+  .hits .hits-orbit {
+    animation: none !important;
+  }
+
+  .mark {
+    opacity: 1;
+    transform: none;
+  }
+
+  .hits .hit,
+  .hits .hit-label {
+    transition: none;
+  }
+}
