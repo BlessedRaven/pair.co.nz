@@ -110,6 +110,7 @@
 
     const center = document.createElementNS("http://www.w3.org/2000/svg", "g");
     center.setAttribute("class", "center");
+    center.setAttribute("data-sym", "center");
 
     const orbit = document.createElementNS("http://www.w3.org/2000/svg", "g");
     orbit.setAttribute("class", "orbit");
@@ -132,6 +133,7 @@
     host.innerHTML = "";
     host.appendChild(svg);
     wrapOrbitSyms(orbit);
+    pinOrigin(center);
     mark.classList.add("is-ready");
     document.dispatchEvent(new CustomEvent("pair:syms-ready"));
     if (reduced) mark.classList.add("reduced");

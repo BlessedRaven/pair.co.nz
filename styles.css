@@ -426,6 +426,17 @@ body {
   animation: pair-orbit-spin 80s linear infinite;
 }
 
+html[data-ring="off"] .mark-host svg.sigil .orbit,
+html[data-ring="off"] .hits .hits-orbit,
+html[data-ring="off"] .mark.is-ready {
+  animation: none !important;
+}
+
+html[data-ring="off"] .mark.is-ready {
+  opacity: 1;
+  transform: none;
+}
+
 @keyframes pair-orbit-spin {
   from {
     transform: rotate(0deg);
@@ -435,23 +446,27 @@ body {
   }
 }
 
-/* Per-symbol motion — only Flower / SOL / FOL get cw|ccw via Motion panel */
-.mark-host svg.sigil .sym {
+/* Per-symbol motion via Motion panel (default / Reset = none) */
+.mark-host svg.sigil .sym,
+.mark-host svg.sigil .center {
   transform-box: fill-box;
   transform-origin: center;
   will-change: transform;
   animation: none;
 }
 
-.mark-host svg.sigil .sym[data-anim="cw"] {
+.mark-host svg.sigil .sym[data-anim="cw"],
+.mark-host svg.sigil .center[data-anim="cw"] {
   animation: pair-sym-spin 72s linear infinite;
 }
 
-.mark-host svg.sigil .sym[data-anim="ccw"] {
+.mark-host svg.sigil .sym[data-anim="ccw"],
+.mark-host svg.sigil .center[data-anim="ccw"] {
   animation: pair-sym-spin-ccw 72s linear infinite;
 }
 
-.mark-host svg.sigil .sym[data-anim="off"] {
+.mark-host svg.sigil .sym[data-anim="off"],
+.mark-host svg.sigil .center[data-anim="off"] {
   animation: none !important;
 }
 
