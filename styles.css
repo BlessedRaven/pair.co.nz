@@ -408,35 +408,24 @@ body {
   }
 }
 
-/* Per-symbol motion (Motion panel). Default = torus drift */
+/* Per-symbol motion — only Flower / SOL / FOL get cw|ccw via Motion panel */
 .mark-host svg.sigil .sym {
   transform-box: fill-box;
   transform-origin: center;
   will-change: transform;
+  animation: none;
+}
+
+.mark-host svg.sigil .sym[data-anim="cw"] {
   animation: pair-sym-spin 72s linear infinite;
 }
 
-.mark-host svg.sigil .sym[data-anim="drift"] {
-  animation-name: pair-sym-spin;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
+.mark-host svg.sigil .sym[data-anim="ccw"] {
+  animation: pair-sym-spin-ccw 72s linear infinite;
 }
 
-.mark-host svg.sigil .sym[data-anim="reverse"] {
-  animation-name: pair-sym-spin-ccw;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-}
-
-.mark-host svg.sigil .sym[data-anim="stationary"],
 .mark-host svg.sigil .sym[data-anim="off"] {
   animation: none !important;
-}
-
-.mark-host svg.sigil .sym[data-anim="pulse"] {
-  animation-name: pair-sym-pulse;
-  animation-timing-function: ease-in-out;
-  animation-iteration-count: infinite;
 }
 
 @keyframes pair-sym-spin {
@@ -447,11 +436,6 @@ body {
 @keyframes pair-sym-spin-ccw {
   from { transform: rotate(0deg); }
   to { transform: rotate(-360deg); }
-}
-
-@keyframes pair-sym-pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.06); }
 }
 
 

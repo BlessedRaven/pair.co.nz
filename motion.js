@@ -1,25 +1,18 @@
 (() => {
-  const STORE_KEY = "pair-sym-motion";
-  const SELECTED_KEY = "pair-motion-selected";
+  const STORE_KEY = "pair-sym-motion-v2";
+  const SELECTED_KEY = "pair-motion-selected-v2";
   const BASE_SEC = 72;
 
+  // Step 1: only these three
   const SYMBOLS = [
-    { id: "n", label: "Raven" },
     { id: "ne", label: "Flower" },
-    { id: "e", label: "Torus" },
-    { id: "se", label: "Nest" },
-    { id: "s", label: "Fund" },
-    { id: "sw", label: "Wings" },
-    { id: "w", label: "Orbit" },
-    { id: "nw", label: "Archive" },
+    { id: "e", label: "SOL" },
+    { id: "se", label: "FOL" },
   ];
 
   const ANIMS = [
-    { id: "drift", label: "Drift" },
-    { id: "reverse", label: "Reverse" },
-    { id: "stationary", label: "Stationary" },
-    { id: "pulse", label: "Pulse" },
-    { id: "off", label: "Off" },
+    { id: "cw", label: "Clockwise" },
+    { id: "ccw", label: "Anti-clockwise" },
   ];
 
   const panel = document.querySelector("[data-motion-panel]");
@@ -49,15 +42,17 @@
   try {
     selected = localStorage.getItem(SELECTED_KEY) || "e";
   } catch {}
+  if (!SYMBOLS.some((s) => s.id === selected)) selected = "e";
 
   const ensure = (id) => {
-    if (!store[id]) store[id] = { anim: "drift", speed: 100 };
+    if (!store[id]) store[id] = { anim: "cw", speed: 100 };
+    if (store[id].anim !== "cw" && store[id].anim !== "ccw") store[id].anim = "cw";
     return store[id];
   };
   SYMBOLS.forEach((s) => ensure(s.id));
 
   const periodSec = (speedPct) => {
-    const mult = Math.max(0.35, Math.min(2, (Number(speedPct) || 100) / 100));
+    const mult = Math.max(0.5, Math.min(4, (Number(speedPct) || 100) / 100));
     return BASE_SEC / mult;
   };
 
@@ -66,14 +61,18 @@
     const el = document.querySelector('.mark-host svg.sigil .sym[data-sym="' + id + '"]');
     if (!el) return;
     el.dataset.anim = cfg.anim;
-    if (cfg.anim === "drift" || cfg.anim === "reverse" || cfg.anim === "pulse") {
-      el.style.animationDuration = periodSec(cfg.speed) + "s";
-    } else {
-      el.style.animationDuration = "";
-    }
+    el.style.animationDuration = periodSec(cfg.speed) + "s";
   };
 
   const applyAll = () => {
+    // Freeze every outer symbol, then enable only the three we care about
+    document.querySelectorAll(".mark-host svg.sigil .sym").forEach((el) => {
+      const id = el.getAttribute("data-sym");
+      if (!SYMBOLS.some((s) => s.id === id)) {
+        el.dataset.anim = "off";
+        el.style.animationDuration = "";
+      }
+    });
     SYMBOLS.forEach((s) => applyToDom(s.id));
   };
 
