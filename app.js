@@ -17,20 +17,21 @@
     "fol",
   ];
 
-  // Primary ring symbols (even spacing). Scarab satellites keep relative offsets.
-  const RING_IDS = [
-    "gol",
+  // Clockwise from top — fixed circular orbit (matches portal reading order)
+  const RING_ORDER = [
+    "scarab",
     "flower",
+    "gol",
     "sol",
+    "fol",
+    "hermes",
+    "ra",
     "trinity",
     "cloud",
     "pi",
-    "ra",
-    "hermes",
-    "scarab",
-    "fol",
   ];
   const SCARAB_SATS = ["sun", "key", "bean"];
+  const ORBIT_R = 348;
 
   const host = document.querySelector("[data-mark-host]");
   const mark = document.querySelector("[data-mark]");
@@ -148,75 +149,73 @@
   };
 
   const layoutEvenOrbit = () => {
-    const infos = [];
-    RING_IDS.forEach((id) => {
+    const n = RING_ORDER.length;
+    const startAng = -Math.PI / 2; // scarab at top
+
+    const scarabEl = findSym("scarab");
+    let scarabC = null;
+    const satOffsets = [];
+    if (scarabEl) {
+      try {
+        scarabC = centerOf(scarabEl);
+        SCARAB_SATS.forEach((sid) => {
+          const el = findSym(sid);
+          if (!el) return;
+          try {
+            const c = centerOf(el);
+            satOffsets.push({
+              id: sid,
+              el,
+              ox: c.x - scarabC.x,
+              oy: c.y - scarabC.y,
+            });
+          } catch (err) {}
+        });
+      } catch (err) {}
+    }
+
+    RING_ORDER.forEach((id, i) => {
       const el = findSym(id);
       if (!el) return;
       try {
+        // Always measure untransformed geometry (clear prior layout transforms)
+        el.removeAttribute("transform");
         const c = centerOf(el);
-        const dx = c.x - CX;
-        const dy = c.y - CY;
-        infos.push({
-          id,
-          el,
-          ang: Math.atan2(dy, dx),
-          r: Math.hypot(dx, dy) || 1,
-          c,
-        });
-      } catch (err) {
-        /* ignore */
-      }
-    });
-    if (infos.length < 3) return;
+        const ang = startAng + (i * 2 * Math.PI) / n;
+        const tx = CX + ORBIT_R * Math.cos(ang);
+        const ty = CY + ORBIT_R * Math.sin(ang);
+        const dx = tx - c.x;
+        const dy = ty - c.y;
+        el.setAttribute("transform", "translate(" + dx + " " + dy + ")");
+        pinOrigin(el);
+        syncHotspot(id, tx, ty);
 
-    infos.sort((a, b) => a.ang - b.ang);
-    const R = infos.reduce((s, i) => s + i.r, 0) / infos.length;
-    // Keep relative angular order; pin first slot near current first angle
-    const start = infos[0].ang;
-    const n = infos.length;
-
-    // Scarab satellites: relative offsets before scarab moves
-    const scarabInfo = infos.find((i) => i.id === "scarab");
-    const satOffsets = [];
-    if (scarabInfo) {
-      SCARAB_SATS.forEach((sid) => {
-        const el = findSym(sid);
-        if (!el) return;
-        try {
-          const c = centerOf(el);
-          satOffsets.push({
-            id: sid,
-            el,
-            ox: c.x - scarabInfo.c.x,
-            oy: c.y - scarabInfo.c.y,
+        if (id === "scarab") {
+          // Keep sun/key/bean stacked above scarab, but scale so they stay in view
+          const topPad = 30;
+          let scale = 1;
+          satOffsets.forEach((sat) => {
+            if (sat.oy < 0) {
+              const need = -sat.oy;
+              if (need > 0) scale = Math.min(scale, Math.max(0.35, (ty - topPad) / need));
+            }
           });
-        } catch (err) {
-          /* ignore */
+          satOffsets.forEach((sat) => {
+            try {
+              sat.el.removeAttribute("transform");
+              const sc = centerOf(sat.el);
+              const nx = tx + sat.ox * scale;
+              const ny = ty + sat.oy * scale;
+              sat.el.setAttribute(
+                "transform",
+                "translate(" + (nx - sc.x) + " " + (ny - sc.y) + ")"
+              );
+              pinOrigin(sat.el);
+              syncHotspot(sat.id, nx, ny);
+            } catch (err) {}
+          });
         }
-      });
-    }
-
-    infos.forEach((info, i) => {
-      const ang = start + (i * 2 * Math.PI) / n;
-      const tx = CX + R * Math.cos(ang);
-      const ty = CY + R * Math.sin(ang);
-      const dx = tx - info.c.x;
-      const dy = ty - info.c.y;
-      translateEl(info.el, dx, dy);
-      pinOrigin(info.el);
-      syncHotspot(info.id, tx, ty);
-
-      if (info.id === "scarab") {
-        satOffsets.forEach((sat) => {
-          try {
-            translateEl(sat.el, dx, dy);
-            pinOrigin(sat.el);
-            syncHotspot(sat.id, tx + sat.ox, ty + sat.oy);
-          } catch (err) {
-            /* ignore */
-          }
-        });
-      }
+      } catch (err) {}
     });
   };
 
