@@ -1139,6 +1139,8 @@
       pinned: false,
       ax: 0,
       ay: 0,
+      orb: false,
+      orbFn: "shield",
     };
     writeStore(store);
     if (cloudOrbitOn) {
@@ -1167,6 +1169,8 @@
         pinned: false,
         ax: 0,
         ay: 0,
+        orb: false,
+        orbFn: "shield",
       };
     });
     writeStore(store);
