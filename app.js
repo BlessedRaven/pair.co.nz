@@ -67,6 +67,22 @@
     if (reduced) mark.classList.add("reduced");
   };
 
+  const wireHover = () => {
+    if (reduced) return;
+    const hotspots = mark.querySelectorAll(".hotspot[data-hotspot]");
+    hotspots.forEach((el) => {
+      const id = el.getAttribute("data-hotspot");
+      const on = () => mark.setAttribute("data-hover", id);
+      const off = () => {
+        if (mark.getAttribute("data-hover") === id) mark.removeAttribute("data-hover");
+      };
+      el.addEventListener("pointerenter", on);
+      el.addEventListener("pointerleave", off);
+      el.addEventListener("focus", on);
+      el.addEventListener("blur", off);
+    });
+  };
+
   fetch("coins.json")
     .then((r) => (r.ok ? r.json() : null))
     .then((data) => {
@@ -76,9 +92,14 @@
     })
     .catch(() => {});
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", mount, { once: true });
-  } else {
+  const start = () => {
+    wireHover();
     mount();
+  };
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", start, { once: true });
+  } else {
+    start();
   }
 })();
