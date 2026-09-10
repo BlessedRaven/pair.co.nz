@@ -1,7 +1,6 @@
 (() => {
-  const STORE_KEY = "pair-sym-motion-v3";
-  const SELECTED_KEY = "pair-motion-selected-v3";
-  const BASE_SEC = 72;
+  const STORE_KEY = "pair-sym-motion-v4";
+  const SELECTED_KEY = "pair-motion-selected-v4";
 
   const SYMBOLS = [
     { id: "ne", label: "GOL" },
@@ -14,6 +13,7 @@
   const ANIMS = [
     { id: "cw", label: "Clockwise" },
     { id: "ccw", label: "Anti-clockwise" },
+    { id: "vortex", label: "Vortex" },
   ];
 
   const panel = document.querySelector("[data-motion-panel]");
@@ -23,6 +23,11 @@
   const speedEl = document.querySelector("[data-motion-speed]");
   const speedVal = document.querySelector("[data-motion-speed-val]");
   if (!panel || !toggle || !symList || !animList || !speedEl || !speedVal) return;
+
+  // Clicks inside the panel must never bubble to the document closer
+  // (re-rendering options detaches the target and breaks closest()).
+  panel.addEventListener("click", (e) => e.stopPropagation());
+  panel.addEventListener("pointerdown", (e) => e.stopPropagation());
 
   const readStore = () => {
     try {
@@ -47,17 +52,23 @@
 
   const ensure = (id) => {
     if (!store[id]) store[id] = { anim: "cw", speed: 100 };
-    if (store[id].anim !== "cw" && store[id].anim !== "ccw") store[id].anim = "cw";
-    const sp = Number(store[id].speed);
-    store[id].speed = Number.isFinite(sp) ? Math.max(25, Math.min(800, sp)) : 100;
+    const a = store[id].anim;
+    if (a !== "cw" && a !== "ccw" && a !== "vortex") store[id].anim = "cw";
+    let sp = Number(store[id].speed);
+    if (!Number.isFinite(sp)) sp = 100;
+    store[id].speed = Math.max(1, Math.min(200, Math.round(sp)));
     return store[id];
   };
   SYMBOLS.forEach((s) => ensure(s.id));
 
-  // speed %: 100 = base 72s period; 800% = 8x faster
-  const periodSec = (speedPct) => {
-    const pct = Math.max(25, Math.min(800, Number(speedPct) || 100));
-    return BASE_SEC / (pct / 100);
+  // 1% ~ 150s, 100% ~ 1.5s, 200% ~ 0.75s (vortex-capable)
+  const periodSec = (speedPct, anim) => {
+    const pct = Math.max(1, Math.min(200, Number(speedPct) || 100));
+    if (anim === "vortex") {
+      // Vortex: even snappier — 200% ≈ 0.35s
+      return Math.max(0.28, 70 / pct);
+    }
+    return Math.max(0.45, 150 / pct);
   };
 
   const formatPct = (pct) => Math.round(Number(pct) || 100) + "%";
@@ -66,8 +77,11 @@
     const cfg = ensure(id);
     const el = document.querySelector('.mark-host svg.sigil .sym[data-sym="' + id + '"]');
     if (!el) return;
-    el.dataset.anim = cfg.anim;
-    el.style.animationDuration = periodSec(cfg.speed) + "s";
+    // vortex uses cw spin, just faster
+    el.dataset.anim = cfg.anim === "vortex" ? "cw" : cfg.anim;
+    if (cfg.anim === "vortex") el.dataset.vortex = "1";
+    else delete el.dataset.vortex;
+    el.style.animationDuration = periodSec(cfg.speed, cfg.anim) + "s";
   };
 
   const applyAll = () => {
@@ -75,6 +89,7 @@
       const id = el.getAttribute("data-sym");
       if (!SYMBOLS.some((s) => s.id === id)) {
         el.dataset.anim = "off";
+        delete el.dataset.vortex;
         el.style.animationDuration = "";
       }
     });
@@ -131,6 +146,7 @@
   });
 
   symList.addEventListener("click", (e) => {
+    e.stopPropagation();
     const btn = e.target.closest("[data-sym-pick]");
     if (!btn) return;
     selected = btn.getAttribute("data-sym-pick");
@@ -142,10 +158,12 @@
   });
 
   animList.addEventListener("click", (e) => {
+    e.stopPropagation();
     const btn = e.target.closest("[data-anim-pick]");
     if (!btn) return;
     const cfg = ensure(selected);
     cfg.anim = btn.getAttribute("data-anim-pick");
+    if (cfg.anim === "vortex" && cfg.speed < 160) cfg.speed = 200;
     writeStore(store);
     applyToDom(selected);
     renderLists();
