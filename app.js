@@ -238,6 +238,45 @@
     if (reduced) mark.classList.add("reduced");
   };
 
+  // Scroll-wheel zoom on the sigil (scroll down = zoom out)
+  const ZOOM_KEY = "pair-mark-zoom-v1";
+  const ZOOM_MIN = 0.28;
+  const ZOOM_MAX = 2.4;
+  const readZoom = () => {
+    try {
+      const n = Number(localStorage.getItem(ZOOM_KEY));
+      if (Number.isFinite(n) && n >= ZOOM_MIN && n <= ZOOM_MAX) return n;
+    } catch {}
+    return 1;
+  };
+  let markZoom = readZoom();
+  const applyZoom = () => {
+    mark.style.setProperty("--mark-zoom", String(markZoom));
+    try {
+      localStorage.setItem(ZOOM_KEY, String(markZoom));
+    } catch {}
+  };
+  applyZoom();
+  mark.addEventListener(
+    "wheel",
+    (e) => {
+      // ignore when scrolling inside panels
+      if (e.target.closest("[data-motion-panel], .motion-panel, header, .themes")) return;
+      e.preventDefault();
+      const factor = e.deltaY > 0 ? 0.9 : 1.111111;
+      markZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, markZoom * factor));
+      // snap near 1
+      if (Math.abs(markZoom - 1) < 0.02) markZoom = 1;
+      applyZoom();
+    },
+    { passive: false }
+  );
+  mark.addEventListener("dblclick", (e) => {
+    if (e.target.closest("a.hotspot")) return;
+    markZoom = 1;
+    applyZoom();
+  });
+
   fetch("coins.json")
     .then((r) => (r.ok ? r.json() : null))
     .then((data) => {

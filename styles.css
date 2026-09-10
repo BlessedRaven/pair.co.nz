@@ -426,6 +426,7 @@ body {
   aspect-ratio: 923.86 / 886.31;
   transform-origin: 50% 50%;
   flex-shrink: 0;
+  --mark-zoom: 1;
 }
 
 .mark.is-ready {
@@ -528,6 +529,14 @@ body {
   pointer-events: none;
   user-select: none;
   -webkit-user-drag: none;
+}
+
+/* Scroll-wheel zoom (sigil + hit layer stay locked together) */
+.mark-host,
+.mark > .hits {
+  transform: scale(var(--mark-zoom, 1));
+  transform-origin: 50% 50%;
+  will-change: transform;
 }
 
 .mark-host img.sigil-fallback {
