@@ -49,7 +49,7 @@ body {
   text-decoration: none;
   font-weight: 700;
   letter-spacing: 0.18em;
-  font-size: 0.85rem;
+  font-size: 1rem;
 }
 
 .tag {
@@ -75,7 +75,7 @@ body {
 
 .mark {
   position: relative;
-  width: min(92vw, calc(78vh * 923.86 / 886.31), 820px);
+  width: min(98vw, calc(92vh * 923.86 / 886.31), 1100px);
   max-width: 100%;
   aspect-ratio: 923.86 / 886.31;
   transform-origin: 50% 55%;
@@ -163,7 +163,7 @@ body {
 .hits .hit-label {
   fill: var(--fg);
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-  font-size: 24px;
+  font-size: 30px;
   font-weight: 650;
   letter-spacing: 0.06em;
   opacity: 0;
@@ -314,11 +314,11 @@ body {
 
 @media (max-width: 640px) {
   .mark {
-    width: min(96vw, calc(72vh * 923.86 / 886.31));
+    width: min(100vw, calc(88vh * 923.86 / 886.31));
   }
 
   .hits .hit-label {
-    font-size: 28px;
+    font-size: 34px;
   }
 
   .tag {
