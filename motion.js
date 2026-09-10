@@ -1,7 +1,7 @@
 (() => {
-  const STORE_KEY = "pair-sym-motion-v13";
-  const SELECTED_KEY = "pair-motion-selected-v13";
-  const RING_KEY = "pair-motion-ring-v13";
+  const STORE_KEY = "pair-sym-motion-v14";
+  const SELECTED_KEY = "pair-motion-selected-v14";
+  const RING_KEY = "pair-motion-ring-v14";
 
   const SYMBOLS = [
     { id: "gol", label: "GOL" },
@@ -110,7 +110,7 @@
   };
 
   const ensure = (id) => {
-    if (!store[id]) store[id] = { anim: "off", speed: 100, colour: "off", colourSpeed: 100, size: 100, x: 0, y: 0 };
+    if (!store[id]) store[id] = { anim: "off", speed: 100, colour: "off", colourSpeed: 100, size: 100, x: 0, y: 0, pinned: false, ax: 0, ay: 0 };
     const a = store[id].anim;
     if (a !== "cw" && a !== "ccw" && a !== "off") store[id].anim = "off";
     if (store[id].colour !== "vibe") store[id].colour = "off";
@@ -121,6 +121,11 @@
     let y = Number(store[id].y);
     store[id].x = Number.isFinite(x) ? x : 0;
     store[id].y = Number.isFinite(y) ? y : 0;
+    store[id].pinned = !!store[id].pinned;
+    let ax = Number(store[id].ax);
+    let ay = Number(store[id].ay);
+    store[id].ax = Number.isFinite(ax) ? ax : 0;
+    store[id].ay = Number.isFinite(ay) ? ay : 0;
     return store[id];
   };
   SYMBOLS.forEach((s) => ensure(s.id));
@@ -155,26 +160,123 @@
 
   const findHit = (id) => document.querySelector('.hits [data-hotspot="' + id + '"]');
 
-  // Pose (pin x/y + size) — never restarts spin/orbit animations
+  const orbitLayer = () => document.querySelector(".mark-host svg.sigil .orbit");
+  const freeLayer = () => document.querySelector(".mark-host svg.sigil .free-layer");
+  const hitsOrbit = () => document.querySelector(".hits .hits-orbit");
+  const hitsFree = () => document.querySelector(".hits .hits-free");
+
+  const artCenter = (el) => {
+    try {
+      const bb = el.getBBox();
+      return { x: bb.x + bb.width / 2, y: bb.y + bb.height / 2 };
+    } catch (err) {
+      return { x: 0, y: 0 };
+    }
+  };
+
+  const svgPoint = (svg, clientX, clientY) => {
+    const pt = svg.createSVGPoint();
+    pt.x = clientX;
+    pt.y = clientY;
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return { x: 0, y: 0 };
+    return pt.matrixTransform(ctm.inverse());
+  };
+
+  const worldCenter = (el) => {
+    const svg = el.ownerSVGElement;
+    if (!svg) return { x: 0, y: 0 };
+    const r = el.getBoundingClientRect();
+    return svgPoint(svg, r.left + r.width / 2, r.top + r.height / 2);
+  };
+
+  const setSlotAbs = (slot, el, ax, ay) => {
+    const c = artCenter(el);
+    slot.setAttribute("transform", "translate(" + (ax - c.x) + " " + (ay - c.y) + ")");
+  };
+
+  // Detach from orbit into free-layer so Motion no longer carries it
+  const releaseToFree = (id) => {
+    const el = findEl(id);
+    const slot = findSlot(id);
+    const free = freeLayer();
+    if (!el || !slot || !free) return;
+    const cfg = ensure(id);
+    if (slot.parentNode !== free) {
+      const w = worldCenter(el);
+      cfg.pinned = true;
+      cfg.ax = w.x;
+      cfg.ay = w.y;
+      free.appendChild(slot);
+    }
+    setSlotAbs(slot, el, cfg.ax, cfg.ay);
+    const hit = findHit(id);
+    const hf = hitsFree();
+    if (hit && hf && hit.parentNode !== hf) {
+      hf.appendChild(hit);
+    }
+    if (hit) {
+      const c = artCenter(el);
+      // hotspot uses its own circle center — translate so hit center ~= ax,ay
+      const hc = hit.querySelector("circle.hit");
+      if (hc) {
+        const hx = Number(hc.getAttribute("cx")) || 0;
+        const hy = Number(hc.getAttribute("cy")) || 0;
+        hit.setAttribute("transform", "translate(" + (cfg.ax - hx) + " " + (cfg.ay - hy) + ")");
+      }
+    }
+  };
+
+  const restoreToOrbit = (id) => {
+    const slot = findSlot(id);
+    const orbit = orbitLayer();
+    const hit = findHit(id);
+    const ho = hitsOrbit();
+    if (slot && orbit && id !== "torus" && slot.parentNode !== orbit) {
+      orbit.appendChild(slot);
+    }
+    if (slot) slot.removeAttribute("transform");
+    if (hit && ho && id !== "torus" && hit.parentNode !== ho) {
+      ho.appendChild(hit);
+    }
+    if (hit) hit.removeAttribute("transform");
+    const cfg = ensure(id);
+    cfg.pinned = false;
+    cfg.ax = 0;
+    cfg.ay = 0;
+    cfg.x = 0;
+    cfg.y = 0;
+  };
+
   const applyPose = (id) => {
     const cfg = ensure(id);
     const el = findEl(id);
     const slot = findSlot(id);
-    const x = cfg.x || 0;
-    const y = cfg.y || 0;
-    if (slot) {
-      if (x || y) slot.setAttribute("transform", "translate(" + x + " " + y + ")");
-      else slot.removeAttribute("transform");
-    }
     if (el) {
       el.style.setProperty("--sym-scale", String(clampSize(cfg.size) / 100));
       el.style.removeProperty("--sym-x");
       el.style.removeProperty("--sym-y");
     }
-    const hit = findHit(id);
-    if (hit) {
-      if (x || y) hit.setAttribute("transform", "translate(" + x + " " + y + ")");
-      else hit.removeAttribute("transform");
+    if (!slot || !el) return;
+    if (cfg.pinned) {
+      releaseToFree(id);
+      setSlotAbs(slot, el, cfg.ax, cfg.ay);
+      const hit = findHit(id);
+      if (hit) {
+        const hc = hit.querySelector("circle.hit");
+        if (hc) {
+          const hx = Number(hc.getAttribute("cx")) || 0;
+          const hy = Number(hc.getAttribute("cy")) || 0;
+          hit.setAttribute("transform", "translate(" + (cfg.ax - hx) + " " + (cfg.ay - hy) + ")");
+        }
+      }
+    } else if (id === "torus" && (cfg.x || cfg.y)) {
+      // rare: unpinned torus nudge
+      slot.setAttribute("transform", "translate(" + cfg.x + " " + cfg.y + ")");
+    } else {
+      slot.removeAttribute("transform");
+      const hit = findHit(id);
+      if (hit) hit.removeAttribute("transform");
     }
   };
 
@@ -389,20 +491,22 @@
       e.stopPropagation();
       store = {};
       SYMBOLS.forEach((s) => {
-        store[s.id] = { anim: "off", speed: 100, colour: "off", colourSpeed: 100, size: 100, x: 0, y: 0 };
+        restoreToOrbit(s.id);
+        store[s.id] = { anim: "off", speed: 100, colour: "off", colourSpeed: 100, size: 100, x: 0, y: 0, pinned: false, ax: 0, ay: 0 };
       });
       writeStore(store);
       selected = new Set();
       writeSelected(selected);
       ringOn = false;
       writeRing(false);
+      setPin(false);
       applyAll();
       renderLists();
     });
   }
 
 
-  // Pin mode: drag symbols; spin/size apply where they stand
+  // Pin mode (top bar): drag any symbol — free agent, stays where dropped
   let pinOn = false;
   const pinBtn = document.querySelector("[data-motion-pin]");
   const setPin = (on) => {
@@ -418,15 +522,6 @@
     });
   }
 
-  const svgPoint = (svg, clientX, clientY) => {
-    const pt = svg.createSVGPoint();
-    pt.x = clientX;
-    pt.y = clientY;
-    const ctm = svg.getScreenCTM();
-    if (!ctm) return { x: 0, y: 0 };
-    return pt.matrixTransform(ctm.inverse());
-  };
-
   let drag = null;
   const onPointerDown = (e) => {
     if (!pinOn) return;
@@ -438,23 +533,29 @@
     e.stopPropagation();
     const svg = el.ownerSVGElement;
     const p = svgPoint(svg, e.clientX, e.clientY);
+    releaseToFree(id);
     const cfg = ensure(id);
     drag = { id, el, svg, lastX: p.x, lastY: p.y };
     selected = new Set([id]);
     writeSelected(selected);
+    writeStore(store);
     renderLists();
-    el.setPointerCapture?.(e.pointerId);
+    try {
+      el.setPointerCapture(e.pointerId);
+    } catch (err) {}
   };
   const onPointerMove = (e) => {
     if (!drag) return;
+    e.preventDefault();
     const p = svgPoint(drag.svg, e.clientX, e.clientY);
     const dx = p.x - drag.lastX;
     const dy = p.y - drag.lastY;
     drag.lastX = p.x;
     drag.lastY = p.y;
     const cfg = ensure(drag.id);
-    cfg.x = Math.round((cfg.x + dx) * 10) / 10;
-    cfg.y = Math.round((cfg.y + dy) * 10) / 10;
+    cfg.pinned = true;
+    cfg.ax = Math.round((cfg.ax + dx) * 10) / 10;
+    cfg.ay = Math.round((cfg.ay + dy) * 10) / 10;
     writeStore(store);
     applyPose(drag.id);
   };
@@ -465,12 +566,6 @@
   document.addEventListener("pointermove", onPointerMove, true);
   document.addEventListener("pointerup", onPointerUp, true);
   document.addEventListener("pointercancel", onPointerUp, true);
-
-  // Reset also clears place offsets (already in store reset) and turns place off
-  const _reset = document.querySelector("[data-motion-reset]");
-  if (_reset) {
-    _reset.addEventListener("click", () => setPin(false));
-  }
 
   document.documentElement.setAttribute("data-colour", "off");
   renderLists();

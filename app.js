@@ -167,7 +167,11 @@
       }
     });
 
+    const free = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    free.setAttribute("class", "free-layer");
+
     svg.appendChild(orbit);
+    svg.appendChild(free);
     svg.appendChild(centerSlot);
     host.innerHTML = "";
     host.appendChild(svg);

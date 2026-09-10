@@ -901,16 +901,24 @@ body:has(.brief) .top {
 }
 
 
-/* Pin mode — drag symbols into place */
+/* Pin mode — free-agent drag */
 html[data-pin="on"] .mark-host svg.sigil .sym,
-html[data-pin="on"] .mark-host svg.sigil .center {
+html[data-pin="on"] .mark-host svg.sigil .center,
+html[data-pin="on"] .mark-host svg.sigil .sym-slot {
   cursor: grab;
-  pointer-events: auto;
+  pointer-events: all;
 }
 html[data-pin="on"] .mark-host svg.sigil .sym:active,
-html[data-pin="on"] .mark-host svg.sigil .center:active {
+html[data-pin="on"] .mark-host svg.sigil .center:active,
+html[data-pin="on"] .mark-host svg.sigil .sym-slot:active {
   cursor: grabbing;
 }
 html[data-pin="on"] .hits {
+  pointer-events: none !important;
+}
+.mark-host svg.sigil .free-layer {
   pointer-events: none;
+}
+html[data-pin="on"] .mark-host svg.sigil .free-layer {
+  pointer-events: all;
 }

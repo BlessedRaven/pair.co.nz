@@ -18,7 +18,7 @@
       } catch (e) {}
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=38" />
+  <link rel="stylesheet" href="styles.css?v=39" />
 </head>
 <body>
   <header class="top">
@@ -37,6 +37,7 @@
         </span>
         <button type="button" data-panel-open="symbol" aria-pressed="false" aria-expanded="false" aria-controls="motion-panel" title="Symbol options">Symbol</button>
         <button type="button" data-motion-toggle aria-pressed="false" title="Slow whole-sigil orbit">Motion</button>
+        <button type="button" data-motion-pin aria-pressed="false" title="Pin: drag symbols freely">Pin</button>
       </div>
     </div>
   </header>
@@ -66,11 +67,9 @@
           <span class="motion-speed-val" data-motion-colour-speed-val>100%</span>
         </div>
         <input class="motion-speed" data-motion-colour-speed type="range" min="1" max="100" value="100" step="1" aria-label="Colour speed" />
-        <button type="button" class="motion-reset" data-motion-pin aria-pressed="false" style="margin-top:0.75rem">Pin</button>
-        <p class="motion-hint" style="margin-top:0.35rem">Pin on: drag to set position. Size stays on-orbit; spin where pinned.</p>
       </div>
       <button type="button" class="motion-reset" data-motion-reset>Reset</button>
-      <p class="motion-hint">Motion = whole-ring orbit. Pin = drag symbols. Size scales in place on the ring.</p>
+      <p class="motion-hint">Motion = whole-ring orbit. Top-bar Pin = drag any symbol free; it stays where you drop it.</p>
     </div>
   </aside>
 
@@ -136,6 +135,7 @@
             <text class="hit-label" x="706.6" y="168" text-anchor="middle" dy="0.35em">FLOWER</text>
           </a>
         </g>
+        <g class="hits-free"></g>
       </svg>
     </div>
     <p class="hint">Hover or tap a node · opens coin brief</p>
@@ -149,8 +149,8 @@
     <span class="muted">Mints TBD · not financial advice</span>
   </footer>
 
-  <script src="theme.js?v=38" defer></script>
-  <script src="motion.js?v=38" defer></script>
-  <script src="app.js?v=38" defer></script>
+  <script src="theme.js?v=39" defer></script>
+  <script src="motion.js?v=39" defer></script>
+  <script src="app.js?v=39" defer></script>
 </body>
 </html>
