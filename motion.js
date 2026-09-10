@@ -1,5 +1,5 @@
 (() => {
-  const STORE_KEY = "pair-sym-motion-v19";
+  const STORE_KEY = "pair-sym-motion-v20";
   const SELECTED_KEY = "pair-motion-selected-v19";
   const RING_KEY = "pair-motion-ring-v19";
 
@@ -119,7 +119,7 @@
   };
 
   const ensure = (id) => {
-    if (!store[id]) store[id] = { anim: "off", speed: 100, colour: "off", colourSpeed: 100, size: 100, x: 0, y: 0, pinned: false, ax: 0, ay: 0 };
+    if (!store[id]) store[id] = { anim: "off", speed: 100, colour: "off", colourSpeed: 100, size: 100, x: 0, y: 0, pinned: false, ax: 0, ay: 0, orb: false, orbFn: "shield" };
     const a = store[id].anim;
     if (a !== "cw" && a !== "ccw" && a !== "off") store[id].anim = "off";
     if (!COLOUR_IDS.has(store[id].colour)) store[id].colour = "off";
@@ -135,6 +135,9 @@
     let ay = Number(store[id].ay);
     store[id].ax = Number.isFinite(ax) ? ax : 0;
     store[id].ay = Number.isFinite(ay) ? ay : 0;
+    store[id].orb = !!store[id].orb;
+    const ofn = store[id].orbFn;
+    store[id].orbFn = ofn === "orbit" || ofn === "cloud" ? ofn : "shield";
     return store[id];
   };
   SYMBOLS.forEach((s) => ensure(s.id));
@@ -325,6 +328,41 @@
     }
   };
 
+  const syncOrbOn = (id) => {
+    const el = findEl(id);
+    if (!el) return;
+    const cfg = ensure(id);
+    let orb = el.querySelector(":scope > .sym-orb");
+    if (!cfg.orb) {
+      if (orb) orb.remove();
+      return;
+    }
+    const ns = "http://www.w3.org/2000/svg";
+    if (!orb || orb.tagName.toLowerCase() !== "circle") {
+      if (orb) orb.remove();
+      orb = document.createElementNS(ns, "circle");
+      orb.setAttribute("class", "sym-orb");
+      const firstArt = [...el.children].find(
+        (c) => !c.classList.contains("sym-shape-hit") && !c.classList.contains("sym-hitpad") && !c.classList.contains("sym-orb")
+      );
+      if (firstArt) el.insertBefore(orb, firstArt);
+      else el.appendChild(orb);
+    }
+    const bb = withArtOnly(el, () => {
+      try {
+        return el.getBBox();
+      } catch (err) {
+        return { x: 0, y: 0, width: 40, height: 40 };
+      }
+    });
+    const pad = cfg.orbFn === "cloud" ? 1.28 : cfg.orbFn === "orbit" ? 1.2 : 1.14;
+    const r = Math.max(12, (Math.max(bb.width, bb.height) / 2) * pad);
+    orb.setAttribute("cx", bb.x + bb.width / 2);
+    orb.setAttribute("cy", bb.y + bb.height / 2);
+    orb.setAttribute("r", r);
+    orb.setAttribute("data-orb-fn", cfg.orbFn || "shield");
+  };
+
   const applyToDom = (id) => {
     const cfg = ensure(id);
     const el = findEl(id);
@@ -332,6 +370,7 @@
     el.dataset.anim = cfg.anim;
     el.dataset.colour = COLOUR_IDS.has(cfg.colour) ? cfg.colour : "off";
     applyPose(id);
+    syncOrbOn(id);
     if (cfg.anim === "off" && cfg.colour !== "vibe") {
       el.style.animation = "none";
       el.style.removeProperty("--spin-dur");
@@ -417,6 +456,16 @@
     colourSpeedEl.value = String(cfg.colourSpeed);
     colourSpeedVal.textContent = formatPct(cfg.colourSpeed);
     colourSpeedEl.disabled = !selected.size || cfg.colour !== "vibe";
+
+    const projectOrbBtn = document.querySelector('[data-project-pick="orb"]');
+    const projectDetail = document.querySelector('[data-project-detail="orb"]');
+    const anyOrb = selectedList().some((id) => ensure(id).orb);
+    if (projectOrbBtn) projectOrbBtn.setAttribute("aria-selected", anyOrb ? "true" : "false");
+    if (projectDetail) projectDetail.hidden = !selected.size;
+    document.querySelectorAll("[data-orb-fn]").forEach((btn) => {
+      const fn = btn.getAttribute("data-orb-fn");
+      btn.setAttribute("aria-selected", selected.size && fn === cfg.orbFn ? "true" : "false");
+    });
   };
 
   const setPanelOpen = (open) => {
@@ -487,6 +536,73 @@
     renderLists();
   });
 
+  const selectAllBtn = document.querySelector("[data-sym-select-all]");
+  const selectNoneBtn = document.querySelector("[data-sym-select-none]");
+  if (selectAllBtn) {
+    selectAllBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      selected = new Set(SYMBOLS.map((s) => s.id));
+      writeSelected(selected);
+      selected.forEach((id) => ensure(id));
+      renderLists();
+    });
+  }
+  if (selectNoneBtn) {
+    selectNoneBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      selected = new Set();
+      writeSelected(selected);
+      renderLists();
+    });
+  }
+
+  const projectList = document.querySelector("[data-project-list]");
+  if (projectList) {
+    projectList.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const btn = e.target.closest("[data-project-pick]");
+      if (!btn) return;
+      if (btn.getAttribute("data-project-pick") !== "orb") return;
+      const ids = selectedList();
+      if (!ids.length) return;
+      const turnOn = !ids.every((id) => ensure(id).orb);
+      ids.forEach((id) => {
+        const cfg = ensure(id);
+        cfg.orb = turnOn;
+        if (turnOn) cfg.orbFn = cfg.orbFn || "shield";
+      });
+      writeStore(store);
+      ids.forEach((id) => applyToDom(id));
+      renderLists();
+    });
+  }
+
+  const orbFnList = document.querySelector("[data-orb-fn-list]");
+  if (orbFnList) {
+    orbFnList.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const btn = e.target.closest("[data-orb-fn]");
+      if (!btn) return;
+      const fn = btn.getAttribute("data-orb-fn");
+      if (fn !== "shield" && fn !== "orbit" && fn !== "cloud") return;
+      const ids = selectedList();
+      if (!ids.length) return;
+      ids.forEach((id) => {
+        const cfg = ensure(id);
+        cfg.orb = true;
+        cfg.orbFn = fn;
+      });
+      writeStore(store);
+      ids.forEach((id) => applyToDom(id));
+      renderLists();
+      // Soft link: single Cloud-fn pick can become Cloud-orbit hub when that mode is live
+      if (fn === "cloud" && ids.length === 1) {
+        document.dispatchEvent(new CustomEvent("pair:orb-cloud-hub", { detail: { id: ids[0] } }));
+      }
+    });
+  }
+
+
   const forSelected = (fn) => {
     const ids = selectedList();
     if (!ids.length) return;
@@ -528,6 +644,7 @@
       ensure(id);
       store[id].size = size;
       applyPose(id);
+      syncOrbOn(id);
     });
     writeStore(store);
     sizeVal.textContent = size + "%";
@@ -556,8 +673,9 @@
       store = {};
       SYMBOLS.forEach((s) => {
         restoreToOrbit(s.id);
-        store[s.id] = { anim: "off", speed: 100, colour: "off", colourSpeed: 100, size: 100, x: 0, y: 0, pinned: false, ax: 0, ay: 0 };
+        store[s.id] = { anim: "off", speed: 100, colour: "off", colourSpeed: 100, size: 100, x: 0, y: 0, pinned: false, ax: 0, ay: 0, orb: false, orbFn: "shield" };
       });
+      document.querySelectorAll(".mark-host svg.sigil .sym-orb").forEach((n) => n.remove());
       writeStore(store);
       selected = new Set();
       writeSelected(selected);
@@ -868,6 +986,15 @@
     syncPinUi();
   };
 
+  document.addEventListener("pair:orb-cloud-hub", (e) => {
+    const id = e.detail && e.detail.id;
+    if (!id || !findEl(id)) return;
+    if (!cloudOrbitOn) return;
+    hubId = id;
+    ensurePinnedAtWorld(id);
+    rebuildCloudMoons();
+  });
+
   const setRepel = (on) => {
     repelOn = !!on;
     syncPinUi();
@@ -965,6 +1092,8 @@
           pinned: false,
           ax: 0,
           ay: 0,
+        orb: false,
+        orbFn: "shield",
         };
       });
       writeStore(store);

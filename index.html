@@ -18,7 +18,7 @@
       } catch (e) {}
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=56" />
+  <link rel="stylesheet" href="styles.css?v=57" />
 </head>
 <body>
   <header class="top">
@@ -52,10 +52,8 @@
             <button type="button" data-zoom-reset>Reset 100%</button>
           </span>
         </span>
-        <button type="button" data-orb-toggle aria-pressed="false" title="Orb mode: tap a symbol for a forcefield glow">Orb</button>
         <button type="button" data-link-toggle aria-pressed="true" title="Tap a shape (no drag) to open its coin brief">Link</button>
         <button type="button" data-drag-toggle aria-pressed="false" title="Shapes always drag site-wide; also pan the void">Drag</button>
-        <button type="button" data-sandbox-toggle aria-pressed="false" title="Sandbox play framing">Sandbox</button>
       </div>
     </div>
   </header>
@@ -65,7 +63,11 @@
       <p class="motion-kicker">Symbol</p>
       <div class="motion-block" data-panel-section="symbol">
         <p class="motion-label">Symbol</p>
-        <div class="motion-list" data-motion-symbols role="listbox" aria-label="Symbol"></div>
+        <div class="motion-list motion-list-actions" data-sym-actions>
+          <button type="button" class="motion-opt" data-sym-select-all>Select all</button>
+          <button type="button" class="motion-opt" data-sym-select-none>Clear</button>
+        </div>
+        <div class="motion-list" data-motion-symbols role="listbox" aria-label="Symbol" aria-multiselectable="true"></div>
         <p class="motion-label" style="margin-top:0.65rem">Animation</p>
         <div class="motion-list" data-motion-anims role="listbox" aria-label="Animation"></div>
         <p class="motion-label" style="margin-top:0.65rem">Colour</p>
@@ -85,9 +87,24 @@
           <span class="motion-speed-val" data-motion-colour-speed-val>100%</span>
         </div>
         <input class="motion-speed" data-motion-colour-speed type="range" min="1" max="100" value="100" step="1" aria-label="Colour speed" />
+
+        <p class="motion-label" style="margin-top:0.85rem">Projects</p>
+        <div class="motion-list" data-project-list role="listbox" aria-label="Projects">
+          <button type="button" role="option" class="motion-opt" data-project-pick="orb" aria-selected="false">Orb</button>
+        </div>
+        <div class="motion-project-detail" data-project-detail="orb" hidden>
+          <p class="motion-label" style="margin-top:0.45rem">Orb function</p>
+          <div class="motion-list" data-orb-fn-list role="listbox" aria-label="Orb function">
+            <button type="button" role="option" class="motion-opt" data-orb-fn="shield" aria-selected="true">Shield</button>
+            <button type="button" role="option" class="motion-opt" data-orb-fn="orbit" aria-selected="false">Orbit</button>
+            <button type="button" role="option" class="motion-opt" data-orb-fn="cloud" aria-selected="false">Cloud</button>
+          </div>
+          <p class="motion-hint" style="margin-top:0.35rem">Simple glowing circle around selected shapes. Shield = forcefield · Orbit = spinning ring · Cloud = soft house glow.</p>
+        </div>
       </div>
-      <button type="button" class="motion-reset" data-motion-reset>Reset</button>
-      <p class="motion-hint">Sandbox for symbol play. Motion = Blessed Raven ring. Pin = drag + Repel + Cloud orbit + Reset layout. Zoom = lock mode, then drag empty space (down=in, up=out; Invert swaps). Colour = Multicolour or static rainbow.</p>
+      <button type="button" class="motion-reset motion-reset-danger" data-motion-reset>Reset</button>
+      <button type="button" class="motion-sandbox" data-sandbox-toggle aria-pressed="false" title="Sandbox play framing">Sandbox</button>
+      <p class="motion-hint">Select symbols (or Select all), then edit. Projects → Orb adds a glow circle. Pin = Repel + Cloud orbit. Zoom = empty-space drag.</p>
     </div>
   </aside>
 
@@ -171,9 +188,9 @@
     <span class="muted">Mints TBD · not financial advice</span>
   </footer>
 
-  <script src="theme.js?v=56" defer></script>
-  <script src="motion.js?v=56" defer></script>
-  <script src="app.js?v=56" defer></script>
+  <script src="theme.js?v=57" defer></script>
+  <script src="motion.js?v=57" defer></script>
+  <script src="app.js?v=57" defer></script>
 
   <div class="cloud-shape-menu" data-cloud-shape-menu hidden role="menu" aria-label="Cloud shape actions">
     <button type="button" role="menuitem" data-cloud-act="hub">Make house (hub)</button>
