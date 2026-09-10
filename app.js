@@ -401,7 +401,117 @@
     });
   }
 
-  // —— Link vs Drag (mutually exclusive click intents) ——
+  // —— Orb mode: tap symbol → forcefield (circle / ellipse) ——
+  const ORB_ELLIPSE = new Set(["pi", "scarab", "key", "hermes", "wave"]);
+  const orbBtn = document.querySelector("[data-orb-toggle]");
+  let orbMode = false;
+  try {
+    orbMode = localStorage.getItem("pair-orb-mode-v1") === "1";
+  } catch {}
+  const setOrbMode = (on) => {
+    orbMode = !!on;
+    document.documentElement.setAttribute("data-orb-mode", orbMode ? "on" : "off");
+    if (orbBtn) orbBtn.setAttribute("aria-pressed", orbMode ? "true" : "false");
+    if (!orbMode) {
+      document.querySelectorAll(".mark-host svg.sigil .sym-orb").forEach((n) => n.remove());
+    }
+    try {
+      localStorage.setItem("pair-orb-mode-v1", orbMode ? "1" : "0");
+    } catch {}
+  };
+  setOrbMode(orbMode);
+  if (orbBtn) {
+    orbBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setOrbMode(!orbMode);
+    });
+  }
+
+  const artBBox = (wrap) => {
+    const hits = [];
+    wrap.querySelectorAll(".sym-shape-hit, .sym-orb, .sym-hitpad").forEach((n) => {
+      hits.push([n, n.getAttribute("visibility"), n.style.display]);
+      n.setAttribute("visibility", "hidden");
+      n.style.display = "none";
+    });
+    let bb;
+    try {
+      bb = wrap.getBBox();
+    } catch {
+      bb = { x: 0, y: 0, width: 40, height: 40 };
+    }
+    hits.forEach(([n, vis, disp]) => {
+      if (vis == null) n.removeAttribute("visibility");
+      else n.setAttribute("visibility", vis);
+      n.style.display = disp || "";
+    });
+    return bb;
+  };
+
+  const syncOrbGeometry = (wrap) => {
+    const orb = wrap.querySelector(".sym-orb");
+    if (!orb) return;
+    const id = wrap.getAttribute("data-sym") || "";
+    const bb = artBBox(wrap);
+    const cx = bb.x + bb.width / 2;
+    const cy = bb.y + bb.height / 2;
+    const pad = 1.14;
+    if (ORB_ELLIPSE.has(id)) {
+      const rx = Math.max(8, (bb.width / 2) * pad);
+      const ry = Math.max(8, (bb.height / 2) * pad);
+      orb.setAttribute("cx", cx);
+      orb.setAttribute("cy", cy);
+      orb.setAttribute("rx", rx);
+      orb.setAttribute("ry", ry);
+      orb.setAttribute("data-orb-kind", "ellipse");
+    } else {
+      const r = Math.max(10, (Math.max(bb.width, bb.height) / 2) * pad);
+      orb.setAttribute("cx", cx);
+      orb.setAttribute("cy", cy);
+      orb.setAttribute("r", r);
+      orb.setAttribute("data-orb-kind", "circle");
+    }
+  };
+
+  const toggleOrbOn = (wrap) => {
+    if (!wrap) return;
+    const existing = wrap.querySelector(".sym-orb");
+    if (existing) {
+      existing.remove();
+      return;
+    }
+    const id = wrap.getAttribute("data-sym") || "";
+    const ns = "http://www.w3.org/2000/svg";
+    const orb = document.createElementNS(ns, ORB_ELLIPSE.has(id) ? "ellipse" : "circle");
+    orb.setAttribute("class", "sym-orb");
+    // Insert behind art so glow frames the symbol (before first non-hit child if possible)
+    const firstArt = [...wrap.children].find(
+      (c) => !c.classList.contains("sym-shape-hit") && !c.classList.contains("sym-hitpad")
+    );
+    if (firstArt) wrap.insertBefore(orb, firstArt);
+    else wrap.appendChild(orb);
+    syncOrbGeometry(wrap);
+  };
+
+  // Keep orb sized if symbol size changes (motion size slider / pin)
+  const orbResizeObs =
+    typeof ResizeObserver !== "undefined"
+      ? new ResizeObserver(() => {
+          document.querySelectorAll(".mark-host svg.sigil .sym-orb").forEach((orb) => {
+            const wrap = orb.parentElement;
+            if (wrap) syncOrbGeometry(wrap);
+          });
+        })
+      : null;
+  if (orbResizeObs) {
+    document.querySelectorAll(".mark-host svg.sigil .sym, .mark-host svg.sigil .center").forEach((w) => {
+      try {
+        orbResizeObs.observe(w);
+      } catch {}
+    });
+  }
+
+    // —— Link vs Drag (mutually exclusive click intents) ——
   const PAN_KEY = "pair-mark-pan-v1";
   const linkBtn = document.querySelector("[data-link-toggle]");
   const dragBtn = document.querySelector("[data-drag-toggle]");
@@ -516,7 +626,12 @@
       const moved = Math.hypot(e.clientX - tap.x, e.clientY - tap.y) > 8;
       tap = null;
       if (moved) return;
-      // Brief pause: don't navigate while actively in exclusive drag-pan intent? allow always
+      if (orbMode) {
+        const wrap = e.target.closest(".mark-host svg.sigil .sym, .mark-host svg.sigil .center");
+        if (wrap) toggleOrbOn(wrap);
+        return;
+      }
+      // Link: open coin brief on tap
       const href = linkBySym[id];
       if (href) window.location.href = href;
     },
