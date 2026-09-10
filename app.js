@@ -274,6 +274,7 @@
     try {
       localStorage.setItem(ZOOM_KEY, String(markZoom));
     } catch {}
+    document.dispatchEvent(new CustomEvent("pair:zoom", { detail: { zoom: markZoom } }));
   };
 
   const setZoomMode = (on) => {

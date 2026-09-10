@@ -18,7 +18,7 @@
       } catch (e) {}
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=60" />
+  <link rel="stylesheet" href="styles.css?v=61" />
 </head>
 <body>
   <header class="top">
@@ -36,7 +36,13 @@
           </span>
         </span>
         <button type="button" data-panel-open="symbol" aria-pressed="false" aria-expanded="false" aria-controls="motion-panel" title="Symbol options">Symbol</button>
-        <button type="button" data-motion-toggle aria-pressed="false" title="Slow whole-sigil orbit">Motion</button>
+        <span class="motion-wrap" data-motion-wrap>
+          <button type="button" data-motion-toggle aria-pressed="false" aria-expanded="false" aria-haspopup="true" title="Slow whole-sigil orbit">Motion</button>
+          <span class="motion-menu pin-menu" data-motion-menu hidden>
+            <button type="button" data-motion-spin="cw" aria-pressed="false">Clockwise</button>
+            <button type="button" data-motion-spin="ccw" aria-pressed="false">Anticlockwise</button>
+          </span>
+        </span>
         <span class="pin-wrap" data-pin-wrap>
           <button type="button" data-motion-pin aria-pressed="false" aria-expanded="false" aria-haspopup="true" title="Pin: drag symbols">Pin</button>
           <span class="pin-menu" data-pin-menu hidden>
@@ -192,9 +198,9 @@
     <span class="muted">Mints TBD · not financial advice</span>
   </footer>
 
-  <script src="theme.js?v=60" defer></script>
-  <script src="motion.js?v=60" defer></script>
-  <script src="app.js?v=60" defer></script>
+  <script src="theme.js?v=61" defer></script>
+  <script src="motion.js?v=61" defer></script>
+  <script src="app.js?v=61" defer></script>
 
   <div class="cloud-shape-menu" data-cloud-shape-menu hidden role="menu" aria-label="Cloud shape actions">
     <button type="button" role="menuitem" data-cloud-act="hub">Make house (hub)</button>

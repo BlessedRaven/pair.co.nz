@@ -2,6 +2,7 @@
   const STORE_KEY = "pair-sym-motion-v21";
   const SELECTED_KEY = "pair-motion-selected-v19";
   const RING_KEY = "pair-motion-ring-v19";
+  const RING_SPIN_KEY = "pair-motion-ring-spin-v1";
 
   const SYMBOLS = [
     { id: "gol", label: "GOL" },
@@ -104,6 +105,19 @@
   let store = readStore();
   let selected = readSelected();
   let ringOn = readRing();
+  const readRingSpin = () => {
+    try {
+      const v = localStorage.getItem(RING_SPIN_KEY);
+      if (v === "cw" || v === "ccw") return v;
+    } catch {}
+    return "off";
+  };
+  const writeRingSpin = (v) => {
+    try {
+      localStorage.setItem(RING_SPIN_KEY, v === "cw" || v === "ccw" ? v : "off");
+    } catch {}
+  };
+  let ringSpin = readRingSpin(); // off | cw | ccw — global Motion shape spin
 
   const clampPct = (sp) => {
     let n = Number(sp);
@@ -163,9 +177,90 @@
     return document.querySelector('.mark-host svg.sigil .sym[data-sym="' + id + '"]');
   };
 
+  // Never spin these — they overlap neighbors in the artist layout
+  const MOTION_SPIN_NEVER = new Set(["ra", "pi", "scarab", "hermes"]);
+  // Soft-gated shapes may spin only when zoomed out enough if they overlay others
+  const MOTION_SPIN_ZOOM_MAX = 0.82; // at or below this zoom, overlapping soft shapes may spin
+
+  const readMarkZoom = () => {
+    const raw = getComputedStyle(document.querySelector("[data-mark]") || document.documentElement)
+      .getPropertyValue("--mark-zoom")
+      .trim();
+    const n = Number(raw);
+    return Number.isFinite(n) && n > 0 ? n : 1;
+  };
+
+  const artScreenRect = (el) => {
+    return withArtOnly(el, () => el.getBoundingClientRect());
+  };
+
+  const rectsOverlap = (a, b, pad) => {
+    if (!a || !b) return false;
+    return !(
+      a.right < b.left - pad ||
+      a.left > b.right + pad ||
+      a.bottom < b.top - pad ||
+      a.top > b.bottom + pad
+    );
+  };
+
+  const shapeOverlapsNeighbor = (id, rects) => {
+    const mine = rects[id];
+    if (!mine) return false;
+    for (const other of Object.keys(rects)) {
+      if (other === id) continue;
+      if (rectsOverlap(mine, rects[other], 4)) return true;
+    }
+    return false;
+  };
+
+  const syncMotionSpinUi = () => {
+    document.documentElement.setAttribute("data-ring-spin", ringOn ? ringSpin : "off");
+    document.querySelectorAll("[data-motion-spin]").forEach((btn) => {
+      const dir = btn.getAttribute("data-motion-spin");
+      btn.setAttribute("aria-pressed", ringOn && ringSpin === dir ? "true" : "false");
+    });
+  };
+
+  const applyMotionSpin = () => {
+    const dir = ringOn && (ringSpin === "cw" || ringSpin === "ccw") ? ringSpin : "off";
+    const zoom = readMarkZoom();
+    const els = {};
+    SYMBOLS.forEach((s) => {
+      const el = findEl(s.id);
+      if (el) els[s.id] = el;
+    });
+    const rects = {};
+    Object.keys(els).forEach((id) => {
+      try {
+        rects[id] = artScreenRect(els[id]);
+      } catch (err) {
+        rects[id] = null;
+      }
+    });
+
+    Object.keys(els).forEach((id) => {
+      const el = els[id];
+      let allow = false;
+      if (dir !== "off" && !MOTION_SPIN_NEVER.has(id)) {
+        const overlaps = shapeOverlapsNeighbor(id, rects);
+        if (!overlaps) allow = true;
+        else allow = zoom <= MOTION_SPIN_ZOOM_MAX;
+      }
+      if (allow) {
+        el.setAttribute("data-motion-spin", dir);
+        el.style.removeProperty("animation");
+      } else {
+        el.removeAttribute("data-motion-spin");
+      }
+    });
+    syncMotionSpinUi();
+  };
+
   const syncRing = () => {
     document.documentElement.setAttribute("data-ring", ringOn ? "on" : "off");
     toggle.setAttribute("aria-pressed", ringOn ? "true" : "false");
+    applyMotionSpin();
   };
 
   const findSlot = (id) =>
@@ -560,16 +655,57 @@
     writeStore(store);
   };
 
+  const motionMenu = document.querySelector("[data-motion-menu]");
+  const motionMenuOpen = (open) => {
+    if (!motionMenu || !toggle) return;
+    motionMenu.hidden = !open;
+    toggle.setAttribute("aria-expanded", open ? "true" : "false");
+  };
+
   toggle.addEventListener("click", (e) => {
     e.stopPropagation();
     ringOn = !ringOn;
     if (ringOn) {
       if (typeof pinOn !== "undefined" && pinOn) setPin(false);
       restoreNativeRing();
+      motionMenuOpen(true);
+    } else {
+      motionMenuOpen(false);
     }
     writeRing(ringOn);
     syncRing();
     applyAll();
+  });
+
+  if (motionMenu) {
+    motionMenu.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const btn = e.target.closest("[data-motion-spin]");
+      if (!btn) return;
+      const dir = btn.getAttribute("data-motion-spin");
+      if (dir !== "cw" && dir !== "ccw") return;
+      // Toggle off if pressing the active direction
+      ringSpin = ringSpin === dir ? "off" : dir;
+      if (!ringOn) {
+        ringOn = true;
+        if (typeof pinOn !== "undefined" && pinOn) setPin(false);
+        restoreNativeRing();
+        writeRing(true);
+      }
+      writeRingSpin(ringSpin);
+      syncRing();
+      applyAll();
+    });
+  }
+
+  document.addEventListener("click", (e) => {
+    if (!motionMenu || motionMenu.hidden) return;
+    if (e.target.closest("[data-motion-wrap]")) return;
+    motionMenuOpen(false);
+  });
+
+  document.addEventListener("pair:zoom", () => {
+    if (ringOn && ringSpin !== "off") applyMotionSpin();
   });
 
   if (symbolOpen) {
@@ -767,6 +903,8 @@
     writeSelected(selected);
     ringOn = false;
     writeRing(false);
+    ringSpin = "off";
+    writeRingSpin("off");
     setPin(false);
     applyAll();
     renderLists();

@@ -212,6 +212,7 @@ body {
   background: var(--fg);
 }
 
+.motion-wrap,
 .pin-wrap {
   position: relative;
   display: inline-flex;
@@ -1380,4 +1381,22 @@ button.top-reset:hover {
 }
 .themes .top-reset[aria-pressed="true"] {
   /* reset is an action, not a mode */
+}
+
+/* Motion global shape spin (same 80s period as Blessed Raven ring) */
+html[data-ring="on"] .mark-host svg.sigil .sym[data-motion-spin="cw"],
+html[data-ring="on"] .mark-host svg.sigil .center[data-motion-spin="cw"] {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pair-sym-spin 80s linear infinite !important;
+}
+html[data-ring="on"] .mark-host svg.sigil .sym[data-motion-spin="ccw"],
+html[data-ring="on"] .mark-host svg.sigil .center[data-motion-spin="ccw"] {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pair-sym-spin-ccw 80s linear infinite !important;
+}
+html[data-ring="off"] .mark-host svg.sigil .sym[data-motion-spin],
+html[data-ring="off"] .mark-host svg.sigil .center[data-motion-spin] {
+  /* attribute may linger briefly; ring-off kills it */
 }
