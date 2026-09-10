@@ -149,6 +149,111 @@ body {
   outline-offset: 2px;
 }
 
+/* Motion panel — right rail */
+.motion-panel {
+  position: absolute;
+  top: 3.1rem;
+  right: 0.75rem;
+  z-index: 6;
+  width: min(15.5rem, calc(100vw - 1.5rem));
+  max-height: calc(100dvh - 4.5rem);
+  overflow: auto;
+  pointer-events: auto;
+}
+
+.motion-panel[hidden] {
+  display: none !important;
+}
+
+.motion-panel-inner {
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--fg) 18%, transparent);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(12px);
+  padding: 0.75rem 0.8rem 0.85rem;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+
+.motion-kicker {
+  margin: 0 0 0.65rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.motion-block {
+  margin-bottom: 0.75rem;
+}
+
+.motion-label {
+  margin: 0 0 0.35rem;
+  font-size: 0.58rem;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.motion-speed-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.motion-speed-val {
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg);
+}
+
+.motion-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.28rem;
+}
+
+.motion-opt {
+  appearance: none;
+  border: 1px solid color-mix(in srgb, var(--fg) 16%, transparent);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 0.32rem 0.5rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.motion-opt[aria-selected="true"] {
+  color: var(--bg);
+  background: var(--fg);
+  border-color: transparent;
+}
+
+.motion-opt:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.motion-speed {
+  width: 100%;
+  accent-color: var(--fg);
+  cursor: pointer;
+}
+
+.motion-hint {
+  margin: 0.15rem 0 0;
+  font-size: 0.58rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+
 .landing {
   height: 100vh;
   height: 100dvh;
@@ -303,7 +408,7 @@ body {
   }
 }
 
-/* All symbols: same forever drift as torus (e) — 72s CW */
+/* Per-symbol motion (Motion panel). Default = torus drift */
 .mark-host svg.sigil .sym {
   transform-box: fill-box;
   transform-origin: center;
@@ -311,9 +416,42 @@ body {
   animation: pair-sym-spin 72s linear infinite;
 }
 
+.mark-host svg.sigil .sym[data-anim="drift"] {
+  animation-name: pair-sym-spin;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.mark-host svg.sigil .sym[data-anim="reverse"] {
+  animation-name: pair-sym-spin-ccw;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.mark-host svg.sigil .sym[data-anim="stationary"],
+.mark-host svg.sigil .sym[data-anim="off"] {
+  animation: none !important;
+}
+
+.mark-host svg.sigil .sym[data-anim="pulse"] {
+  animation-name: pair-sym-pulse;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
 @keyframes pair-sym-spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+@keyframes pair-sym-spin-ccw {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+
+@keyframes pair-sym-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
 }
 
 
@@ -536,24 +674,12 @@ body:has(.brief) .top {
 }
 
 
-/* Motion toggle off — freeze orbit / spin / breathe (theme still applies) */
-html[data-motion="off"] .mark.is-ready,
-html[data-motion="off"] .mark-host svg.sigil .orbit,
-html[data-motion="off"] .hits .hits-orbit,
-html[data-motion="off"] .mark-host svg.sigil .sym {
-  animation: none !important;
-}
-
-html[data-motion="off"] .mark.is-ready {
-  opacity: 1;
-  transform: none;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .mark.is-ready,
   .mark-host svg.sigil .orbit,
   .hits .hits-orbit,
-  .mark-host svg.sigil .sym {
+  .mark-host svg.sigil .sym,
+  .mark-host svg.sigil .sym[data-anim] {
     animation: none !important;
   }
 

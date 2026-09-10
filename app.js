@@ -133,6 +133,7 @@
     host.appendChild(svg);
     wrapOrbitSyms(orbit);
     mark.classList.add("is-ready");
+    document.dispatchEvent(new CustomEvent("pair:syms-ready"));
     if (reduced) mark.classList.add("reduced");
   };
 

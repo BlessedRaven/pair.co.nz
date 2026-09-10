@@ -13,26 +13,46 @@
         if (t === "light" || t === "vibe" || t === "dark") {
           document.documentElement.setAttribute("data-theme", t);
         }
-        var m = localStorage.getItem("pair-motion");
-        document.documentElement.setAttribute("data-motion", m === "off" ? "off" : "on");
       } catch (e) {}
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=20" />
+  <link rel="stylesheet" href="styles.css?v=21" />
 </head>
 <body>
   <header class="top">
     <a class="brand" href="/">PAIR</a>
     <div class="top-right">
       <p class="tag" id="tagline">Each node is its own coin</p>
-      <div class="themes" role="group" aria-label="Theme and motion">
+      <div class="themes" role="group" aria-label="Theme">
         <button type="button" data-theme-set="dark" aria-pressed="true">Dark</button>
         <button type="button" data-theme-set="light" aria-pressed="false">Light</button>
         <button type="button" data-theme-set="vibe" aria-pressed="false">Vibe</button>
-        <button type="button" data-motion-toggle aria-pressed="true" title="Toggle orbit motion">Motion</button>
+        <button type="button" data-motion-toggle aria-pressed="false" aria-expanded="false" aria-controls="motion-panel" title="Motion controls">Motion</button>
       </div>
     </div>
   </header>
+
+  <aside id="motion-panel" class="motion-panel" hidden data-motion-panel>
+    <div class="motion-panel-inner">
+      <p class="motion-kicker">Motion</p>
+      <div class="motion-block">
+        <p class="motion-label">Symbol</p>
+        <div class="motion-list" data-motion-symbols role="listbox" aria-label="Symbol"></div>
+      </div>
+      <div class="motion-block">
+        <p class="motion-label">Animation</p>
+        <div class="motion-list" data-motion-anims role="listbox" aria-label="Animation"></div>
+      </div>
+      <div class="motion-block">
+        <div class="motion-speed-row">
+          <p class="motion-label">Speed</p>
+          <span class="motion-speed-val" data-motion-speed-val>1x</span>
+        </div>
+        <input class="motion-speed" data-motion-speed type="range" min="35" max="200" value="100" step="5" aria-label="Animation speed" />
+      </div>
+      <p class="motion-hint">Pick a symbol, then an animation. Speed applies to that symbol.</p>
+    </div>
+  </aside>
 
   <main class="landing" id="top" aria-label="PAIR coin hub">
     <div class="mark" data-mark>
@@ -89,7 +109,8 @@
     <span class="muted">Mints TBD · not financial advice</span>
   </footer>
 
-  <script src="theme.js?v=20" defer></script>
-  <script src="app.js?v=20" defer></script>
+  <script src="theme.js?v=21" defer></script>
+  <script src="motion.js?v=21" defer></script>
+  <script src="app.js?v=21" defer></script>
 </body>
 </html>

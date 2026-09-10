@@ -1,6 +1,5 @@
 (() => {
   const THEME_KEY = "pair-theme";
-  const MOTION_KEY = "pair-motion";
   const allowed = new Set(["dark", "light", "vibe"]);
 
   const readTheme = () => {
@@ -9,14 +8,6 @@
       return allowed.has(t) ? t : "dark";
     } catch {
       return "dark";
-    }
-  };
-
-  const readMotion = () => {
-    try {
-      return localStorage.getItem(MOTION_KEY) === "off" ? "off" : "on";
-    } catch {
-      return "on";
     }
   };
 
@@ -36,26 +27,10 @@
     } catch {}
   };
 
-  const applyMotion = (motion) => {
-    const m = motion === "off" ? "off" : "on";
-    document.documentElement.setAttribute("data-motion", m);
-    document.querySelectorAll("[data-motion-toggle]").forEach((btn) => {
-      btn.setAttribute("aria-pressed", m === "on" ? "true" : "false");
-    });
-    try {
-      localStorage.setItem(MOTION_KEY, m);
-    } catch {}
-  };
-
   applyTheme(readTheme());
-  applyMotion(readMotion());
 
   document.addEventListener("click", (e) => {
-    const motionBtn = e.target.closest("[data-motion-toggle]");
-    if (motionBtn) {
-      applyMotion(readMotion() === "on" ? "off" : "on");
-      return;
-    }
+    if (e.target.closest("[data-motion-toggle]") || e.target.closest("[data-motion-panel]")) return;
     const btn = e.target.closest("[data-theme-set]");
     if (!btn) return;
     applyTheme(btn.getAttribute("data-theme-set"));
