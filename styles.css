@@ -303,18 +303,35 @@ body {
   }
 }
 
-/* Every outer symbol: same forever drift as torus (e) */
+/* Alternate: drift (torus) / stationary (nest moon) around the ring */
 .mark-host svg.sigil .sym {
   transform-box: fill-box;
   transform-origin: center;
   will-change: transform;
+}
+
+/* Drift — same as torus (e) */
+.mark-host svg.sigil .sym[data-sym="e"],
+.mark-host svg.sigil .sym[data-sym="s"],
+.mark-host svg.sigil .sym[data-sym="w"],
+.mark-host svg.sigil .sym[data-sym="n"],
+.mark-host svg.sigil .sym[data-sym^="_x"] {
   animation: pair-sym-spin 72s linear infinite;
+}
+
+/* Stationary — ride the orbit only (nest / moon look) */
+.mark-host svg.sigil .sym[data-sym="se"],
+.mark-host svg.sigil .sym[data-sym="sw"],
+.mark-host svg.sigil .sym[data-sym="nw"],
+.mark-host svg.sigil .sym[data-sym="ne"] {
+  animation: none;
 }
 
 @keyframes pair-sym-spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
 
 .hits {
   position: absolute;
