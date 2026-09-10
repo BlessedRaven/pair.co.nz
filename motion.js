@@ -1,7 +1,7 @@
 (() => {
-  const STORE_KEY = "pair-sym-motion-v14";
-  const SELECTED_KEY = "pair-motion-selected-v14";
-  const RING_KEY = "pair-motion-ring-v14";
+  const STORE_KEY = "pair-sym-motion-v15";
+  const SELECTED_KEY = "pair-motion-selected-v15";
+  const RING_KEY = "pair-motion-ring-v15";
 
   const SYMBOLS = [
     { id: "gol", label: "GOL" },
@@ -17,6 +17,7 @@
     { id: "sun", label: "Sun" },
     { id: "key", label: "Key" },
     { id: "bean", label: "Bean" },
+    { id: "wave", label: "Wave" },
     { id: "torus", label: "Torus" },
   ];
 
@@ -528,6 +529,7 @@
     const el = e.target.closest(".mark-host svg.sigil .sym, .mark-host svg.sigil .center");
     if (!el) return;
     const id = el.getAttribute("data-sym");
+    // hitpad is inside .sym — already covered by closest(.sym)
     if (!SYMBOLS.some((s) => s.id === id)) return;
     e.preventDefault();
     e.stopPropagation();

@@ -67,6 +67,15 @@
     return wrap;
   };
 
+  const midY = (el) => {
+    try {
+      const bb = el.getBBox();
+      return bb.y + bb.height / 2;
+    } catch (err) {
+      return 9999;
+    }
+  };
+
   const splitScarabCluster = (orbit, cluster) => {
     const parts = Array.from(cluster.children);
     if (parts.length < 2) {
@@ -79,22 +88,48 @@
     const scarabEl = bodyKids.find((k) => k.tagName.toLowerCase() === "g") || bodyWrap;
     const sunDisk = bodyKids.find((k) => k.tagName.toLowerCase() === "circle") || null;
     const upperKids = Array.from(upperWrap.children || []);
-    const keyEl = upperKids[0] || null;
-    const beanNodes = upperKids.slice(1);
+    const keyGroup = upperKids[0] || null;
+    // upperKids[1], [2] are the side waves (previously mislabeled bean)
+    const waveNodes = upperKids.slice(1);
 
     wrapDetached(orbit, cluster, scarabEl, "scarab");
     if (sunDisk) wrapDetached(orbit, cluster, sunDisk, "sun");
-    if (keyEl) wrapDetached(orbit, cluster, keyEl, "key");
+
+    // Peel true bean out of key group (top tip geometry), keep shaft as key
+    let beanNodes = [];
+    if (keyGroup) {
+      const keyKids = Array.from(keyGroup.children || []);
+      keyKids.forEach((n) => {
+        if (midY(n) < 30) beanNodes.push(n);
+      });
+      beanNodes.forEach((n) => {
+        if (n.parentNode) n.parentNode.removeChild(n);
+      });
+      wrapDetached(orbit, cluster, keyGroup, "key");
+    }
+
     if (beanNodes.length) {
       const slot = makeSlot("bean");
-      const beanWrap = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      beanWrap.setAttribute("class", "sym");
-      beanWrap.setAttribute("data-sym", "bean");
+      const wrap = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      wrap.setAttribute("class", "sym");
+      wrap.setAttribute("data-sym", "bean");
       orbit.insertBefore(slot, cluster);
-      slot.appendChild(beanWrap);
-      beanNodes.forEach((n) => beanWrap.appendChild(n));
-      pinOrigin(beanWrap);
+      slot.appendChild(wrap);
+      beanNodes.forEach((n) => wrap.appendChild(n));
+      pinOrigin(wrap);
     }
+
+    if (waveNodes.length) {
+      const slot = makeSlot("wave");
+      const wrap = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      wrap.setAttribute("class", "sym");
+      wrap.setAttribute("data-sym", "wave");
+      orbit.insertBefore(slot, cluster);
+      slot.appendChild(wrap);
+      waveNodes.forEach((n) => wrap.appendChild(n));
+      pinOrigin(wrap);
+    }
+
     if (cluster.parentNode) cluster.parentNode.removeChild(cluster);
   };
 
@@ -177,6 +212,27 @@
     host.appendChild(svg);
     wrapOrbitSyms(orbit);
     pinOrigin(center);
+    // Invisible hit pads so thin paths (cloud/hermes/ra) and dense scarab drag easily
+    document.querySelectorAll(".sym, .center").forEach((wrap) => {
+      try {
+        if (wrap.querySelector(".sym-hitpad")) return;
+        const bb = wrap.getBBox();
+        const cx = bb.x + bb.width / 2;
+        const cy = bb.y + bb.height / 2;
+        const r = Math.max(52, Math.max(bb.width, bb.height) * 0.58);
+        const pad = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        pad.setAttribute("class", "sym-hitpad");
+        pad.setAttribute("cx", String(cx));
+        pad.setAttribute("cy", String(cy));
+        pad.setAttribute("r", String(r));
+        pad.setAttribute("fill", "transparent");
+        pad.setAttribute("stroke", "none");
+        pad.style.pointerEvents = "all";
+        wrap.insertBefore(pad, wrap.firstChild);
+      } catch (err) {
+        /* ignore */
+      }
+    });
     mark.classList.add("is-ready");
     document.dispatchEvent(new CustomEvent("pair:syms-ready"));
     if (reduced) mark.classList.add("reduced");

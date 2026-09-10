@@ -922,3 +922,10 @@ html[data-pin="on"] .hits {
 html[data-pin="on"] .mark-host svg.sigil .free-layer {
   pointer-events: all;
 }
+
+
+.mark-host svg.sigil .sym-hitpad {
+  fill: transparent;
+  stroke: none;
+  pointer-events: all;
+}
