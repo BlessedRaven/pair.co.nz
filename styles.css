@@ -1221,3 +1221,14 @@ html[data-pin="on"] .mark-host svg.sigil .center:active {
 .hits .hit-label {
   display: none !important;
 }
+
+
+/* native site-wide shape drag */
+.mark-host svg.sigil .sym,
+.mark-host svg.sigil .center {
+  cursor: grab;
+}
+.mark-host svg.sigil .sym:active,
+.mark-host svg.sigil .center:active {
+  cursor: grabbing;
+}
