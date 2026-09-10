@@ -534,7 +534,7 @@ body {
 /* Scroll-wheel zoom (sigil + hit layer stay locked together) */
 .mark-host,
 .mark > .hits {
-  transform: scale(var(--mark-zoom, 1));
+  transform: translate(var(--mark-pan-x, 0px), var(--mark-pan-y, 0px)) scale(var(--mark-zoom, 1));
   transform-origin: 50% 50%;
   will-change: transform;
 }
@@ -1147,4 +1147,48 @@ html[data-sandbox="on"] .brand::after {
   text-transform: uppercase;
   opacity: 0.55;
   font-weight: 600;
+}
+
+
+/* SVG-shaped hits: art groups are the targets; void is the mark */
+.mark {
+  pointer-events: auto;
+  touch-action: none;
+}
+.mark-host {
+  pointer-events: none;
+}
+.mark-host svg.sigil .sym,
+.mark-host svg.sigil .center {
+  pointer-events: bounding-box;
+  cursor: pointer;
+}
+.mark-host svg.sigil .sym *,
+.mark-host svg.sigil .center * {
+  pointer-events: none; /* hit the group bbox, not stray tiny strokes */
+}
+/* Legacy hitpad circles — disabled */
+.mark-host svg.sigil .sym-hitpad {
+  display: none !important;
+  pointer-events: none !important;
+}
+/* Coin brief labels stay visual only; no invisible circle capture */
+.hits {
+  pointer-events: none !important;
+}
+html[data-drag-mode="on"] .mark {
+  cursor: grab;
+}
+html[data-drag-mode="on"] .mark-host svg.sigil .sym,
+html[data-drag-mode="on"] .mark-host svg.sigil .center {
+  cursor: grab;
+}
+html[data-drag-mode="on"] .mark.is-panning,
+html[data-drag-mode="on"] .mark-host svg.sigil .sym:active,
+html[data-drag-mode="on"] .mark-host svg.sigil .center:active {
+  cursor: grabbing;
+}
+html[data-pin="on"] .mark-host svg.sigil .sym,
+html[data-pin="on"] .mark-host svg.sigil .center {
+  cursor: grab;
 }

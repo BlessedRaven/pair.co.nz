@@ -212,27 +212,7 @@
     host.appendChild(svg);
     wrapOrbitSyms(orbit);
     pinOrigin(center);
-    // Invisible hit pads so thin paths (cloud/hermes/ra) and dense scarab drag easily
-    document.querySelectorAll(".sym, .center").forEach((wrap) => {
-      try {
-        if (wrap.querySelector(".sym-hitpad")) return;
-        const bb = wrap.getBBox();
-        const cx = bb.x + bb.width / 2;
-        const cy = bb.y + bb.height / 2;
-        const r = Math.max(52, Math.max(bb.width, bb.height) * 0.58);
-        const pad = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        pad.setAttribute("class", "sym-hitpad");
-        pad.setAttribute("cx", String(cx));
-        pad.setAttribute("cy", String(cy));
-        pad.setAttribute("r", String(r));
-        pad.setAttribute("fill", "transparent");
-        pad.setAttribute("stroke", "none");
-        pad.style.pointerEvents = "all";
-        wrap.insertBefore(pad, wrap.firstChild);
-      } catch (err) {
-        /* ignore */
-      }
-    });
+    // Hits come from SVG group bounding boxes (no invisible circles)
     mark.classList.add("is-ready");
     document.dispatchEvent(new CustomEvent("pair:syms-ready"));
     if (reduced) mark.classList.add("reduced");
@@ -277,6 +257,12 @@
     if (zoomBtn) {
       zoomBtn.setAttribute("aria-pressed", zoomMode ? "true" : "false");
       zoomBtn.setAttribute("aria-expanded", zoomMode && zoomMenu && !zoomMenu.hidden ? "true" : "false");
+    }
+    if (zoomMode) {
+      dragMode = false;
+      document.documentElement.setAttribute("data-drag-mode", "off");
+      const db = document.querySelector("[data-drag-toggle]");
+      if (db) db.setAttribute("aria-pressed", "false");
     }
   };
 
@@ -392,6 +378,123 @@
       setSandbox(!sandboxOn);
     });
   }
+
+  // —— Drag mode: pan the void + (with motion.js) move SVG shapes ——
+  const PAN_KEY = "pair-mark-pan-v1";
+  const dragBtn = document.querySelector("[data-drag-toggle]");
+  let dragMode = false;
+  let panX = 0;
+  let panY = 0;
+  try {
+    const raw = JSON.parse(localStorage.getItem(PAN_KEY) || "null");
+    if (raw && Number.isFinite(raw.x) && Number.isFinite(raw.y)) {
+      panX = raw.x;
+      panY = raw.y;
+    }
+  } catch {}
+  const applyPan = () => {
+    mark.style.setProperty("--mark-pan-x", panX + "px");
+    mark.style.setProperty("--mark-pan-y", panY + "px");
+    try {
+      localStorage.setItem(PAN_KEY, JSON.stringify({ x: panX, y: panY }));
+    } catch {}
+  };
+  applyPan();
+
+  const setDragMode = (on) => {
+    dragMode = !!on;
+    document.documentElement.setAttribute("data-drag-mode", dragMode ? "on" : "off");
+    if (dragBtn) dragBtn.setAttribute("aria-pressed", dragMode ? "true" : "false");
+    if (dragMode && typeof setZoomMode === "function") {
+      // Zoom and Drag fight over empty-space gestures
+      try {
+        setZoomMode(false);
+        zoomMenuOpen(false);
+      } catch (err) {}
+    }
+  };
+  setDragMode(false);
+  if (dragBtn) {
+    dragBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setDragMode(!dragMode);
+    });
+  }
+
+  // Pan void when Drag mode on (not on a symbol)
+  let panDrag = null;
+  mark.addEventListener("pointerdown", (e) => {
+    if (!dragMode) return;
+    if (e.target.closest(".sym, .center, [data-motion-panel], header, .themes, .zoom-wrap, .pin-wrap")) return;
+    if (document.documentElement.getAttribute("data-zoom-mode") === "on") return;
+    e.preventDefault();
+    panDrag = { x0: e.clientX, y0: e.clientY, panX0: panX, panY0: panY };
+    mark.classList.add("is-panning");
+    try {
+      mark.setPointerCapture(e.pointerId);
+    } catch (err) {}
+  });
+  mark.addEventListener("pointermove", (e) => {
+    if (!panDrag) return;
+    e.preventDefault();
+    panX = panDrag.panX0 + (e.clientX - panDrag.x0);
+    panY = panDrag.panY0 + (e.clientY - panDrag.y0);
+    applyPan();
+  });
+  const endPan = () => {
+    panDrag = null;
+    mark.classList.remove("is-panning");
+  };
+  mark.addEventListener("pointerup", endPan);
+  mark.addEventListener("pointercancel", endPan);
+
+  // Double-click void resets pan (shape dblclick ignored)
+  mark.addEventListener("dblclick", (e) => {
+    if (e.target.closest(".sym, .center, a.hotspot")) return;
+    if (dragMode || e.altKey) {
+      panX = 0;
+      panY = 0;
+      applyPan();
+    }
+  });
+
+  // Coin links: tap SVG shape (no drag) → navigate. Map from hotspot hrefs.
+  const linkBySym = {};
+  document.querySelectorAll(".hits [data-hotspot]").forEach((a) => {
+    const id = a.getAttribute("data-hotspot");
+    const href = a.getAttribute("href");
+    if (id && href) linkBySym[id] = href;
+  });
+  let tap = null;
+  mark.addEventListener(
+    "pointerdown",
+    (e) => {
+      const el = e.target.closest(".mark-host svg.sigil .sym, .mark-host svg.sigil .center");
+      if (!el) return;
+      // Pin/Drag modes own the gesture for moving
+      if (dragMode || document.documentElement.getAttribute("data-pin") === "on") return;
+      tap = {
+        id: el.getAttribute("data-sym"),
+        x: e.clientX,
+        y: e.clientY,
+      };
+    },
+    true
+  );
+  mark.addEventListener(
+    "pointerup",
+    (e) => {
+      if (!tap) return;
+      const id = tap.id;
+      const moved = Math.hypot(e.clientX - tap.x, e.clientY - tap.y) > 6;
+      tap = null;
+      if (moved) return;
+      if (dragMode || document.documentElement.getAttribute("data-pin") === "on") return;
+      const href = linkBySym[id];
+      if (href) window.location.href = href;
+    },
+    true
+  );
 
   fetch("coins.json")
     .then((r) => (r.ok ? r.json() : null))

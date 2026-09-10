@@ -650,7 +650,8 @@
 
   // Hard separation: no two symbols may touch/overlay when repel is on
   const resolveRepel = (priorityId) => {
-    if (!repelOn || !pinOn) return;
+    if (!repelOn) return;
+    if (!pinOn && document.documentElement.getAttribute("data-drag-mode") !== "on") return;
     const ids = SYMBOLS.map((s) => s.id).filter((id) => findEl(id));
     ids.forEach((id) => {
       if (!ensure(id).pinned) ensurePinnedAtWorld(id);
@@ -947,8 +948,12 @@
     pinMenuOpen(false);
   });
 
+  const canvasDragOn = () =>
+    pinOn || document.documentElement.getAttribute("data-drag-mode") === "on";
+
   const onPointerDown = (e) => {
-    if (!pinOn) return;
+    if (!canvasDragOn()) return;
+    if (document.documentElement.getAttribute("data-zoom-mode") === "on") return;
     const el = e.target.closest(".mark-host svg.sigil .sym, .mark-host svg.sigil .center");
     if (!el) return;
     const id = el.getAttribute("data-sym");
