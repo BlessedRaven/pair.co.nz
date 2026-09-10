@@ -36,7 +36,8 @@
   color-scheme: light;
 }
 
-[data-theme="vibe"] {
+[data-theme="vibe"],
+[data-theme="vibe-dark"] {
   --bg: #050508;
   --fg: #f2f0ea;
   --muted: rgba(242, 240, 234, 0.5);
@@ -47,6 +48,19 @@
   --sigil-filter: invert(1) contrast(1.05);
   --fallback-filter: invert(1);
   color-scheme: dark;
+}
+
+[data-theme="vibe-light"] {
+  --bg: #f7f5f0;
+  --fg: #121212;
+  --muted: rgba(18, 18, 18, 0.45);
+  --accent: #ff2d55;
+  --hit: rgba(18, 18, 18, 0.06);
+  --hit-stroke: rgba(18, 18, 18, 0.5);
+  --label-stroke: rgba(255, 255, 255, 0.92);
+  --sigil-filter: none;
+  --fallback-filter: none;
+  color-scheme: light;
 }
 
 html,
@@ -148,6 +162,56 @@ body {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+.vibe-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.vibe-menu {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 7.5rem;
+  padding: 0.35rem;
+  border-radius: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--fg) 18%, transparent);
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+}
+
+.vibe-menu[hidden] {
+  display: none !important;
+}
+
+.vibe-menu button {
+  appearance: none;
+  border: 0;
+  margin: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.62rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: left;
+  padding: 0.4rem 0.55rem;
+  border-radius: 0.55rem;
+  color: var(--muted);
+  background: transparent;
+}
+
+.vibe-menu button[aria-pressed="true"],
+.vibe-menu button:hover {
+  color: var(--bg);
+  background: var(--fg);
+}
+
 
 /* Motion panel — right rail */
 .motion-panel {
@@ -332,11 +396,20 @@ body {
     drop-shadow(0 0 5px rgba(18, 18, 18, 0.18));
 }
 
-/* Vibe: colour hold ~2.5s each × 6 hues ≈ 15s loop */
-[data-theme="vibe"] .mark.is-ready {
-  animation:
-    pair-breathe 8s ease-in-out infinite,
-    pair-glow 15s linear infinite;
+/* Vibe themes: breathe only — colour lives per selected symbol */
+[data-theme="vibe"] .mark.is-ready,
+[data-theme="vibe-dark"] .mark.is-ready {
+  animation: pair-breathe 8s ease-in-out infinite;
+  filter:
+    drop-shadow(0 0 1px rgba(255, 255, 255, 0.95))
+    drop-shadow(0 0 5px rgba(255, 255, 255, 0.35));
+}
+
+[data-theme="vibe-light"] .mark.is-ready {
+  animation: pair-breathe 8s ease-in-out infinite;
+  filter:
+    drop-shadow(0 0 1px rgba(18, 18, 18, 0.55))
+    drop-shadow(0 0 5px rgba(18, 18, 18, 0.18));
 }
 
 @keyframes pair-breathe {
@@ -446,17 +519,13 @@ html[data-ring="off"] .mark.is-ready {
 }
 
 html[data-ring="off"][data-theme="vibe"] .mark.is-ready,
-html[data-colour="vibe"] .mark.is-ready {
-  animation: pair-glow 15s linear infinite !important;
+html[data-ring="off"][data-theme="vibe-dark"] .mark.is-ready,
+html[data-ring="off"][data-theme="vibe-light"] .mark.is-ready {
+  animation: none !important;
   opacity: 1;
   transform: none;
 }
 
-/* Colour mix: vibe glow on dark/light bases too */
-html[data-colour="vibe"][data-theme="dark"] .mark.is-ready,
-html[data-colour="vibe"][data-theme="light"] .mark.is-ready {
-  animation: pair-glow 15s linear infinite;
-}
 
 @keyframes pair-orbit-spin {
   from {
@@ -476,20 +545,92 @@ html[data-colour="vibe"][data-theme="light"] .mark.is-ready {
   animation: none;
 }
 
+.mark-host svg.sigil .sym[data-anim="off"],
+.mark-host svg.sigil .center[data-anim="off"] {
+  /* colour may still run via data-colour rules */
+}
+
+.mark-host svg.sigil .sym[data-anim="off"][data-colour="off"],
+.mark-host svg.sigil .center[data-anim="off"][data-colour="off"] {
+  animation: none !important;
+  filter: none;
+}
+
+/* Per-symbol colour (vibe glow) — only elements with data-colour=vibe */
+.mark-host svg.sigil .sym[data-colour="vibe"],
+.mark-host svg.sigil .center[data-colour="vibe"] {
+  animation: pair-sym-glow 15s linear infinite;
+}
+
+.mark-host svg.sigil .sym[data-anim="cw"][data-colour="vibe"],
+.mark-host svg.sigil .center[data-anim="cw"][data-colour="vibe"] {
+  animation:
+    pair-sym-spin var(--spin-dur, 72s) linear infinite,
+    pair-sym-glow 15s linear infinite;
+}
+
+.mark-host svg.sigil .sym[data-anim="ccw"][data-colour="vibe"],
+.mark-host svg.sigil .center[data-anim="ccw"][data-colour="vibe"] {
+  animation:
+    pair-sym-spin-ccw var(--spin-dur, 72s) linear infinite,
+    pair-sym-glow 15s linear infinite;
+}
+
 .mark-host svg.sigil .sym[data-anim="cw"],
 .mark-host svg.sigil .center[data-anim="cw"] {
-  animation: pair-sym-spin 72s linear infinite;
+  animation: pair-sym-spin var(--spin-dur, 72s) linear infinite;
 }
 
 .mark-host svg.sigil .sym[data-anim="ccw"],
 .mark-host svg.sigil .center[data-anim="ccw"] {
-  animation: pair-sym-spin-ccw 72s linear infinite;
+  animation: pair-sym-spin-ccw var(--spin-dur, 72s) linear infinite;
 }
 
-.mark-host svg.sigil .sym[data-anim="off"],
-.mark-host svg.sigil .center[data-anim="off"] {
-  animation: none !important;
+@keyframes pair-sym-glow {
+  0%, 14% {
+    filter:
+      drop-shadow(0 0 1.5px #ff2d55)
+      drop-shadow(0 0 6px rgba(255, 45, 85, 0.85))
+      drop-shadow(0 0 14px rgba(255, 138, 0, 0.3));
+  }
+  16.5%, 30.5% {
+    filter:
+      drop-shadow(0 0 1.5px #ff8a00)
+      drop-shadow(0 0 6px rgba(255, 138, 0, 0.85))
+      drop-shadow(0 0 14px rgba(255, 214, 10, 0.3));
+  }
+  33%, 47% {
+    filter:
+      drop-shadow(0 0 1.5px #ffd60a)
+      drop-shadow(0 0 6px rgba(255, 214, 10, 0.85))
+      drop-shadow(0 0 14px rgba(50, 215, 75, 0.3));
+  }
+  49.5%, 63.5% {
+    filter:
+      drop-shadow(0 0 1.5px #32d74b)
+      drop-shadow(0 0 6px rgba(50, 215, 75, 0.85))
+      drop-shadow(0 0 14px rgba(100, 210, 255, 0.3));
+  }
+  66%, 80% {
+    filter:
+      drop-shadow(0 0 1.5px #64d2ff)
+      drop-shadow(0 0 6px rgba(100, 210, 255, 0.85))
+      drop-shadow(0 0 14px rgba(191, 90, 242, 0.3));
+  }
+  82.5%, 96.5% {
+    filter:
+      drop-shadow(0 0 1.5px #bf5af2)
+      drop-shadow(0 0 6px rgba(191, 90, 242, 0.85))
+      drop-shadow(0 0 14px rgba(255, 45, 85, 0.3));
+  }
+  100% {
+    filter:
+      drop-shadow(0 0 1.5px #ff2d55)
+      drop-shadow(0 0 6px rgba(255, 45, 85, 0.85))
+      drop-shadow(0 0 14px rgba(255, 138, 0, 0.3));
+  }
 }
+
 
 @keyframes pair-sym-spin {
   from { transform: rotate(0deg); }

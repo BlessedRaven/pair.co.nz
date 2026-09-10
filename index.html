@@ -10,19 +10,15 @@
     (function () {
       try {
         var t = localStorage.getItem("pair-theme");
-        if (t === "light" || t === "vibe" || t === "dark") {
+        if (t === "vibe") t = "vibe-dark";
+        if (t === "light" || t === "dark" || t === "vibe-dark" || t === "vibe-light") {
           document.documentElement.setAttribute("data-theme", t);
         }
-        var c = localStorage.getItem("pair-colour");
-        if (c === "vibe" || t === "vibe") {
-          document.documentElement.setAttribute("data-colour", "vibe");
-        } else {
-          document.documentElement.setAttribute("data-colour", "off");
-        }
+        document.documentElement.setAttribute("data-colour", "off");
       } catch (e) {}
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=29" />
+  <link rel="stylesheet" href="styles.css?v=30" />
 </head>
 <body>
   <header class="top">
@@ -32,7 +28,13 @@
       <div class="themes" role="group" aria-label="Theme">
         <button type="button" data-theme-set="dark" aria-pressed="true">Dark</button>
         <button type="button" data-theme-set="light" aria-pressed="false">Light</button>
-        <button type="button" data-theme-set="vibe" aria-pressed="false">Vibe</button>
+        <span class="vibe-wrap" data-vibe-wrap>
+          <button type="button" data-vibe-toggle aria-pressed="false" aria-expanded="false" aria-haspopup="true">Vibe</button>
+          <span class="vibe-menu" data-vibe-menu hidden>
+            <button type="button" data-theme-set="vibe-dark">Vibe Dark</button>
+            <button type="button" data-theme-set="vibe-light">Vibe Light</button>
+          </span>
+        </span>
         <button type="button" data-panel-open="symbol" aria-pressed="false" title="Symbols">Symbol</button>
         <button type="button" data-panel-open="animation" aria-pressed="false" title="Animations">Animation</button>
         <button type="button" data-motion-toggle aria-pressed="false" aria-expanded="false" aria-controls="motion-panel" title="Motion controls">Motion</button>
@@ -61,7 +63,7 @@
         <input class="motion-speed" data-motion-speed type="range" min="1" max="100" value="100" step="1" aria-label="Animation speed" />
       </div>
       <button type="button" class="motion-reset" data-motion-reset>Reset</button>
-      <p class="motion-hint">Pick symbol · None/CW/CCW · speed 1–100%. Reset = all stop.</p>
+      <p class="motion-hint">Multi-select symbols (tap again to clear). Colour = vibe glow on selection only.</p>
     </div>
   </aside>
 
@@ -140,8 +142,8 @@
     <span class="muted">Mints TBD · not financial advice</span>
   </footer>
 
-  <script src="theme.js?v=29" defer></script>
-  <script src="motion.js?v=29" defer></script>
-  <script src="app.js?v=29" defer></script>
+  <script src="theme.js?v=30" defer></script>
+  <script src="motion.js?v=30" defer></script>
+  <script src="app.js?v=30" defer></script>
 </body>
 </html>

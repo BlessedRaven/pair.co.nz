@@ -1,6 +1,6 @@
 (() => {
-  const STORE_KEY = "pair-sym-motion-v7";
-  const SELECTED_KEY = "pair-motion-selected-v7";
+  const STORE_KEY = "pair-sym-motion-v8";
+  const SELECTED_KEY = "pair-motion-selected-v8";
 
   const SYMBOLS = [
     { id: "gol", label: "GOL" },
@@ -27,9 +27,8 @@
 
   const COLOURS = [
     { id: "off", label: "None" },
-    { id: "vibe", label: "Vibe" },
+    { id: "vibe", label: "Colour" },
   ];
-  const COLOUR_KEY = "pair-colour";
 
   const panel = document.querySelector("[data-motion-panel]");
   const toggle = document.querySelector("[data-motion-toggle]");
@@ -57,17 +56,30 @@
     } catch {}
   };
 
+  const readSelected = () => {
+    try {
+      const raw = JSON.parse(localStorage.getItem(SELECTED_KEY) || "[]");
+      if (Array.isArray(raw) && raw.length) {
+        return new Set(raw.filter((id) => SYMBOLS.some((s) => s.id === id)));
+      }
+    } catch {}
+    return new Set();
+  };
+
+  const writeSelected = (set) => {
+    try {
+      localStorage.setItem(SELECTED_KEY, JSON.stringify([...set]));
+    } catch {}
+  };
+
   let store = readStore();
-  let selected = "torus";
-  try {
-    selected = localStorage.getItem(SELECTED_KEY) || "torus";
-  } catch {}
-  if (!SYMBOLS.some((s) => s.id === selected)) selected = "torus";
+  let selected = readSelected();
 
   const ensure = (id) => {
-    if (!store[id]) store[id] = { anim: "off", speed: 100 };
+    if (!store[id]) store[id] = { anim: "off", speed: 100, colour: "off" };
     const a = store[id].anim;
     if (a !== "cw" && a !== "ccw" && a !== "off") store[id].anim = "off";
+    if (store[id].colour !== "vibe") store[id].colour = "off";
     let sp = Number(store[id].speed);
     if (!Number.isFinite(sp)) sp = 100;
     if (sp > 100) sp = Math.round(sp / 2);
@@ -93,7 +105,6 @@
   const anySpinning = () => SYMBOLS.some((s) => ensure(s.id).anim !== "off");
 
   const syncRing = () => {
-    // Whole-ring orbit only while something is intentionally spinning
     document.documentElement.setAttribute("data-ring", anySpinning() ? "on" : "off");
   };
 
@@ -102,55 +113,50 @@
     const el = findEl(id);
     if (!el) return;
     el.dataset.anim = cfg.anim;
-    if (cfg.anim === "off") {
-      el.style.animationDuration = "";
+    el.dataset.colour = cfg.colour === "vibe" ? "vibe" : "off";
+    el.style.animation = "";
+    el.style.animationDuration = "";
+    if (cfg.anim === "off" && cfg.colour !== "vibe") {
       el.style.animation = "none";
+      return;
+    }
+    if (cfg.anim !== "off") {
+      el.style.setProperty("--spin-dur", periodSec(cfg.speed) + "s");
     } else {
-      el.style.animation = "";
-      el.style.animationDuration = periodSec(cfg.speed) + "s";
+      el.style.removeProperty("--spin-dur");
     }
   };
 
   const applyAll = () => {
-    document.querySelectorAll(".mark-host svg.sigil .sym").forEach((el) => {
+    document.querySelectorAll(".mark-host svg.sigil .sym, .mark-host svg.sigil .center").forEach((el) => {
       const id = el.getAttribute("data-sym");
       if (!SYMBOLS.some((s) => s.id === id)) {
         el.dataset.anim = "off";
+        el.dataset.colour = "off";
         el.style.animation = "none";
-        el.style.animationDuration = "";
       }
     });
     SYMBOLS.forEach((s) => applyToDom(s.id));
     syncRing();
   };
 
-  const readColour = () => {
-    try {
-      return localStorage.getItem(COLOUR_KEY) === "vibe" ? "vibe" : "off";
-    } catch {
-      return "off";
-    }
-  };
+  const selectedList = () => [...selected];
 
-  const applyColour = (colour) => {
-    const c = colour === "vibe" ? "vibe" : "off";
-    document.documentElement.setAttribute("data-colour", c);
-    try {
-      localStorage.setItem(COLOUR_KEY, c);
-    } catch {}
-    colourList.querySelectorAll("[data-colour-pick]").forEach((btn) => {
-      btn.setAttribute("aria-selected", btn.getAttribute("data-colour-pick") === c ? "true" : "false");
-    });
+  const primaryCfg = () => {
+    const ids = selectedList();
+    if (!ids.length) return { anim: "off", speed: 100, colour: "off" };
+    return ensure(ids[ids.length - 1]);
   };
 
   const renderLists = () => {
-    const cfg = ensure(selected);
+    const cfg = primaryCfg();
     symList.innerHTML = SYMBOLS.map(function (s) {
+      const on = selected.has(s.id);
       return (
         '<button type="button" role="option" class="motion-opt" data-sym-pick="' +
         s.id +
         '" aria-selected="' +
-        (s.id === selected ? "true" : "false") +
+        (on ? "true" : "false") +
         '">' +
         s.label +
         "</button>"
@@ -167,27 +173,29 @@
         "</button>"
       );
     }).join("");
-    speedEl.value = String(cfg.speed);
-    speedVal.textContent = formatPct(cfg.speed);
-    speedEl.disabled = cfg.anim === "off";
-    const colour = readColour();
     colourList.innerHTML = COLOURS.map(function (c) {
       return (
         '<button type="button" role="option" class="motion-opt" data-colour-pick="' +
         c.id +
         '" aria-selected="' +
-        (c.id === colour ? "true" : "false") +
+        (c.id === cfg.colour ? "true" : "false") +
         '">' +
         c.label +
         "</button>"
       );
     }).join("");
+    speedEl.value = String(cfg.speed);
+    speedVal.textContent = formatPct(cfg.speed);
+    speedEl.disabled = !selected.size || cfg.anim === "off";
   };
 
   const setOpen = (open) => {
     panel.hidden = !open;
     toggle.setAttribute("aria-expanded", open ? "true" : "false");
     toggle.setAttribute("aria-pressed", open ? "true" : "false");
+    if (!open) {
+      document.querySelectorAll("[data-panel-open]").forEach((b) => b.setAttribute("aria-pressed", "false"));
+    }
   };
 
   toggle.addEventListener("click", (e) => {
@@ -213,7 +221,7 @@
 
   document.addEventListener("click", (e) => {
     if (panel.hidden) return;
-    if (e.target.closest("[data-motion-panel]") || e.target.closest("[data-motion-toggle]")) return;
+    if (e.target.closest("[data-motion-panel]") || e.target.closest("[data-motion-toggle]") || e.target.closest("[data-panel-open]")) return;
     setOpen(false);
   });
 
@@ -225,43 +233,53 @@
     e.stopPropagation();
     const btn = e.target.closest("[data-sym-pick]");
     if (!btn) return;
-    selected = btn.getAttribute("data-sym-pick");
-    try {
-      localStorage.setItem(SELECTED_KEY, selected);
-    } catch {}
-    ensure(selected);
+    const id = btn.getAttribute("data-sym-pick");
+    if (selected.has(id)) selected.delete(id);
+    else selected.add(id);
+    writeSelected(selected);
+    ensure(id);
     renderLists();
   });
+
+  const forSelected = (fn) => {
+    const ids = selectedList();
+    if (!ids.length) return;
+    ids.forEach((id) => {
+      ensure(id);
+      fn(id, store[id]);
+    });
+    writeStore(store);
+    ids.forEach((id) => applyToDom(id));
+    syncRing();
+    renderLists();
+  };
 
   animList.addEventListener("click", (e) => {
     e.stopPropagation();
     const btn = e.target.closest("[data-anim-pick]");
     if (!btn) return;
-    const cfg = ensure(selected);
-    cfg.anim = btn.getAttribute("data-anim-pick");
-    writeStore(store);
-    applyToDom(selected);
-    syncRing();
-    renderLists();
+    const anim = btn.getAttribute("data-anim-pick");
+    forSelected((id, cfg) => {
+      cfg.anim = anim;
+    });
   });
 
   colourList.addEventListener("click", (e) => {
     e.stopPropagation();
     const btn = e.target.closest("[data-colour-pick]");
     if (!btn) return;
-    applyColour(btn.getAttribute("data-colour-pick"));
-  });
-
-  document.addEventListener("pair:colour-changed", () => {
-    renderLists();
+    const colour = btn.getAttribute("data-colour-pick") === "vibe" ? "vibe" : "off";
+    forSelected((id, cfg) => {
+      cfg.colour = colour;
+    });
   });
 
   speedEl.addEventListener("input", () => {
-    const cfg = ensure(selected);
-    cfg.speed = Number(speedEl.value) || 100;
-    writeStore(store);
-    applyToDom(selected);
-    speedVal.textContent = formatPct(cfg.speed);
+    const speed = Number(speedEl.value) || 100;
+    forSelected((id, cfg) => {
+      cfg.speed = speed;
+    });
+    speedVal.textContent = formatPct(speed);
   });
 
   const resetBtn = document.querySelector("[data-motion-reset]");
@@ -270,21 +288,19 @@
       e.stopPropagation();
       store = {};
       SYMBOLS.forEach((s) => {
-        store[s.id] = { anim: "off", speed: 100 };
+        store[s.id] = { anim: "off", speed: 100, colour: "off" };
       });
       writeStore(store);
-      selected = "torus";
-      try {
-        localStorage.setItem(SELECTED_KEY, selected);
-      } catch {}
+      selected = new Set();
+      writeSelected(selected);
       applyAll();
       renderLists();
     });
   }
 
-  // Start from a clean stopped state until user opts in
   document.documentElement.setAttribute("data-ring", "off");
-  applyColour(readColour());
+  // clear legacy whole-sigil colour flag
+  document.documentElement.setAttribute("data-colour", "off");
   renderLists();
   setOpen(false);
 
