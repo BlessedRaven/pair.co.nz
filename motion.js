@@ -666,26 +666,28 @@
     colourSpeedVal.textContent = formatPct(colourSpeed);
   });
 
-  const resetBtn = document.querySelector("[data-motion-reset]");
-  if (resetBtn) {
+  const doFullReset = () => {
+    store = {};
+    SYMBOLS.forEach((s) => {
+      restoreToOrbit(s.id);
+      store[s.id] = { anim: "off", speed: 100, colour: "off", colourSpeed: 100, size: 100, x: 0, y: 0, pinned: false, ax: 0, ay: 0, orb: false, orbFn: "shield" };
+    });
+    document.querySelectorAll(".mark-host svg.sigil .sym-orb").forEach((n) => n.remove());
+    writeStore(store);
+    selected = new Set();
+    writeSelected(selected);
+    ringOn = false;
+    writeRing(false);
+    setPin(false);
+    applyAll();
+    renderLists();
+  };
+  document.querySelectorAll("[data-motion-reset]").forEach((resetBtn) => {
     resetBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      store = {};
-      SYMBOLS.forEach((s) => {
-        restoreToOrbit(s.id);
-        store[s.id] = { anim: "off", speed: 100, colour: "off", colourSpeed: 100, size: 100, x: 0, y: 0, pinned: false, ax: 0, ay: 0, orb: false, orbFn: "shield" };
-      });
-      document.querySelectorAll(".mark-host svg.sigil .sym-orb").forEach((n) => n.remove());
-      writeStore(store);
-      selected = new Set();
-      writeSelected(selected);
-      ringOn = false;
-      writeRing(false);
-      setPin(false);
-      applyAll();
-      renderLists();
+      doFullReset();
     });
-  }
+  });
 
 
   // Pause Blessed Raven orbit while hovering a symbol (same as blessedraven.com)

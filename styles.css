@@ -1350,3 +1350,22 @@ html[data-pin="on"] .mark-host svg.sigil .center:active {
 .cloud-shape-menu button:hover {
   background: rgba(120, 170, 255, 0.22);
 }
+
+/* Top-bar Reset (next to Link / Drag) */
+.themes .top-reset,
+button.top-reset {
+  border-color: rgba(255, 80, 80, 0.55) !important;
+  background: linear-gradient(180deg, rgba(220, 40, 40, 0.95), rgba(140, 10, 10, 0.98)) !important;
+  color: #fff !important;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  box-shadow: 0 0 14px rgba(255, 50, 50, 0.35);
+}
+.themes .top-reset:hover,
+button.top-reset:hover {
+  background: linear-gradient(180deg, rgba(255, 70, 70, 1), rgba(180, 20, 20, 1)) !important;
+  box-shadow: 0 0 20px rgba(255, 70, 70, 0.5);
+}
+.themes .top-reset[aria-pressed="true"] {
+  /* reset is an action, not a mode */
+}
