@@ -7,6 +7,38 @@
 
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  const restartFilterAnims = (filterId) => {
+    const filter = document.getElementById(filterId);
+    if (!filter) return;
+    filter.querySelectorAll("animate").forEach((el) => {
+      try {
+        el.beginElement();
+      } catch (_) {
+        // restart by cloning
+        const clone = el.cloneNode(true);
+        el.replaceWith(clone);
+      }
+    });
+  };
+
+  const fxFor = (hotspot) => {
+    const map = {
+      center: "warpSpectral",
+      bean: "warpSpectral",
+      sun: "warpViolent",
+      key: "warpFlutter",
+      n: "warpFlutter",
+      ne: "warpViolent",
+      e: "warpSpectral",
+      se: "warpDrip",
+      s: "warpDrip",
+      sw: "warpFlutter",
+      w: "warpViolent",
+      nw: "warpSpectral",
+    };
+    return map[hotspot] || "warpViolent";
+  };
+
   const mount = async () => {
     let raw;
     try {
@@ -72,9 +104,20 @@
     const hotspots = mark.querySelectorAll(".hotspot[data-hotspot]");
     hotspots.forEach((el) => {
       const id = el.getAttribute("data-hotspot");
-      const on = () => mark.setAttribute("data-hover", id);
+      const on = () => {
+        const fx = el.getAttribute("data-fx") || id;
+        mark.setAttribute("data-hover", id);
+        mark.setAttribute("data-fx", fx);
+        const filterId = fxFor(id);
+        mark.setAttribute("data-filter", filterId);
+        restartFilterAnims(filterId);
+      };
       const off = () => {
-        if (mark.getAttribute("data-hover") === id) mark.removeAttribute("data-hover");
+        if (mark.getAttribute("data-hover") === id) {
+          mark.removeAttribute("data-hover");
+          mark.removeAttribute("data-fx");
+          mark.removeAttribute("data-filter");
+        }
       };
       el.addEventListener("pointerenter", on);
       el.addEventListener("pointerleave", off);

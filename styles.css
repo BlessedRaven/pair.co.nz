@@ -149,25 +149,161 @@ body {
   outline-offset: 2px;
 }
 
-.landing {
+.stage {
   height: 100vh;
   height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(15rem, 0.75fr);
+  align-items: stretch;
+  gap: clamp(0.5rem, 2vw, 1.5rem);
+  padding: var(--pad);
+  padding-top: max(var(--pad), env(safe-area-inset-top));
+  padding-right: max(var(--pad), env(safe-area-inset-right));
+  padding-bottom: max(2.6rem, env(safe-area-inset-bottom));
+  padding-left: max(var(--pad), env(safe-area-inset-left));
+}
+
+.stage-sigil {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--pad);
-  padding-top: max(var(--pad), env(safe-area-inset-top));
-  padding-right: max(var(--pad), env(safe-area-inset-right));
-  padding-bottom: max(var(--pad), env(safe-area-inset-bottom));
-  padding-left: max(var(--pad), env(safe-area-inset-left));
+  min-width: 0;
+}
+
+.stage-void {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding-inline: 0.25rem;
+}
+
+.void-stack {
+  position: relative;
+  width: min(100%, 22rem);
+  aspect-ratio: 0.78;
+  display: grid;
+  place-items: center;
+}
+
+.blackhole {
+  position: absolute;
+  inset: 18% 12% 28% 12%;
+  border-radius: 50%;
+  isolation: isolate;
+}
+
+.bh-disk {
+  position: absolute;
+  inset: -8%;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 210deg,
+    transparent 0deg,
+    color-mix(in srgb, var(--accent) 55%, #ffb000) 40deg,
+    #ffe29a 70deg,
+    transparent 110deg,
+    transparent 200deg,
+    color-mix(in srgb, var(--fg) 35%, #7ab7ff) 250deg,
+    transparent 300deg
+  );
+  filter: blur(10px) saturate(1.25);
+  opacity: 0.85;
+  animation: bh-spin 18s linear infinite;
+}
+
+.bh-photon {
+  position: absolute;
+  inset: 6%;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--fg) 35%, transparent);
+  box-shadow:
+    0 0 18px color-mix(in srgb, var(--accent) 35%, transparent),
+    inset 0 0 24px color-mix(in srgb, var(--fg) 12%, transparent);
+  opacity: 0.7;
+}
+
+.bh-core {
+  position: absolute;
+  inset: 22%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 45% 40%, #1a1a1e 0%, #000 55%, #000 100%);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.9),
+    0 0 40px 8px rgba(0, 0, 0, 0.85),
+    inset 0 0 30px 12px rgba(0, 0, 0, 1);
+}
+
+.bh-lens {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.14), transparent 42%);
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+}
+
+[data-theme="light"] .bh-core {
+  background: radial-gradient(circle at 45% 40%, #2a2a30 0%, #050505 60%, #000 100%);
+}
+
+[data-theme="vibe"] .bh-disk {
+  animation-duration: 10s;
+  filter: blur(9px) saturate(1.6);
+}
+
+@keyframes bh-spin {
+  to { transform: rotate(360deg); }
+}
+
+.void-title {
+  position: relative;
+  z-index: 2;
+  margin: 0;
+  width: 100%;
+  text-align: center;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 0.92;
+  font-size: clamp(1.55rem, 3.6vw, 2.75rem);
+  text-transform: uppercase;
+  color: var(--fg);
+  text-shadow:
+    0 0 24px color-mix(in srgb, var(--bg) 80%, transparent),
+    0 1px 0 color-mix(in srgb, var(--bg) 60%, transparent);
+}
+
+.void-title span {
+  display: block;
+}
+
+.void-title span:first-child {
+  letter-spacing: 0.12em;
+}
+
+.void-title span:last-child {
+  margin-top: 0.12em;
+  letter-spacing: 0.18em;
+  font-size: 0.86em;
+  opacity: 0.92;
+}
+
+.fx-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
 }
 
 .mark {
   position: relative;
   width: min(
-    calc(100vw - 2 * var(--pad)),
-    calc((100dvh - 2 * var(--pad)) * var(--vb-w) / var(--vb-h))
+    100%,
+    calc((100dvh - 4.5rem) * var(--vb-w) / var(--vb-h)),
+    52rem
   );
   height: auto;
   aspect-ratio: 923.86 / 886.31;
@@ -358,7 +494,7 @@ body {
 
 .hint {
   position: absolute;
-  bottom: 2.4rem;
+  bottom: 0.35rem;
   left: 50%;
   transform: translateX(-50%);
   z-index: 5;
@@ -522,7 +658,7 @@ body:has(.brief) .top {
 }
 
 
-/* ——— Hover: unique spectral / flutter / drip-wave per node ——— */
+/* ——— Violent warp / phase hovers (shape holds, geometry liquifies) ——— */
 .hits .ripple {
   fill: none;
   stroke: var(--fg);
@@ -539,151 +675,139 @@ body:has(.brief) .top {
 }
 
 @keyframes pair-ripple {
-  0% {
-    opacity: 0.75;
-    stroke-width: 2.4;
-    transform: scale(0.55);
-  }
-  100% {
-    opacity: 0;
-    stroke-width: 0.5;
-    transform: scale(2.1);
-  }
+  0% { opacity: 0.75; stroke-width: 2.4; transform: scale(0.55); }
+  100% { opacity: 0; stroke-width: 0.5; transform: scale(2.1); }
 }
 
-/* While hovering, drive the sigil art — pause idle breathe so motion reads */
 .mark.is-ready[data-hover] {
   animation: none;
 }
 
 [data-theme="vibe"] .mark.is-ready[data-hover] {
-  /* keep colour aura, drop breathe */
   animation: pair-glow 15s linear infinite;
 }
 
 .mark[data-hover] .sigil {
   transform-box: view-box;
   transform-origin: 447.56px 484.96px;
-}
-
-.mark[data-hover="center"] .sigil {
-  animation: pair-hover-spectral 0.9s ease-in-out;
-}
-.mark[data-hover="n"] .sigil {
-  animation: pair-hover-flutter 0.55s ease-in-out;
-}
-.mark[data-hover="ne"] .sigil {
-  animation: pair-hover-bloom 0.7s ease-out;
-}
-.mark[data-hover="e"] .sigil {
-  animation: pair-hover-shimmer 0.65s linear;
-}
-.mark[data-hover="se"] .sigil {
-  animation: pair-hover-drip 0.85s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.mark[data-hover="s"] .sigil {
-  animation: pair-hover-wave 0.8s ease-in-out;
-}
-.mark[data-hover="sw"] .sigil {
-  animation: pair-hover-flutter-soft 0.6s ease-in-out;
-}
-.mark[data-hover="w"] .sigil {
-  animation: pair-hover-shear 0.7s ease-in-out;
-}
-.mark[data-hover="nw"] .sigil {
-  animation: pair-hover-ghost 0.75s ease-in-out;
+  will-change: filter, transform, opacity;
 }
 
 .mark[data-hover] .sigil .orbit {
-  animation: pair-orbit-react 0.8s ease-in-out;
+  animation: pair-orbit-react 0.75s ease-in-out;
 }
 
 .mark[data-hover] .sigil .center {
   transform-box: view-box;
   transform-origin: 447.56px 484.96px;
-  animation: pair-center-pulse 0.8s ease-in-out;
+  animation: pair-center-pulse 0.75s ease-in-out;
 }
 
-@keyframes pair-hover-spectral {
-  0%, 100% { transform: scale(1); opacity: 1; filter: none; }
-  20% { transform: scale(1.02) rotate(-0.6deg); opacity: 0.82; }
-  40% { transform: scale(0.985) rotate(0.7deg); opacity: 1; }
-  60% { transform: scale(1.025); opacity: 0.78; }
-  80% { transform: scale(0.99) rotate(-0.4deg); opacity: 0.95; }
+/* Displacement filters — keep recognisable silhouette while warping lines */
+.mark[data-filter="warpViolent"] .sigil {
+  filter: url(#warpViolent);
+  animation: pair-violent-kick 0.7s ease-in-out;
+}
+.mark[data-filter="warpDrip"] .sigil {
+  filter: url(#warpDrip);
+  animation: pair-drip-kick 0.85s cubic-bezier(0.2, 0.85, 0.2, 1);
+}
+.mark[data-filter="warpFlutter"] .sigil {
+  filter: url(#warpFlutter);
+  animation: pair-flutter-kick 0.55s ease-in-out;
+}
+.mark[data-filter="warpSpectral"] .sigil {
+  filter: url(#warpSpectral);
+  animation: pair-spectral-kick 0.9s ease-in-out;
 }
 
-@keyframes pair-hover-flutter {
-  0%, 100% { transform: rotate(0deg) scale(1); }
-  15% { transform: rotate(-2.2deg) scale(1.015) translate(0, -4px); }
-  30% { transform: rotate(2.4deg) scale(0.99) translate(0, 2px); }
-  45% { transform: rotate(-1.8deg) scale(1.02) translate(0, -3px); }
-  60% { transform: rotate(1.6deg) scale(0.995) translate(0, 1px); }
-  75% { transform: rotate(-0.8deg) scale(1.01); }
+/* Sigil already inverted via --sigil-filter on host; compose carefully */
+.mark-host svg.sigil {
+  filter: var(--sigil-filter);
+}
+.mark[data-hover] .mark-host svg.sigil {
+  /* hover filter replaces host invert briefly — re-apply invert via CSS where needed */
+  filter: var(--sigil-filter) url(#warpViolent);
+}
+.mark[data-filter="warpViolent"] .mark-host svg.sigil { filter: var(--sigil-filter) url(#warpViolent); }
+.mark[data-filter="warpDrip"] .mark-host svg.sigil { filter: var(--sigil-filter) url(#warpDrip); }
+.mark[data-filter="warpFlutter"] .mark-host svg.sigil { filter: var(--sigil-filter) url(#warpFlutter); }
+.mark[data-filter="warpSpectral"] .mark-host svg.sigil { filter: var(--sigil-filter) url(#warpSpectral); }
+
+@keyframes pair-violent-kick {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  18% { transform: scale(1.035, 0.96) rotate(-1.4deg); opacity: 0.88; }
+  42% { transform: scale(0.96, 1.05) rotate(1.8deg); opacity: 1; }
+  68% { transform: scale(1.04, 0.97) rotate(-1deg); opacity: 0.8; }
 }
 
-@keyframes pair-hover-flutter-soft {
+@keyframes pair-drip-kick {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  30% { transform: translateY(-10px) scale(1.04, 0.94); }
+  62% { transform: translateY(14px) scale(0.95, 1.08); }
+  82% { transform: translateY(-4px) scale(1.02, 0.98); }
+}
+
+@keyframes pair-flutter-kick {
   0%, 100% { transform: rotate(0) scale(1); }
-  25% { transform: rotate(1.4deg) scale(1.012) translate(-3px, 0); }
-  50% { transform: rotate(-1.6deg) scale(0.992) translate(3px, 1px); }
-  75% { transform: rotate(0.9deg) scale(1.008); }
+  12% { transform: rotate(-3deg) scale(1.03) translateY(-5px); }
+  28% { transform: rotate(3.4deg) scale(0.97) translateY(3px); }
+  46% { transform: rotate(-2.6deg) scale(1.04) translateY(-4px); }
+  64% { transform: rotate(2.2deg) scale(0.98); }
+  80% { transform: rotate(-1deg) scale(1.02); }
 }
 
-@keyframes pair-hover-drip {
-  0% { transform: translate(0, 0) scale(1); }
-  25% { transform: translate(0, -6px) scale(1.015, 0.985); }
-  55% { transform: translate(0, 10px) scale(0.985, 1.03); }
-  75% { transform: translate(0, -3px) scale(1.01, 0.995); }
-  100% { transform: translate(0, 0) scale(1); }
-}
-
-@keyframes pair-hover-wave {
-  0%, 100% { transform: translate(0, 0) rotate(0); }
-  20% { transform: translate(-5px, 3px) rotate(-0.5deg); }
-  40% { transform: translate(6px, -4px) rotate(0.6deg); }
-  60% { transform: translate(-4px, 5px) rotate(-0.4deg); }
-  80% { transform: translate(3px, -2px) rotate(0.3deg); }
-}
-
-@keyframes pair-hover-bloom {
-  0%, 100% { transform: scale(1); }
-  40% { transform: scale(1.04); }
-  70% { transform: scale(0.98); }
-}
-
-@keyframes pair-hover-shimmer {
+@keyframes pair-spectral-kick {
   0%, 100% { opacity: 1; transform: scale(1); }
-  25% { opacity: 0.72; transform: scale(1.01); }
-  50% { opacity: 1; transform: scale(0.99); }
-  75% { opacity: 0.8; transform: scale(1.015); }
-}
-
-@keyframes pair-hover-shear {
-  0%, 100% { transform: skewX(0deg) translate(0, 0); }
-  30% { transform: skewX(-2deg) translate(4px, 0); }
-  60% { transform: skewX(2deg) translate(-4px, 0); }
-}
-
-@keyframes pair-hover-ghost {
-  0%, 100% { opacity: 1; transform: scale(1) translate(0, 0); filter: none; }
-  30% { opacity: 0.55; transform: scale(1.02) translate(0, -5px); }
-  55% { opacity: 0.9; transform: scale(0.98) translate(0, 3px); }
-  75% { opacity: 0.65; transform: scale(1.015); }
+  20% { opacity: 0.45; transform: scale(1.03); }
+  40% { opacity: 1; transform: scale(0.97); }
+  60% { opacity: 0.55; transform: scale(1.05); }
+  80% { opacity: 0.9; transform: scale(0.99); }
 }
 
 @keyframes pair-orbit-react {
   0%, 100% { transform: rotate(0deg); }
-  50% { transform: rotate(4deg); }
+  35% { transform: rotate(6deg); }
+  70% { transform: rotate(-4deg); }
 }
 
 @keyframes pair-center-pulse {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.06); }
+  40% { transform: scale(1.09); }
+  70% { transform: scale(0.94); }
 }
 
-.mark[data-hover="n"] .sigil .orbit { animation-name: pair-orbit-react-opp; }
-@keyframes pair-orbit-react-opp {
-  0%, 100% { transform: rotate(0deg); }
-  50% { transform: rotate(-5deg); }
+@media (max-width: 900px) {
+  .stage {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) auto;
+    padding-bottom: max(3.2rem, env(safe-area-inset-bottom));
+  }
+
+  .stage-void {
+    min-height: 9.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .void-stack {
+    aspect-ratio: auto;
+    width: min(100%, 28rem);
+    grid-template-columns: 7.5rem 1fr;
+    gap: 0.85rem;
+    align-items: center;
+  }
+
+  .blackhole {
+    position: relative;
+    inset: auto;
+    width: 7.5rem;
+    height: 7.5rem;
+  }
+
+  .void-title {
+    text-align: left;
+    font-size: clamp(1.35rem, 6vw, 2rem);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -695,8 +819,13 @@ body:has(.brief) .top {
   .mark-host svg.sigil .orbit,
   .hits .hits-orbit,
   .hits .hotspot:hover .ripple,
-  .hits .hotspot:focus-visible .ripple {
+  .hits .hotspot:focus-visible .ripple,
+  .bh-disk {
     animation: none !important;
+  }
+
+  .mark[data-hover] .mark-host svg.sigil {
+    filter: var(--sigil-filter) !important;
   }
 
   .mark {
