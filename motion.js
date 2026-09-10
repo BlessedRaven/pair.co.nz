@@ -216,7 +216,7 @@
 
   const syncMotionSpinUi = () => {
     document.documentElement.setAttribute("data-ring-spin", ringOn ? ringSpin : "off");
-    document.querySelectorAll("[data-motion-spin]").forEach((btn) => {
+    document.querySelectorAll("[data-motion-menu] [data-motion-spin]").forEach((btn) => {
       const dir = btn.getAttribute("data-motion-spin");
       btn.setAttribute("aria-pressed", ringOn && ringSpin === dir ? "true" : "false");
     });

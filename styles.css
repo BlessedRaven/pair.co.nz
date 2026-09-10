@@ -617,6 +617,12 @@ html[data-ring="off"] .hits .hits-orbit {
   animation: none !important;
 }
 
+/* Anticlockwise Motion: reverse the whole Blessed Raven ring (avoids canceling local CCW spin) */
+html[data-ring="on"][data-ring-spin="ccw"] .mark-host svg.sigil .orbit,
+html[data-ring="on"][data-ring-spin="ccw"] .hits .hits-orbit {
+  animation: pair-orbit-spin-ccw 80s linear infinite;
+}
+
 /* Stop breathe scale when ring is off, but never kill colour glow */
 html[data-ring="off"] .mark.is-ready {
   animation: none !important;
@@ -829,7 +835,10 @@ html[data-ring="off"][data-theme="vibe-light"] .mark.is-ready {
   from { transform: rotate(0deg) scale(var(--sym-scale, 1)); }
   to { transform: rotate(-360deg) scale(var(--sym-scale, 1)); }
 }
-  to { transform: translate(var(--sym-x, 0px), var(--sym-y, 0px)) rotate(-360deg) scale(var(--sym-scale, 1)); }
+
+@keyframes pair-orbit-spin-ccw {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
 }
 
 .hits {
