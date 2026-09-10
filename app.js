@@ -338,7 +338,7 @@
   // Drag zoom when Zoom mode is locked on (empty space / not a symbol or hotspot)
   mark.addEventListener("pointerdown", (e) => {
     if (!zoomMode) return;
-    if (e.target.closest("a.hotspot, .sym, .center, [data-motion-panel], header")) return;
+    if (e.target.closest("a.hotspot, .sym, .center, [data-motion-panel], header, [data-site-bar]")) return;
     e.preventDefault();
     zoomDrag = { y0: e.clientY, z0: markZoom, pid: e.pointerId };
     try {
@@ -365,7 +365,7 @@
   mark.addEventListener(
     "wheel",
     (e) => {
-      if (e.target.closest("[data-motion-panel], .motion-panel, header, .themes")) return;
+      if (e.target.closest("[data-motion-panel], .motion-panel, header, .themes, [data-site-bar]")) return;
       e.preventDefault();
       const factor = e.deltaY > 0 ? 0.9 : 1.111111;
       markZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, markZoom * factor));
@@ -462,7 +462,7 @@
   mark.addEventListener("pointerdown", (e) => {
     // Void pan is native (empty space). Zoom mode still owns empty-space zoom-drag.
     if (document.documentElement.getAttribute("data-zoom-mode") === "on") return;
-    if (e.target.closest(".sym, .center, [data-motion-panel], header, .themes, .zoom-wrap, .pin-wrap")) return;
+    if (e.target.closest(".sym, .center, [data-motion-panel], header, .themes, .zoom-wrap, .pin-wrap, [data-site-bar], .site-bar")) return;
     e.preventDefault();
     panDrag = { x0: e.clientX, y0: e.clientY, panX0: panX, panY0: panY };
     mark.classList.add("is-panning");

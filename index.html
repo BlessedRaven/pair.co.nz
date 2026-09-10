@@ -18,7 +18,7 @@
       } catch (e) {}
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=62" />
+  <link rel="stylesheet" href="styles.css?v=63" />
 </head>
 <body>
   <header class="top">
@@ -47,18 +47,10 @@
           <button type="button" data-motion-pin aria-pressed="false" aria-expanded="false" aria-haspopup="true" title="Pin: drag symbols">Pin</button>
           <span class="pin-menu" data-pin-menu hidden>
             <button type="button" data-pin-repel aria-pressed="true">Repel</button>
-            <button type="button" data-pin-cloud-orbit aria-pressed="false">Cloud orbit</button>
+            <button type="button" data-pin-cloud-orbit aria-pressed="false" title="Orbit mode: any hub; Torus hub-only">Orbit mode</button>
             <button type="button" data-pin-layout-reset>Reset</button>
           </span>
         </span>
-        <span class="zoom-wrap" data-zoom-wrap>
-          <button type="button" data-zoom-toggle aria-pressed="false" aria-expanded="false" aria-haspopup="true" title="Zoom mode: click-drag on empty space">Zoom</button>
-          <span class="zoom-menu" data-zoom-menu hidden>
-            <button type="button" data-zoom-invert aria-pressed="false">Invert drag</button>
-            <button type="button" data-zoom-reset>Reset 100%</button>
-          </span>
-        </span>
-        <button type="button" data-link-toggle aria-pressed="true" title="Tap a shape (no drag) to open its coin brief">Link</button>
         <button type="button" data-drag-toggle aria-pressed="false" title="Shapes always drag site-wide; also pan the void">Drag</button>
         <button type="button" class="top-reset" data-motion-reset title="Reset all symbol play">Reset</button>
       </div>
@@ -187,8 +179,20 @@
         <g class="hits-free"></g>
       </svg>
     </div>
-    <p class="hint">Drag shapes anytime · tap (no move) opens brief · pan void · Pin = repel/orbit/reset</p>
+    <p class="hint">Drag shapes · Link/Zoom bottom-right · Pin = Repel + Orbit mode</p>
   </main>
+
+
+  <div class="site-bar" data-site-bar role="toolbar" aria-label="Site">
+    <button type="button" data-link-toggle aria-pressed="true" title="Tap a shape (no drag) to open its coin brief">Link</button>
+    <span class="zoom-wrap" data-zoom-wrap>
+      <button type="button" data-zoom-toggle aria-pressed="false" aria-expanded="false" aria-haspopup="true" title="Zoom mode: click-drag on empty space">Zoom</button>
+      <span class="zoom-menu" data-zoom-menu hidden>
+        <button type="button" data-zoom-invert aria-pressed="false">Invert drag</button>
+        <button type="button" data-zoom-reset>Reset 100%</button>
+      </span>
+    </span>
+  </div>
 
   <footer class="foot">
     <a href="donate.html">Donate</a>
@@ -198,13 +202,13 @@
     <span class="muted">Mints TBD · not financial advice</span>
   </footer>
 
-  <script src="theme.js?v=62" defer></script>
-  <script src="motion.js?v=62" defer></script>
-  <script src="app.js?v=62" defer></script>
+  <script src="theme.js?v=63" defer></script>
+  <script src="motion.js?v=63" defer></script>
+  <script src="app.js?v=63" defer></script>
 
-  <div class="cloud-shape-menu" data-cloud-shape-menu hidden role="menu" aria-label="Cloud shape actions">
-    <button type="button" role="menuitem" data-cloud-act="hub">Make house (hub)</button>
-    <button type="button" role="menuitem" data-cloud-act="all-shapes">All shapes</button>
+  <div class="cloud-shape-menu" data-cloud-shape-menu hidden role="menu" aria-label="Orbit shape actions">
+    <button type="button" role="menuitem" data-cloud-act="hub">Make hub (orbited)</button>
+    <button type="button" role="menuitem" data-cloud-act="all-shapes">All orbiters</button>
     <button type="button" role="menuitem" data-cloud-act="reset-shape">Reset shape</button>
     <button type="button" role="menuitem" data-cloud-act="reset-all">Reset</button>
   </div>

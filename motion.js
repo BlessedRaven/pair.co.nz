@@ -941,7 +941,7 @@
   let repelOn = true;
   let cloudOrbitOn = false;
   let drag = null;
-  // hubId is Cloud for now; later any selected symbol can become the hub
+  // hubId: any symbol (incl. Torus). Moons: any except Torus.
   let hubId = CLOUD_ID;
   let ringIds = []; // moons in even angular order
   let ringRadius = 0; // single shared radius — perfect circle
@@ -1023,8 +1023,12 @@
 
   // Hard separation: no two symbols may touch/overlay when repel is on
   const resolveRepel = (priorityId) => {
-    // Repel stays a Pin tool; shape drag itself is always available
-    if (!repelOn || !pinOn) return;
+    // Repel is Pin tool; Orbit mode always auto-repels while active
+    if (cloudOrbitOn && pinOn) {
+      /* fall through */
+    } else if (!repelOn || !pinOn) {
+      return;
+    }
     const ids = SYMBOLS.map((s) => s.id).filter((id) => findEl(id));
     ids.forEach((id) => {
       if (!ensure(id).pinned) ensurePinnedAtWorld(id);
@@ -1139,7 +1143,10 @@
     SYMBOLS.forEach((s) => {
       if (s.id === hubId) return;
       if (!findEl(s.id)) return;
+      // Torus can only be orbited — never an orbiter/moon
+      if (s.id === "torus") return;
       const r = artRadius(s.id);
+      // Orbit mode: every non-torus can orbit; size gate only when not force-all
       if (cloudForceAll || r < hubR * 0.98) smaller.push({ id: s.id, r });
     });
     // Stable order by size then id — even slots around the circle
@@ -1207,6 +1214,12 @@
         }
         SYMBOLS.forEach((s) => ensurePinnedAtWorld(s.id));
       }
+      // Orbit mode: every shape can orbit except Torus (hub-only)
+      cloudForceAll = true;
+      // Auto-repel while orbiting — click/drag keeps separation
+      repelOn = true;
+      if (!hubId || !findEl(hubId)) hubId = CLOUD_ID;
+      // If somehow hub is invalid, fall back
       startCloudOrbit();
     } else {
       stopCloudOrbit();
@@ -1503,7 +1516,8 @@
     }
     // While dragging a moon, allow free move; ring snaps even again on release
 
-    if (repelOn && pinOn) resolveRepel(drag.id);
+    // Orbit mode auto-repels on drag; Pin+Repel also
+    if ((repelOn && pinOn) || cloudOrbitOn) resolveRepel(drag.id);
     writeStore(store);
   };
 
