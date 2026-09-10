@@ -1055,14 +1055,22 @@ html[data-pin="on"] .mark-host svg.sigil .free-layer {
   pointer-events: all;
 }
 
-/* Gravity hub highlight (Pin Orbit) */
-.mark-host svg.sigil .sym[data-gravity-hub="true"],
-.mark-host svg.sigil .center[data-gravity-hub="true"] {
+/* Cloud-orbit prototype hub */
+.mark-host svg.sigil .sym[data-cloud-hub="true"] {
   filter: drop-shadow(0 0 6px var(--accent)) drop-shadow(0 0 14px rgba(225, 29, 46, 0.4));
 }
-html[data-pin-orbit="on"] .mark-host svg.sigil .sym,
-html[data-pin-orbit="on"] .mark-host svg.sigil .center {
+html[data-pin="on"] .mark-host svg.sigil .sym,
+html[data-pin="on"] .mark-host svg.sigil .center {
   cursor: grab;
-  pointer-events: all;
+}
+html[data-pin="on"] .mark-host svg.sigil .sym:active,
+html[data-pin="on"] .mark-host svg.sigil .center:active {
+  cursor: grabbing;
 }
 
+
+/* Cloud-orbit tidal lock (face the hub) */
+.mark-host svg.sigil .sym[data-cloud-moon="true"] {
+  transform: scale(var(--sym-scale, 1)) rotate(var(--tidal-rot, 0rad));
+  transform-origin: center;
+}

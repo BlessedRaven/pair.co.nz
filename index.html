@@ -18,7 +18,7 @@
       } catch (e) {}
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=46" />
+  <link rel="stylesheet" href="styles.css?v=47" />
 </head>
 <body>
   <header class="top">
@@ -38,10 +38,10 @@
         <button type="button" data-panel-open="symbol" aria-pressed="false" aria-expanded="false" aria-controls="motion-panel" title="Symbol options">Symbol</button>
         <button type="button" data-motion-toggle aria-pressed="false" title="Slow whole-sigil orbit">Motion</button>
         <span class="pin-wrap" data-pin-wrap>
-          <button type="button" data-motion-pin aria-pressed="false" aria-expanded="false" aria-haspopup="true" title="Pin: Free drag or Orbit gravity">Pin</button>
+          <button type="button" data-motion-pin aria-pressed="false" aria-expanded="false" aria-haspopup="true" title="Pin: drag symbols">Pin</button>
           <span class="pin-menu" data-pin-menu hidden>
-            <button type="button" data-pin-mode="free" aria-pressed="true">Free</button>
-            <button type="button" data-pin-mode="orbit" aria-pressed="false">Orbit</button>
+            <button type="button" data-pin-repel aria-pressed="true">Repel</button>
+            <button type="button" data-pin-cloud-orbit aria-pressed="false">Cloud orbit</button>
           </span>
         </span>
       </div>
@@ -75,7 +75,7 @@
         <input class="motion-speed" data-motion-colour-speed type="range" min="1" max="100" value="100" step="1" aria-label="Colour speed" />
       </div>
       <button type="button" class="motion-reset" data-motion-reset>Reset</button>
-      <p class="motion-hint">Motion = Blessed Raven ring spin (pauses on hover). Pin Free = drag + magnetic repel. Pin Orbit = click a symbol to set gravity hub; others orbit it. Colour = Multicolour or static rainbow.</p>
+      <p class="motion-hint">Motion = Blessed Raven ring. Pin = fluid drag. Repel (on by default) stops overlap. Cloud orbit = prototype: symbols smaller than Cloud lock into a circle around it. Colour = Multicolour or static rainbow.</p>
     </div>
   </aside>
 
@@ -159,8 +159,8 @@
     <span class="muted">Mints TBD · not financial advice</span>
   </footer>
 
-  <script src="theme.js?v=46" defer></script>
-  <script src="motion.js?v=46" defer></script>
-  <script src="app.js?v=46" defer></script>
+  <script src="theme.js?v=47" defer></script>
+  <script src="motion.js?v=47" defer></script>
+  <script src="app.js?v=47" defer></script>
 </body>
 </html>
