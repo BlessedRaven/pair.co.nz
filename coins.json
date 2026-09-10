@@ -1,7 +1,7 @@
 {
   "site": {
     "title": "PAIR Portal",
-    "tagline": "Each node is its own coin. Briefs first — mints when ready.",
+    "tagline": "Symbol sandbox \u2014 play & experiment",
     "home": "/"
   },
   "coins": [
@@ -10,7 +10,7 @@
       "slug": "pair",
       "name": "PAIR",
       "ticker": "PAIR",
-      "blurb": "AI nature-scan glasses — compound analysis, resource sense, ecosystem read.",
+      "blurb": "AI nature-scan glasses \u2014 compound analysis, resource sense, ecosystem read.",
       "hotspot": "center",
       "pumpfun": null,
       "status": "brief"
@@ -20,7 +20,7 @@
       "slug": "raven",
       "name": "Blessed Raven",
       "ticker": "RAVEN",
-      "blurb": "Brand crow — inventions hub megaphone and portal sigil.",
+      "blurb": "Brand crow \u2014 inventions hub megaphone and portal sigil.",
       "hotspot": "n",
       "pumpfun": null,
       "status": "brief"
@@ -30,7 +30,7 @@
       "slug": "flower",
       "name": "Flower",
       "ticker": "FLOWER",
-      "blurb": "Sacred-geometry eco-village fund — pods, gardens, solar-first community.",
+      "blurb": "Sacred-geometry eco-village fund \u2014 pods, gardens, solar-first community.",
       "hotspot": "ne",
       "pumpfun": null,
       "status": "brief"
@@ -40,7 +40,7 @@
       "slug": "torus",
       "name": "Torus",
       "ticker": "TORUS",
-      "blurb": "Yellow-light / torus cosmology lane — physics story, not medical claims.",
+      "blurb": "Yellow-light / torus cosmology lane \u2014 physics story, not medical claims.",
       "hotspot": "e",
       "pumpfun": null,
       "status": "brief"
@@ -50,7 +50,7 @@
       "slug": "nest",
       "name": "Nest",
       "ticker": "NEST",
-      "blurb": "Land & base lane — high-country holding for long-horizon buildout.",
+      "blurb": "Land & base lane \u2014 high-country holding for long-horizon buildout.",
       "hotspot": "se",
       "pumpfun": null,
       "status": "brief"
@@ -60,7 +60,7 @@
       "slug": "fund",
       "name": "Fund",
       "ticker": "FUND",
-      "blurb": "Serious NZD path for community / land — meme is megaphone, not title deed.",
+      "blurb": "Serious NZD path for community / land \u2014 meme is megaphone, not title deed.",
       "hotspot": "s",
       "pumpfun": null,
       "status": "brief"
@@ -70,7 +70,7 @@
       "slug": "wings",
       "name": "Wings",
       "ticker": "WINGS",
-      "blurb": "Open slot — next invention or coin narrative.",
+      "blurb": "Open slot \u2014 next invention or coin narrative.",
       "hotspot": "sw",
       "pumpfun": null,
       "status": "brief"
@@ -80,7 +80,7 @@
       "slug": "orbit",
       "name": "Orbit",
       "ticker": "ORBIT",
-      "blurb": "Open slot — merger / horizon experiments and sim work.",
+      "blurb": "Open slot \u2014 merger / horizon experiments and sim work.",
       "hotspot": "w",
       "pumpfun": null,
       "status": "brief"
@@ -90,7 +90,7 @@
       "slug": "archive",
       "name": "Archive",
       "ticker": "ARC",
-      "blurb": "Memory & docs lane — Drive corpus, briefs, and long notes.",
+      "blurb": "Memory & docs lane \u2014 Drive corpus, briefs, and long notes.",
       "hotspot": "nw",
       "pumpfun": null,
       "status": "brief"

@@ -582,6 +582,7 @@
   const pinMenu = document.querySelector("[data-pin-menu]");
   const repelBtn = document.querySelector("[data-pin-repel]");
   const cloudOrbitBtn = document.querySelector("[data-pin-cloud-orbit]");
+  const pinLayoutResetBtn = document.querySelector("[data-pin-layout-reset]");
 
   const pinMenuOpen = (open) => {
     if (!pinMenu || !pinBtn) return;
@@ -910,6 +911,33 @@
       }
       setCloudOrbit(!cloudOrbitOn);
       applyAll();
+    });
+  }
+
+  // Pin → Reset: put every symbol back to artist baseline seats
+  if (pinLayoutResetBtn) {
+    pinLayoutResetBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setCloudOrbit(false);
+      stopCloudOrbit();
+      SYMBOLS.forEach((s) => {
+        restoreToOrbit(s.id);
+        store[s.id] = {
+          anim: (store[s.id] && store[s.id].anim) || "off",
+          speed: (store[s.id] && store[s.id].speed) || 100,
+          colour: (store[s.id] && store[s.id].colour) || "off",
+          colourSpeed: (store[s.id] && store[s.id].colourSpeed) || 100,
+          size: 100,
+          x: 0,
+          y: 0,
+          pinned: false,
+          ax: 0,
+          ay: 0,
+        };
+      });
+      writeStore(store);
+      applyAll();
+      renderLists();
     });
   }
 

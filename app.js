@@ -238,8 +238,9 @@
     if (reduced) mark.classList.add("reduced");
   };
 
-  // Scroll-wheel zoom on the sigil (scroll down = zoom out)
+  // Zoom: wheel (if available) + Zoom-mode click-drag on empty space
   const ZOOM_KEY = "pair-mark-zoom-v1";
+  const ZOOM_INV_KEY = "pair-mark-zoom-invert-v1";
   const ZOOM_MIN = 0.28;
   const ZOOM_MAX = 2.4;
   const readZoom = () => {
@@ -250,32 +251,147 @@
     return 1;
   };
   let markZoom = readZoom();
+  let zoomMode = false;
+  let zoomInvert = false;
+  try {
+    zoomInvert = localStorage.getItem(ZOOM_INV_KEY) === "1";
+  } catch {}
+  let zoomDrag = null;
+
+  const zoomBtn = document.querySelector("[data-zoom-toggle]");
+  const zoomMenu = document.querySelector("[data-zoom-menu]");
+  const zoomInvertBtn = document.querySelector("[data-zoom-invert]");
+  const zoomResetBtn = document.querySelector("[data-zoom-reset]");
+  const sandboxBtn = document.querySelector("[data-sandbox-toggle]");
+
   const applyZoom = () => {
     mark.style.setProperty("--mark-zoom", String(markZoom));
     try {
       localStorage.setItem(ZOOM_KEY, String(markZoom));
     } catch {}
   };
+
+  const setZoomMode = (on) => {
+    zoomMode = !!on;
+    document.documentElement.setAttribute("data-zoom-mode", zoomMode ? "on" : "off");
+    if (zoomBtn) {
+      zoomBtn.setAttribute("aria-pressed", zoomMode ? "true" : "false");
+      zoomBtn.setAttribute("aria-expanded", zoomMode && zoomMenu && !zoomMenu.hidden ? "true" : "false");
+    }
+  };
+
+  const zoomMenuOpen = (open) => {
+    if (!zoomMenu || !zoomBtn) return;
+    zoomMenu.hidden = !open;
+    zoomBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  };
+
+  const syncZoomInvertUi = () => {
+    if (zoomInvertBtn) zoomInvertBtn.setAttribute("aria-pressed", zoomInvert ? "true" : "false");
+  };
+
   applyZoom();
+  setZoomMode(false);
+  syncZoomInvertUi();
+
+  if (zoomBtn) {
+    zoomBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const next = !zoomMode;
+      setZoomMode(next);
+      if (next) zoomMenuOpen(true);
+      else zoomMenuOpen(false);
+    });
+  }
+  if (zoomInvertBtn) {
+    zoomInvertBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      zoomInvert = !zoomInvert;
+      try {
+        localStorage.setItem(ZOOM_INV_KEY, zoomInvert ? "1" : "0");
+      } catch {}
+      syncZoomInvertUi();
+    });
+  }
+  if (zoomResetBtn) {
+    zoomResetBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      markZoom = 1;
+      applyZoom();
+    });
+  }
+  document.addEventListener("click", (e) => {
+    if (!zoomMenu || zoomMenu.hidden) return;
+    if (e.target.closest("[data-zoom-wrap]")) return;
+    zoomMenuOpen(false);
+  });
+
+  // Drag zoom when Zoom mode is locked on (empty space / not a symbol or hotspot)
+  mark.addEventListener("pointerdown", (e) => {
+    if (!zoomMode) return;
+    if (e.target.closest("a.hotspot, .sym, .center, [data-motion-panel], header")) return;
+    e.preventDefault();
+    zoomDrag = { y0: e.clientY, z0: markZoom, pid: e.pointerId };
+    try {
+      mark.setPointerCapture(e.pointerId);
+    } catch (err) {}
+  });
+  mark.addEventListener("pointermove", (e) => {
+    if (!zoomDrag) return;
+    e.preventDefault();
+    const dy = e.clientY - zoomDrag.y0;
+    // default: drag down = zoom in, drag up = zoom out
+    const signed = zoomInvert ? -dy : dy;
+    const factor = Math.exp(signed * 0.0045);
+    markZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoomDrag.z0 * factor));
+    if (Math.abs(markZoom - 1) < 0.015) markZoom = 1;
+    applyZoom();
+  });
+  const endZoomDrag = () => {
+    zoomDrag = null;
+  };
+  mark.addEventListener("pointerup", endZoomDrag);
+  mark.addEventListener("pointercancel", endZoomDrag);
+
   mark.addEventListener(
     "wheel",
     (e) => {
-      // ignore when scrolling inside panels
       if (e.target.closest("[data-motion-panel], .motion-panel, header, .themes")) return;
       e.preventDefault();
       const factor = e.deltaY > 0 ? 0.9 : 1.111111;
       markZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, markZoom * factor));
-      // snap near 1
       if (Math.abs(markZoom - 1) < 0.02) markZoom = 1;
       applyZoom();
     },
     { passive: false }
   );
-  mark.addEventListener("dblclick", (e) => {
-    if (e.target.closest("a.hotspot")) return;
-    markZoom = 1;
-    applyZoom();
-  });
+
+  // Sandbox framing toggle (play / experiment face of the hub)
+  let sandboxOn = false;
+  try {
+    sandboxOn = localStorage.getItem("pair-sandbox-v1") === "1";
+  } catch {}
+  const setSandbox = (on) => {
+    sandboxOn = !!on;
+    document.documentElement.setAttribute("data-sandbox", sandboxOn ? "on" : "off");
+    if (sandboxBtn) sandboxBtn.setAttribute("aria-pressed", sandboxOn ? "true" : "false");
+    const tag = document.getElementById("tagline");
+    if (tag) {
+      tag.textContent = sandboxOn
+        ? "Symbol sandbox — play & experiment"
+        : "Each node is its own coin";
+    }
+    try {
+      localStorage.setItem("pair-sandbox-v1", sandboxOn ? "1" : "0");
+    } catch {}
+  };
+  setSandbox(sandboxOn);
+  if (sandboxBtn) {
+    sandboxBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setSandbox(!sandboxOn);
+    });
+  }
 
   fetch("coins.json")
     .then((r) => (r.ok ? r.json() : null))
