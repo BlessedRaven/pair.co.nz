@@ -18,7 +18,7 @@
       } catch (e) {}
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=55" />
+  <link rel="stylesheet" href="styles.css?v=56" />
 </head>
 <body>
   <header class="top">
@@ -171,8 +171,16 @@
     <span class="muted">Mints TBD · not financial advice</span>
   </footer>
 
-  <script src="theme.js?v=55" defer></script>
-  <script src="motion.js?v=55" defer></script>
-  <script src="app.js?v=55" defer></script>
+  <script src="theme.js?v=56" defer></script>
+  <script src="motion.js?v=56" defer></script>
+  <script src="app.js?v=56" defer></script>
+
+  <div class="cloud-shape-menu" data-cloud-shape-menu hidden role="menu" aria-label="Cloud shape actions">
+    <button type="button" role="menuitem" data-cloud-act="hub">Make house (hub)</button>
+    <button type="button" role="menuitem" data-cloud-act="all-shapes">All shapes</button>
+    <button type="button" role="menuitem" data-cloud-act="reset-shape">Reset shape</button>
+    <button type="button" role="menuitem" data-cloud-act="reset-all">Reset</button>
+  </div>
+
 </body>
 </html>

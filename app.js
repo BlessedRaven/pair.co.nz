@@ -626,6 +626,9 @@
       const moved = Math.hypot(e.clientX - tap.x, e.clientY - tap.y) > 8;
       tap = null;
       if (moved) return;
+      // Cloud orbit owns shape taps (hub / reset menu)
+      if (document.documentElement.getAttribute("data-cloud-orbit") === "on") return;
+      if (document.documentElement.getAttribute("data-cloud-menu") === "on") return;
       if (orbMode) {
         const wrap = e.target.closest(".mark-host svg.sigil .sym, .mark-host svg.sigil .center");
         if (wrap) toggleOrbOn(wrap);

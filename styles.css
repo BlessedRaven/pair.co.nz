@@ -1255,3 +1255,37 @@ html[data-orb-mode="on"] .mark-host svg.sigil .sym,
 html[data-orb-mode="on"] .mark-host svg.sigil .center {
   cursor: crosshair;
 }
+
+/* —— Cloud shape tap menu —— */
+.cloud-shape-menu {
+  position: fixed;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 10.5rem;
+  padding: 0.35rem;
+  border-radius: 10px;
+  background: rgba(12, 16, 28, 0.92);
+  border: 1px solid rgba(180, 210, 255, 0.28);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
+}
+.cloud-shape-menu[hidden] {
+  display: none !important;
+}
+.cloud-shape-menu button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: rgba(230, 240, 255, 0.92);
+  text-align: left;
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.cloud-shape-menu button:hover {
+  background: rgba(120, 170, 255, 0.22);
+}
