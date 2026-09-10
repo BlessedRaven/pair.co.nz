@@ -1,16 +1,33 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#0a0a0c" />
   <title>Fund (FUND) — PAIR Portal</title>
-  <link rel="stylesheet" href="../styles.css?v=9" />
+    <script>
+    (function () {
+      try {
+        var th = localStorage.getItem("pair-theme");
+        if (th === "light" || th === "vibe" || th === "dark") {
+          document.documentElement.setAttribute("data-theme", th);
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="stylesheet" href="../styles.css?v=10" />
 </head>
 <body>
   <header class="top">
     <a class="brand" href="../">PAIR</a>
-    <p class="tag">Coin brief</p>
+    <div class="top-right">
+      <p class="tag">Coin brief</p>
+      <div class="themes" role="group" aria-label="Theme">
+        <button type="button" data-theme-set="dark" aria-pressed="true">Dark</button>
+        <button type="button" data-theme-set="light" aria-pressed="false">Light</button>
+        <button type="button" data-theme-set="vibe" aria-pressed="false">Vibe</button>
+      </div>
+    </div>
   </header>
   <article class="brief">
     <h1>Fund</h1>
@@ -26,5 +43,6 @@
     </div>
     <p class="muted" style="margin-top:2rem;font-size:0.75rem">Placeholder mint until launch. Not financial advice. Meme coins are high risk.</p>
   </article>
+  <script src="../theme.js" defer></script>
 </body>
 </html>
