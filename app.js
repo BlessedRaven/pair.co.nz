@@ -1,93 +1,109 @@
 (() => {
   const CX = 447.56;
   const CY = 484.96;
-  const VB_W = 923.86;
-  const VB_H = 886.31;
   const host = document.querySelector("[data-mark-host]");
   const mark = document.querySelector("[data-mark]");
   if (!host || !mark) return;
 
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  const hotspotGeom = {
-    center: { cx: 447.56, cy: 484.96, r: 150 },
-    bean: { cx: 452.5, cy: 28, r: 36 },
-    key: { cx: 452.5, cy: 78, r: 42 },
-    sun: { cx: 452.5, cy: 118, r: 32 },
-    n: { cx: 453.56, cy: 145, r: 70 },
-    nw: { cx: 148, cy: 167, r: 88 },
-    w: { cx: 91.8, cy: 353, r: 82 },
-    sw: { cx: 90, cy: 555, r: 88 },
-    s: { cx: 462, cy: 820, r: 88 },
-    se: { cx: 672.71, cy: 750.29, r: 100 },
-    e: { cx: 821.16, cy: 582.19, r: 95 },
-    ne: { cx: 820.1, cy: 342.59, r: 95 },
+  // Hotspot centers (viewBox) — used to bind SVG pieces to nodes
+  const anchors = {
+    center: [447.56, 484.96],
+    bean: [452.5, 28],
+    key: [452.5, 78],
+    sun: [452.5, 118],
+    n: [453.56, 145],
+    nw: [148, 167],
+    w: [91.8, 353],
+    sw: [90, 555],
+    s: [462, 820],
+    se: [672.71, 750.29],
+    e: [821.16, 582.19],
+    ne: [820.1, 342.59],
   };
 
-  const fxFilter = {
-    center: "warpSpectral",
-    bean: "warpSpectral",
-    sun: "warpViolent",
-    key: "warpFlutter",
-    n: "warpFlutter",
-    ne: "warpViolent",
-    e: "warpSpectral",
-    se: "warpDrip",
-    s: "warpDrip",
-    sw: "warpFlutter",
-    w: "warpViolent",
-    nw: "warpSpectral",
+  // Unique motion class per node
+  const motion = {
+    center: "sym-pulse",
+    bean: "sym-vanish",
+    key: "sym-flutter",
+    sun: "sym-ripple",
+    n: "sym-flutter",
+    nw: "sym-ghost",
+    w: "sym-shear",
+    sw: "sym-flutter",
+    s: "sym-wave",
+    se: "sym-drip",
+    e: "sym-shimmer",
+    ne: "sym-ripple",
   };
 
-  const restartFilterAnims = (filterId) => {
-    const filter = document.getElementById(filterId);
-    if (!filter) return;
-    filter.querySelectorAll("animate").forEach((el) => {
+  const nearest = (x, y) => {
+    let best = "center";
+    let bd = Infinity;
+    for (const [id, [ax, ay]] of Object.entries(anchors)) {
+      const d = (x - ax) ** 2 + (y - ay) ** 2;
+      if (d < bd) {
+        bd = d;
+        best = id;
+      }
+    }
+    return best;
+  };
+
+  const tagSymbols = (svg) => {
+    // Prefer direct graphical children of center/orbit wrappers, else svg children
+    const pools = [];
+    const center = svg.querySelector(":scope > .center");
+    const orbit = svg.querySelector(":scope > .orbit");
+    if (center) pools.push(...Array.from(center.children));
+    if (orbit) pools.push(...Array.from(orbit.children));
+    if (!pools.length) {
+      pools.push(
+        ...Array.from(svg.children).filter((el) => el.tagName.toLowerCase() !== "defs")
+      );
+    }
+
+    const claimed = new Map(); // id -> element with smallest area among matches? keep list
+    const buckets = Object.fromEntries(Object.keys(anchors).map((k) => [k, []]));
+
+    pools.forEach((el, idx) => {
+      let box;
       try {
-        el.beginElement();
-      } catch (_) {
-        el.replaceWith(el.cloneNode(true));
+        box = el.getBBox();
+      } catch {
+        return;
       }
+      if (!box || !(box.width || box.height)) return;
+      const cx = box.x + box.width / 2;
+      const cy = box.y + box.height / 2;
+      const id = nearest(cx, cy);
+      el.setAttribute("data-sym", id);
+      el.classList.add("sym");
+      // transform origin at own center for local motion
+      el.style.transformBox = "fill-box";
+      el.style.transformOrigin = "center";
+      buckets[id].push({ el, area: box.width * box.height, cx, cy });
+    });
+
+    // If multiple pieces map to same hotspot, keep them — all animate together as that symbol cluster
+    return buckets;
+  };
+
+  const clearHot = (svg) => {
+    svg.querySelectorAll(".sym.is-hot").forEach((el) => {
+      el.classList.remove("is-hot");
+      Object.values(motion).forEach((c) => el.classList.remove(c));
     });
   };
 
-  const setClip = (id) => {
-    const g = hotspotGeom[id];
-    if (!g) return;
-    const x = (g.cx / VB_W) * 100;
-    const y = (g.cy / VB_H) * 100;
-    // slightly tight so neighbouring symbols stay calm
-    const r = (g.r / Math.min(VB_W, VB_H)) * 100;
-    mark.style.setProperty("--clip-x", `${x}%`);
-    mark.style.setProperty("--clip-y", `${y}%`);
-    mark.style.setProperty("--clip-r", `${r}%`);
-  };
-
-  const buildSigilTree = (src) => {
-    const frag = document.createDocumentFragment();
-    const defs = src.querySelector("defs");
-    if (defs) frag.appendChild(document.importNode(defs, true));
-
-    const center = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    center.setAttribute("class", "center");
-    const orbit = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    orbit.setAttribute("class", "orbit");
-    orbit.setAttribute("style", `transform-origin: ${CX}px ${CY}px; transform-box: view-box;`);
-
-    const kids = Array.from(src.children).filter((el) => el.tagName.toLowerCase() !== "defs");
-    let sawCenter = false;
-    kids.forEach((el) => {
-      const node = document.importNode(el, true);
-      if (!sawCenter && el.tagName.toLowerCase() === "g") {
-        center.appendChild(node);
-        sawCenter = true;
-      } else {
-        orbit.appendChild(node);
-      }
+  const heat = (svg, id) => {
+    clearHot(svg);
+    const cls = motion[id] || "sym-ripple";
+    svg.querySelectorAll(`.sym[data-sym="${id}"]`).forEach((el) => {
+      el.classList.add("is-hot", cls);
     });
-    frag.appendChild(orbit);
-    frag.appendChild(center);
-    return frag;
   };
 
   const mount = async () => {
@@ -113,45 +129,59 @@
       return;
     }
 
-    const mkSvg = (className) => {
-      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-      svg.setAttribute("class", className);
-      svg.setAttribute("viewBox", src.getAttribute("viewBox") || `0 0 ${VB_W} ${VB_H}`);
-      svg.setAttribute("focusable", "false");
-      svg.appendChild(buildSigilTree(src));
-      return svg;
-    };
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "sigil sigil-base");
+    svg.setAttribute("viewBox", src.getAttribute("viewBox") || "0 0 923.86 886.31");
+    svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", "PAIR portal sigil");
+    svg.setAttribute("focusable", "false");
 
-    const base = mkSvg("sigil sigil-base");
-    base.setAttribute("role", "img");
-    base.setAttribute("aria-label", "PAIR portal sigil");
+    const defs = src.querySelector("defs");
+    if (defs) svg.appendChild(document.importNode(defs, true));
 
-    const warp = mkSvg("sigil sigil-warp");
-    warp.setAttribute("aria-hidden", "true");
+    const center = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    center.setAttribute("class", "center");
+    const orbit = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    orbit.setAttribute("class", "orbit");
+    orbit.setAttribute("style", `transform-origin: ${CX}px ${CY}px; transform-box: view-box;`);
+
+    const kids = Array.from(src.children).filter((el) => el.tagName.toLowerCase() !== "defs");
+    let sawCenter = false;
+    kids.forEach((el) => {
+      const node = document.importNode(el, true);
+      if (!sawCenter && el.tagName.toLowerCase() === "g") {
+        center.appendChild(node);
+        sawCenter = true;
+      } else {
+        orbit.appendChild(node);
+      }
+    });
+    // Also promote loose paths under orbit
+    svg.appendChild(orbit);
+    svg.appendChild(center);
 
     host.innerHTML = "";
-    host.appendChild(base);
-    host.appendChild(warp);
+    host.appendChild(svg);
+    // force layout then tag
+    void svg.getBBox();
+    tagSymbols(svg);
+    mark._sigil = svg;
     mark.classList.add("is-ready");
     if (reduced) mark.classList.add("reduced");
   };
 
   const wireHover = () => {
     if (reduced) return;
-    const hotspots = mark.querySelectorAll(".hotspot[data-hotspot]");
-    hotspots.forEach((el) => {
+    mark.querySelectorAll(".hotspot[data-hotspot]").forEach((el) => {
       const id = el.getAttribute("data-hotspot");
       const on = () => {
-        const filterId = fxFilter[id] || "warpViolent";
-        setClip(id);
         mark.setAttribute("data-hover", id);
-        mark.setAttribute("data-filter", filterId);
-        restartFilterAnims(filterId);
+        if (mark._sigil) heat(mark._sigil, id);
       };
       const off = () => {
         if (mark.getAttribute("data-hover") === id) {
           mark.removeAttribute("data-hover");
-          mark.removeAttribute("data-filter");
+          if (mark._sigil) clearHot(mark._sigil);
         }
       };
       el.addEventListener("pointerenter", on);

@@ -150,48 +150,58 @@ body {
 }
 
 .stage {
+  position: relative;
   height: 100vh;
   height: 100dvh;
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(15rem, 0.75fr);
-  align-items: stretch;
-  gap: clamp(0.5rem, 2vw, 1.5rem);
-  padding: var(--pad);
-  padding-top: max(var(--pad), env(safe-area-inset-top));
-  padding-right: max(var(--pad), env(safe-area-inset-right));
-  padding-bottom: max(2.6rem, env(safe-area-inset-bottom));
-  padding-left: max(var(--pad), env(safe-area-inset-left));
+  display: block;
+  padding: 0;
+  overflow: hidden;
 }
 
 .stage-sigil {
-  position: relative;
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-width: 0;
+  padding: var(--pad);
+  padding-top: max(var(--pad), env(safe-area-inset-top));
+  padding-right: max(var(--pad), env(safe-area-inset-right));
+  padding-bottom: max(var(--pad), env(safe-area-inset-bottom));
+  padding-left: max(var(--pad), env(safe-area-inset-left));
+  z-index: 1;
 }
 
 .stage-void {
-  position: relative;
+  position: absolute;
+  top: 50%;
+  right: max(0.75rem, env(safe-area-inset-right));
+  transform: translateY(-50%);
+  z-index: 2;
+  width: min(22vw, 17.5rem);
+  height: min(72vh, 34rem);
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 0;
-  padding-inline: 0.25rem;
+  pointer-events: none;
 }
 
 .void-stack {
   position: relative;
-  width: min(100%, 22rem);
-  aspect-ratio: 0.78;
+  width: 100%;
+  height: 100%;
   display: grid;
   place-items: center;
 }
 
 .blackhole {
   position: absolute;
-  inset: 18% 12% 28% 12%;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%);
+  width: min(78%, 11rem);
+  aspect-ratio: 1;
   border-radius: 50%;
   isolation: isolate;
 }
@@ -264,16 +274,17 @@ body {
   z-index: 2;
   margin: 0;
   width: 100%;
+  padding: 0 0.15rem;
   text-align: center;
   font-weight: 800;
-  letter-spacing: 0.08em;
-  line-height: 0.92;
-  font-size: clamp(1.55rem, 3.6vw, 2.75rem);
+  letter-spacing: 0.06em;
+  line-height: 0.9;
+  font-size: clamp(1.25rem, 2.8vw, 2.35rem);
   text-transform: uppercase;
   color: var(--fg);
   text-shadow:
-    0 0 24px color-mix(in srgb, var(--bg) 80%, transparent),
-    0 1px 0 color-mix(in srgb, var(--bg) 60%, transparent);
+    0 0 18px color-mix(in srgb, var(--bg) 85%, transparent),
+    0 1px 0 color-mix(in srgb, var(--bg) 55%, transparent);
 }
 
 .void-title span {
@@ -301,9 +312,8 @@ body {
 .mark {
   position: relative;
   width: min(
-    100%,
-    calc((100dvh - 4.5rem) * var(--vb-w) / var(--vb-h)),
-    52rem
+    calc(100vw - 2 * var(--pad)),
+    calc((100dvh - 2 * var(--pad)) * var(--vb-w) / var(--vb-h))
   );
   height: auto;
   aspect-ratio: 923.86 / 886.31;
@@ -658,7 +668,7 @@ body:has(.brief) .top {
 }
 
 
-/* ——— Single-symbol hover: warp ONLY clipped region around hotspot ——— */
+/* ——— Per-symbol hover: only .sym.is-hot moves ——— */
 .hits .ripple {
   fill: none;
   stroke: var(--fg);
@@ -679,13 +689,7 @@ body:has(.brief) .top {
   100% { opacity: 0; stroke-width: 0.5; transform: scale(2.1); }
 }
 
-.mark-host {
-  position: absolute;
-  inset: 0;
-}
-
 .mark-host .sigil-base,
-.mark-host .sigil-warp,
 .mark-host img.sigil-fallback {
   position: absolute;
   inset: 0;
@@ -695,14 +699,9 @@ body:has(.brief) .top {
   overflow: visible;
   pointer-events: none;
   user-select: none;
-}
-
-.mark-host .sigil-base,
-.mark-host .sigil-warp {
   filter: var(--sigil-filter);
 }
 
-/* Idle orbit only on base */
 .mark-host .sigil-base .orbit,
 .hits .hits-orbit {
   transform-box: view-box;
@@ -710,32 +709,103 @@ body:has(.brief) .top {
   animation: pair-orbit 52s ease-in-out infinite;
 }
 
-/* Warp layer hidden until hover — clipped to ONE symbol circle */
-.mark-host .sigil-warp {
-  opacity: 0;
-  clip-path: circle(0% at 50% 50%);
-  will-change: clip-path, filter, opacity;
+.mark-host .sigil-base .sym {
+  transform-box: fill-box;
+  transform-origin: center;
+  will-change: transform, opacity, filter;
 }
 
-.mark[data-hover] .sigil-warp {
-  opacity: 1;
-  clip-path: circle(var(--clip-r, 8%) at var(--clip-x, 50%) var(--clip-y, 50%));
-  transition: opacity 80ms linear;
+/* Unique motions — only the heated symbol cluster */
+.mark-host .sigil-base .sym.is-hot.sym-vanish {
+  animation: sym-vanish 0.7s ease-in-out;
+}
+.mark-host .sigil-base .sym.is-hot.sym-ripple {
+  animation: sym-ripple 0.75s ease-out;
+}
+.mark-host .sigil-base .sym.is-hot.sym-flutter {
+  animation: sym-flutter 0.55s ease-in-out;
+}
+.mark-host .sigil-base .sym.is-hot.sym-drip {
+  animation: sym-drip 0.85s cubic-bezier(0.2, 0.85, 0.2, 1);
+}
+.mark-host .sigil-base .sym.is-hot.sym-wave {
+  animation: sym-wave 0.8s ease-in-out;
+}
+.mark-host .sigil-base .sym.is-hot.sym-shear {
+  animation: sym-shear 0.7s ease-in-out;
+}
+.mark-host .sigil-base .sym.is-hot.sym-ghost {
+  animation: sym-ghost 0.8s ease-in-out;
+}
+.mark-host .sigil-base .sym.is-hot.sym-shimmer {
+  animation: sym-shimmer 0.65s linear;
+}
+.mark-host .sigil-base .sym.is-hot.sym-pulse {
+  animation: sym-pulse 0.7s ease-in-out;
 }
 
-/* Do NOT filter/transform the base sigil on hover */
-.mark[data-hover] .sigil-base {
-  filter: var(--sigil-filter);
+@keyframes sym-vanish {
+  0%, 100% { opacity: 1; transform: scale(1); filter: none; }
+  35% { opacity: 0; transform: scale(1.08); filter: blur(1.2px); }
+  55% { opacity: 0; transform: scale(0.92); }
+  75% { opacity: 0.85; transform: scale(1.03); filter: blur(0.4px); }
 }
 
-.mark[data-filter="warpViolent"] .sigil-warp { filter: var(--sigil-filter) url(#warpViolent); }
-.mark[data-filter="warpDrip"] .sigil-warp { filter: var(--sigil-filter) url(#warpDrip); }
-.mark[data-filter="warpFlutter"] .sigil-warp { filter: var(--sigil-filter) url(#warpFlutter); }
-.mark[data-filter="warpSpectral"] .sigil-warp { filter: var(--sigil-filter) url(#warpSpectral); }
+@keyframes sym-ripple {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  30% { transform: scale(1.18); opacity: 0.75; }
+  55% { transform: scale(0.92); opacity: 1; }
+  75% { transform: scale(1.06); }
+}
 
-/* Keep vibe glow on the mark chrome, not a whole-sigil liquify */
-.mark.is-ready[data-hover] {
-  /* retain theme glow; no breathe restart required */
+@keyframes sym-flutter {
+  0%, 100% { transform: rotate(0) scale(1); }
+  15% { transform: rotate(-8deg) scale(1.06) translateY(-3%); }
+  35% { transform: rotate(9deg) scale(0.94) translateY(2%); }
+  55% { transform: rotate(-6deg) scale(1.08); }
+  75% { transform: rotate(4deg) scale(0.97); }
+}
+
+@keyframes sym-drip {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  30% { transform: translateY(-14%) scale(1.08, 0.88); }
+  65% { transform: translateY(18%) scale(0.9, 1.16); }
+  85% { transform: translateY(-4%) scale(1.03, 0.97); }
+}
+
+@keyframes sym-wave {
+  0%, 100% { transform: translate(0, 0) rotate(0); }
+  20% { transform: translate(-8%, 4%) rotate(-3deg); }
+  45% { transform: translate(9%, -5%) rotate(4deg); }
+  70% { transform: translate(-5%, 6%) rotate(-2deg); }
+}
+
+@keyframes sym-shear {
+  0%, 100% { transform: skewX(0) scale(1); }
+  30% { transform: skewX(-12deg) scale(1.05, 0.95); }
+  60% { transform: skewX(12deg) scale(0.95, 1.05); }
+}
+
+@keyframes sym-ghost {
+  0%, 100% { opacity: 1; transform: scale(1); filter: none; }
+  25% { opacity: 0.15; transform: scale(1.12) translateY(-6%); filter: blur(1.5px); }
+  50% { opacity: 0.9; transform: scale(0.9) translateY(4%); filter: blur(0.2px); }
+  75% { opacity: 0.35; transform: scale(1.06); filter: blur(1px); }
+}
+
+@keyframes sym-shimmer {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  20% { opacity: 0.35; transform: scale(1.04); }
+  40% { opacity: 1; transform: scale(0.96); }
+  60% { opacity: 0.4; transform: scale(1.07); }
+  80% { opacity: 0.95; transform: scale(0.98); }
+}
+
+@keyframes sym-pulse {
+  0%, 100% { transform: scale(1); }
+  35% { transform: scale(1.12); }
+  60% { transform: scale(0.9); }
+  80% { transform: scale(1.05); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -744,17 +814,14 @@ body:has(.brief) .top {
   .hits .hits-orbit,
   .hits .hotspot:hover .ripple,
   .hits .hotspot:focus-visible .ripple,
-  .bh-disk {
+  .bh-disk,
+  .mark-host .sigil-base .sym.is-hot {
     animation: none !important;
   }
 
   .mark {
     opacity: 1;
     transform: none;
-  }
-
-  .mark[data-hover] .sigil-warp {
-    opacity: 0 !important;
   }
 
   [data-theme="dark"] .mark,
