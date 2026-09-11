@@ -595,6 +595,10 @@ body {
 }
 
 .mark-host svg.sigil {
+  filter: none;
+}
+.mark-host svg.sigil .sym > :not(.sym-orb):not(.sym-shape-hit):not(.sym-hitpad),
+.mark-host svg.sigil .center > :not(.sym-orb):not(.sym-shape-hit):not(.sym-hitpad) {
   filter: var(--sigil-filter);
 }
 
@@ -1459,3 +1463,102 @@ html[data-ring="off"] .mark-host svg.sigil .center[data-motion-spin] {
   bottom: calc(100% + 0.35rem);
   top: auto;
 }
+
+
+/* Spectrum hue glow */
+.mark-host svg.sigil .sym[data-colour="hue"],
+.mark-host svg.sigil .center[data-colour="hue"] {
+  filter:
+    drop-shadow(0 0 1.15px hsl(var(--sym-hue, 46), 95%, 58%))
+    drop-shadow(0 0 8px hsla(var(--sym-hue, 46), 95%, 55%, 0.78))
+    drop-shadow(0 0 20px hsla(var(--sym-hue, 46), 90%, 50%, 0.32));
+  transition: filter 200ms ease;
+}
+.mark-host svg.sigil .sym[data-anim="off"][data-colour="hue"],
+.mark-host svg.sigil .center[data-anim="off"][data-colour="hue"] {
+  animation: none !important;
+  transform: scale(var(--sym-scale, 1));
+}
+.mark-host svg.sigil .sym[data-anim="cw"][data-colour="hue"],
+.mark-host svg.sigil .center[data-anim="cw"][data-colour="hue"] {
+  animation: pair-sym-spin var(--spin-dur, 72s) linear infinite;
+  filter:
+    drop-shadow(0 0 1.15px hsl(var(--sym-hue, 46), 95%, 58%))
+    drop-shadow(0 0 8px hsla(var(--sym-hue, 46), 95%, 55%, 0.78))
+    drop-shadow(0 0 20px hsla(var(--sym-hue, 46), 90%, 50%, 0.32));
+}
+.mark-host svg.sigil .sym[data-anim="ccw"][data-colour="hue"],
+.mark-host svg.sigil .center[data-anim="ccw"][data-colour="hue"] {
+  animation: pair-sym-spin-ccw var(--spin-dur, 72s) linear infinite;
+  filter:
+    drop-shadow(0 0 1.15px hsl(var(--sym-hue, 46), 95%, 58%))
+    drop-shadow(0 0 8px hsla(var(--sym-hue, 46), 95%, 55%, 0.78))
+    drop-shadow(0 0 20px hsla(var(--sym-hue, 46), 90%, 50%, 0.32));
+}
+
+.colour-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.45rem;
+}
+.colour-bar {
+  flex: 1;
+  height: 0.85rem;
+  appearance: none;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--fg) 18%, transparent);
+  background: linear-gradient(
+    90deg,
+    hsl(0 92% 52%),
+    hsl(28 95% 52%),
+    hsl(46 95% 52%),
+    hsl(85 85% 48%),
+    hsl(145 70% 45%),
+    hsl(190 85% 50%),
+    hsl(210 90% 55%),
+    hsl(250 75% 58%),
+    hsl(290 75% 58%),
+    hsl(320 85% 55%),
+    hsl(360 92% 52%)
+  );
+  cursor: pointer;
+}
+.colour-bar::-webkit-slider-thumb {
+  appearance: none;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: var(--fg);
+  border: 2px solid var(--bg);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--fg) 35%, transparent);
+}
+.colour-bar::-moz-range-thumb {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: var(--fg);
+  border: 2px solid var(--bg);
+}
+.colour-bar-swatch {
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--fg) 30%, transparent);
+  flex: 0 0 auto;
+}
+
+.mark-host svg.sigil .sym[data-sym="pi"] path.pi-spiral {
+  stroke-dasharray: 14 10;
+  animation: pi-spiral-flow 4.5s linear infinite;
+}
+@keyframes pi-spiral-flow {
+  to { stroke-dashoffset: -120; }
+}
+
+html[data-pair-mode="custom"] .themes [data-theme-set="custom"] {
+  color: var(--bg);
+  background: var(--fg);
+  border-color: transparent;
+}
+

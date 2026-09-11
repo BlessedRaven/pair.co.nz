@@ -1,8 +1,29 @@
 (() => {
-  const STORE_KEY = "pair-sym-motion-v21";
+  const STORE_KEY = "pair-sym-motion-v21"; // legacy fallback
+  const STORE_DARK = "pair-sym-motion-dark-v1";
+  const STORE_LIGHT = "pair-sym-motion-light-v1";
+  const STORE_CUSTOM = "pair-sym-motion-custom-v1";
+  const CUSTOM_SEEDED = "pair-custom-seeded-v1";
   const SELECTED_KEY = "pair-motion-selected-v19";
   const RING_KEY = "pair-motion-ring-v19";
   const RING_SPIN_KEY = "pair-motion-ring-spin-v1";
+
+  const readPairMode = () => {
+    try {
+      const m = localStorage.getItem("pair-theme") || "dark";
+      if (m === "custom") return "custom";
+      if (m === "light" || m === "vibe-light") return "light";
+      return "dark";
+    } catch {
+      return "dark";
+    }
+  };
+
+  const storeKeyForMode = (mode) => {
+    if (mode === "custom") return STORE_CUSTOM;
+    if (mode === "light") return STORE_LIGHT;
+    return STORE_DARK;
+  };
 
   const SYMBOLS = [
     { id: "gol", label: "GOL" },
@@ -28,18 +49,38 @@
     { id: "ccw", label: "Anti-clockwise" },
   ];
 
-  const COLOURS = [
-    { id: "off", label: "None" },
-    { id: "vibe", label: "Multicolour" },
-    { id: "red", label: "Red" },
-    { id: "orange", label: "Orange" },
-    { id: "yellow", label: "Yellow" },
-    { id: "green", label: "Green" },
-    { id: "blue", label: "Blue" },
-    { id: "indigo", label: "Indigo" },
-    { id: "violet", label: "Violet" },
-  ];
-  const COLOUR_IDS = new Set(COLOURS.map((c) => c.id));
+  // Named hues on the spectrum bar (cleaner gold yellow included)
+  const HUE_PRESETS = {
+    red: 0,
+    orange: 28,
+    gold: 46,
+    yellow: 52,
+    lime: 85,
+    green: 145,
+    teal: 175,
+    cyan: 190,
+    blue: 210,
+    indigo: 250,
+    violet: 290,
+    magenta: 320,
+  };
+  const COLOUR_IDS = new Set(["off", "vibe", "hue", ...Object.keys(HUE_PRESETS)]);
+  const namedToHue = (id) => (id in HUE_PRESETS ? HUE_PRESETS[id] : 28);
+  const parseColour = (raw) => {
+    if (!raw || raw === "off") return { mode: "off", hue: 28 };
+    if (raw === "vibe") return { mode: "vibe", hue: 28 };
+    if (typeof raw === "string" && raw.startsWith("hue:")) {
+      const n = Number(raw.slice(4));
+      return { mode: "hue", hue: Number.isFinite(n) ? ((n % 360) + 360) % 360 : 28 };
+    }
+    if (raw in HUE_PRESETS) return { mode: "hue", hue: HUE_PRESETS[raw] };
+    return { mode: "off", hue: 28 };
+  };
+  const colourToken = (mode, hue) => {
+    if (mode === "off") return "off";
+    if (mode === "vibe") return "vibe";
+    return "hue:" + Math.round(((hue % 360) + 360) % 360);
+  };
 
   const panel = document.querySelector("[data-motion-panel]");
   const toggle = document.querySelector("[data-motion-toggle]");
@@ -58,16 +99,31 @@
   panel.addEventListener("click", (e) => e.stopPropagation());
   panel.addEventListener("pointerdown", (e) => e.stopPropagation());
 
-  const readStore = () => {
+  const readStoreRaw = (key) => {
     try {
-      return JSON.parse(localStorage.getItem(STORE_KEY) || "{}") || {};
+      return JSON.parse(localStorage.getItem(key) || "{}") || {};
     } catch {
       return {};
     }
   };
 
+  const readStore = () => {
+    const mode = readPairMode();
+    const key = storeKeyForMode(mode);
+    let data = readStoreRaw(key);
+    // Migrate legacy single store into current mode once if empty
+    if (!Object.keys(data).length) {
+      const legacy = readStoreRaw(STORE_KEY);
+      if (Object.keys(legacy).length) data = legacy;
+    }
+    return data;
+  };
+
   const writeStore = (store) => {
     try {
+      const key = storeKeyForMode(readPairMode());
+      localStorage.setItem(key, JSON.stringify(store));
+      // Keep legacy key in sync for older tabs
       localStorage.setItem(STORE_KEY, JSON.stringify(store));
     } catch {}
   };
@@ -121,7 +177,7 @@
 
   const clampPct = (sp) => {
     let n = Number(sp);
-    if (!Number.isFinite(n)) n = 100;
+    if (!Number.isFinite(n)) n = 1;
     if (n > 100) n = Math.round(n / 2);
     return Math.max(1, Math.min(100, Math.round(n)));
   };
@@ -133,12 +189,14 @@
   };
 
   const ensure = (id) => {
-    if (!store[id]) store[id] = { anim: "off", speed: 100, colour: "off", colourSpeed: 100, size: 100, x: 0, y: 0, pinned: false, ax: 0, ay: 0, orb: false, orbFn: "shield", orbField: false };
+    if (!store[id]) store[id] = { anim: "off", speed: 1, colour: "off", colourSpeed: 1, size: 100, x: 0, y: 0, pinned: false, ax: 0, ay: 0, orb: false, orbFn: "shield", orbField: false };
     const a = store[id].anim;
     if (a !== "cw" && a !== "ccw" && a !== "off") store[id].anim = "off";
-    if (!COLOUR_IDS.has(store[id].colour)) store[id].colour = "off";
-    store[id].speed = clampPct(store[id].speed);
-    store[id].colourSpeed = clampPct(store[id].colourSpeed == null ? 100 : store[id].colourSpeed);
+    const pc = parseColour(store[id].colour);
+    store[id].colour = colourToken(pc.mode, pc.hue);
+    store[id].hue = pc.hue;
+    store[id].speed = clampPct(store[id].speed == null ? 1 : store[id].speed);
+    store[id].colourSpeed = clampPct(store[id].colourSpeed == null ? 1 : store[id].colourSpeed);
     store[id].size = clampSize(store[id].size == null ? 100 : store[id].size);
     let x = Number(store[id].x);
     let y = Number(store[id].y);
@@ -528,11 +586,19 @@
     const cfg = ensure(id);
     const el = findEl(id);
     if (!el) return;
+    const pc = parseColour(cfg.colour);
     el.dataset.anim = cfg.anim;
-    el.dataset.colour = COLOUR_IDS.has(cfg.colour) ? cfg.colour : "off";
+    el.dataset.colour = pc.mode === "off" ? "off" : pc.mode === "vibe" ? "vibe" : "hue";
+    if (pc.mode === "hue") el.style.setProperty("--sym-hue", String(pc.hue));
+    else el.style.removeProperty("--sym-hue");
     applyPose(id);
     syncOrbOn(id);
-    if (cfg.anim === "off" && cfg.colour !== "vibe") {
+    // Pi: mark spiral path for local animation
+    if (id === "pi") {
+      const spiral = el.querySelector("path");
+      if (spiral) spiral.classList.add("pi-spiral");
+    }
+    if (cfg.anim === "off" && pc.mode !== "vibe") {
       el.style.animation = "none";
       el.style.removeProperty("--spin-dur");
       el.style.removeProperty("--glow-dur");
@@ -544,31 +610,38 @@
     } else {
       el.style.removeProperty("--spin-dur");
     }
-    if (cfg.colour === "vibe") {
+    if (pc.mode === "vibe") {
       el.style.setProperty("--glow-dur", glowPeriodSec(cfg.colourSpeed) + "s");
     } else {
       el.style.removeProperty("--glow-dur");
     }
   };
 
+  let applying = false;
   const applyAll = () => {
-    document.querySelectorAll(".mark-host svg.sigil .sym, .mark-host svg.sigil .center").forEach((el) => {
-      const id = el.getAttribute("data-sym");
-      if (!SYMBOLS.some((s) => s.id === id)) {
-        el.dataset.anim = "off";
-        el.dataset.colour = "off";
-        el.style.animation = "none";
-      }
-    });
-    SYMBOLS.forEach((s) => applyToDom(s.id));
-    syncRing();
+    if (applying) return;
+    applying = true;
+    try {
+      document.querySelectorAll(".mark-host svg.sigil .sym, .mark-host svg.sigil .center").forEach((el) => {
+        const id = el.getAttribute("data-sym");
+        if (!SYMBOLS.some((s) => s.id === id)) {
+          el.dataset.anim = "off";
+          el.dataset.colour = "off";
+          el.style.animation = "none";
+        }
+      });
+      SYMBOLS.forEach((s) => applyToDom(s.id));
+      syncRing();
+    } finally {
+      applying = false;
+    }
   };
 
   const selectedList = () => [...selected];
 
   const primaryCfg = () => {
     const ids = selectedList();
-    if (!ids.length) return { anim: "off", speed: 100, colour: "off", colourSpeed: 100, size: 100 };
+    if (!ids.length) return { anim: "off", speed: 1, colour: "off", colourSpeed: 1, size: 100, hue: 28 };
     return ensure(ids[ids.length - 1]);
   };
 
@@ -597,17 +670,20 @@
         "</button>"
       );
     }).join("");
-    colourList.innerHTML = COLOURS.map(function (c) {
-      return (
-        '<button type="button" role="option" class="motion-opt" data-colour-pick="' +
-        c.id +
-        '" aria-selected="' +
-        (c.id === cfg.colour ? "true" : "false") +
-        '">' +
-        c.label +
-        "</button>"
-      );
-    }).join("");
+    const pc = parseColour(cfg.colour);
+    const modePick = pc.mode === "off" ? "off" : pc.mode === "vibe" ? "vibe" : "bar";
+    colourList.querySelectorAll("[data-colour-pick]").forEach((btn) => {
+      btn.setAttribute("aria-selected", btn.getAttribute("data-colour-pick") === modePick ? "true" : "false");
+    });
+    const barWrap = document.querySelector("[data-colour-bar-wrap]");
+    const bar = document.querySelector("[data-colour-bar]");
+    const swatch = document.querySelector("[data-colour-swatch]");
+    if (barWrap) barWrap.hidden = modePick !== "bar";
+    if (bar) {
+      bar.value = String(Math.round(pc.hue));
+      bar.disabled = !selected.size || modePick !== "bar";
+    }
+    if (swatch) swatch.style.background = "hsl(" + pc.hue + " 92% 52%)";
     sizeEl.value = String(cfg.size);
     sizeVal.textContent = clampSize(cfg.size) + "%";
     sizeEl.disabled = !selected.size;
@@ -616,7 +692,7 @@
     speedEl.disabled = !selected.size || cfg.anim === "off";
     colourSpeedEl.value = String(cfg.colourSpeed);
     colourSpeedVal.textContent = formatPct(cfg.colourSpeed);
-    colourSpeedEl.disabled = !selected.size || cfg.colour !== "vibe";
+    colourSpeedEl.disabled = !selected.size || pc.mode === "off";
 
     const projectOrbBtn = document.querySelector('[data-project-pick="orb"]');
     const projectDetail = document.querySelector('[data-project-detail="orb"]');
@@ -855,11 +931,32 @@
     const btn = e.target.closest("[data-colour-pick]");
     if (!btn) return;
     const raw = btn.getAttribute("data-colour-pick") || "off";
-    const colour = COLOUR_IDS.has(raw) ? raw : "off";
+    const bar = document.querySelector("[data-colour-bar]");
     forSelected((id, cfg) => {
-      cfg.colour = colour;
+      if (raw === "off") {
+        cfg.colour = "off";
+      } else if (raw === "vibe") {
+        cfg.colour = cfg.colour === "vibe" ? "off" : "vibe";
+      } else if (raw === "bar") {
+        const hue = bar ? Number(bar.value) : cfg.hue || 28;
+        cfg.colour = colourToken("hue", hue);
+        cfg.hue = hue;
+      }
     });
   });
+
+  const colourBar = document.querySelector("[data-colour-bar]");
+  if (colourBar) {
+    colourBar.addEventListener("input", () => {
+      const hue = Number(colourBar.value);
+      const swatch = document.querySelector("[data-colour-swatch]");
+      if (swatch) swatch.style.background = "hsl(" + hue + " 92% 52%)";
+      forSelected((id, cfg) => {
+        cfg.colour = colourToken("hue", hue);
+        cfg.hue = hue;
+      });
+    });
+  }
 
   sizeEl.addEventListener("input", () => {
     const size = clampSize(sizeEl.value);
@@ -895,7 +992,7 @@
     store = {};
     SYMBOLS.forEach((s) => {
       restoreToOrbit(s.id);
-      store[s.id] = { anim: "off", speed: 100, colour: "off", colourSpeed: 100, size: 100, x: 0, y: 0, pinned: false, ax: 0, ay: 0, orb: false, orbFn: "shield", orbField: false };
+      store[s.id] = { anim: "off", speed: 1, colour: "off", colourSpeed: 1, size: 100, x: 0, y: 0, pinned: false, ax: 0, ay: 0, orb: false, orbFn: "shield", orbField: false };
     });
     document.querySelectorAll(".mark-host svg.sigil .sym-orb").forEach((n) => n.remove());
     writeStore(store);
@@ -1630,12 +1727,81 @@
   document.addEventListener("pointerup", onPointerUp, true);
   document.addEventListener("pointercancel", onPointerUp, true);
 
+  const customPreset = () => {
+    const o = {};
+    SYMBOLS.forEach((s) => {
+      o[s.id] = {
+        anim: "off",
+        speed: 1,
+        colour: "off",
+        colourSpeed: 1,
+        size: 100,
+        x: 0,
+        y: 0,
+        pinned: false,
+        ax: 0,
+        ay: 0,
+        orb: false,
+        orbFn: "shield",
+        orbField: false,
+      };
+    });
+    // Blessed Raven Custom defaults
+    o.key = { ...o.key, anim: "cw", speed: 100 };
+    o.sun = { ...o.sun, colour: colourToken("hue", HUE_PRESETS.orange), hue: HUE_PRESETS.orange, orb: true, orbFn: "orbit" };
+    o.bean = { ...o.bean, colour: colourToken("hue", HUE_PRESETS.orange), hue: HUE_PRESETS.orange, orb: true, orbFn: "orbit" };
+    o.flower = { ...o.flower, colour: "vibe" };
+    o.wave = { ...o.wave, colour: "vibe", orb: true, orbFn: "shield" };
+    o.cloud = { ...o.cloud, colour: "vibe" };
+    o.torus = { ...o.torus, colour: colourToken("hue", HUE_PRESETS.gold), hue: HUE_PRESETS.gold };
+    o.fol = { ...o.fol, anim: "cw", speed: 2, colour: "vibe", orb: true, orbFn: "orbit" };
+    o.gol = { ...o.gol, anim: "cw", speed: 1 };
+    o.hermes = { ...o.hermes, orb: true, orbFn: "orbit" };
+    o.trinity = { ...o.trinity, colour: colourToken("hue", HUE_PRESETS.green), hue: HUE_PRESETS.green };
+    o.pi = { ...o.pi, anim: "cw", speed: 7 };
+    return o;
+  };
+
+  const ensureCustomSeeded = () => {
+    try {
+      const existing = readStoreRaw(STORE_CUSTOM);
+      if (Object.keys(existing).length && localStorage.getItem(CUSTOM_SEEDED) === "1") return;
+      localStorage.setItem(STORE_CUSTOM, JSON.stringify(customPreset()));
+      localStorage.setItem(CUSTOM_SEEDED, "1");
+    } catch (err) {}
+  };
+  ensureCustomSeeded();
+
+  // If Custom mode is active on load, reload store from custom key
+  if (readPairMode() === "custom") {
+    store = readStore();
+    SYMBOLS.forEach((s) => ensure(s.id));
+  }
+
+  document.addEventListener("pair:theme", (e) => {
+    const detail = e.detail || {};
+    const prev = detail.prev;
+    const next = detail.theme;
+    // Persist current symbols into previous mode bucket
+    try {
+      const prevMode = prev === "custom" ? "custom" : prev === "light" || prev === "vibe-light" ? "light" : "dark";
+      localStorage.setItem(storeKeyForMode(prevMode), JSON.stringify(store));
+    } catch (err) {}
+    if (next === "custom") ensureCustomSeeded();
+    store = readStore();
+    SYMBOLS.forEach((s) => ensure(s.id));
+    writeStore(store);
+    applyAll();
+    renderLists();
+  });
+
   document.documentElement.setAttribute("data-colour", "off");
   renderLists();
   setPanelOpen(false);
   syncRing();
 
   const tryApply = () => {
+    if (applying) return;
     if (document.querySelector(".mark-host svg.sigil .sym, .mark-host svg.sigil .center")) {
       applyAll();
     }

@@ -18,7 +18,7 @@
       } catch (e) {}
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=74" />
+  <link rel="stylesheet" href="styles.css?v=75" />
 </head>
 <body>
   <header class="top">
@@ -26,6 +26,7 @@
     <div class="top-right">
       <p class="tag" id="tagline">Symbol sandbox — play &amp; experiment</p>
       <div class="themes" role="group" aria-label="Theme">
+        <button type="button" data-theme-set="custom" aria-pressed="false" title="Your saved Custom setup">Custom</button>
         <button type="button" data-theme-set="dark" aria-pressed="true">Dark</button>
         <button type="button" data-theme-set="light" aria-pressed="false">Light</button>
         <span class="vibe-wrap" data-vibe-wrap>
@@ -70,7 +71,15 @@
         <p class="motion-label" style="margin-top:0.65rem">Animation</p>
         <div class="motion-list" data-motion-anims role="listbox" aria-label="Animation"></div>
         <p class="motion-label" style="margin-top:0.65rem">Colour</p>
-        <div class="motion-list" data-motion-colours role="listbox" aria-label="Colour"></div>
+        <div class="motion-list motion-colour-modes" data-motion-colours role="listbox" aria-label="Colour mode">
+          <button type="button" role="option" class="motion-opt" data-colour-pick="off" aria-selected="true">None</button>
+          <button type="button" role="option" class="motion-opt" data-colour-pick="vibe" aria-selected="false">Multicolour</button>
+          <button type="button" role="option" class="motion-opt" data-colour-pick="bar" aria-selected="false">Spectrum</button>
+        </div>
+        <div class="colour-bar-wrap" data-colour-bar-wrap hidden>
+          <input class="colour-bar" data-colour-bar type="range" min="0" max="360" value="25" step="1" aria-label="Colour spectrum" />
+          <span class="colour-bar-swatch" data-colour-swatch title="Current colour"></span>
+        </div>
         <div class="motion-speed-row" style="margin-top:0.65rem">
           <p class="motion-label">Size</p>
           <span class="motion-speed-val" data-motion-size-val>100%</span>
@@ -78,9 +87,9 @@
         <input class="motion-speed" data-motion-size type="range" min="25" max="200" value="100" step="1" aria-label="Symbol size" />
         <div class="motion-speed-row" style="margin-top:0.65rem">
           <p class="motion-label">Spin speed</p>
-          <span class="motion-speed-val" data-motion-speed-val>100%</span>
+          <span class="motion-speed-val" data-motion-speed-val>1%</span>
         </div>
-        <input class="motion-speed" data-motion-speed type="range" min="1" max="100" value="100" step="1" aria-label="Spin speed" />
+        <input class="motion-speed" data-motion-speed type="range" min="1" max="100" value="1" step="1" aria-label="Spin speed" />
         <div class="motion-speed-row" style="margin-top:0.65rem">
           <p class="motion-label">Colour speed</p>
           <span class="motion-speed-val" data-motion-colour-speed-val>100%</span>
@@ -203,9 +212,9 @@
     <span class="muted">Mints TBD · not financial advice</span>
   </footer>
 
-  <script src="theme.js?v=74" defer></script>
-  <script src="motion.js?v=74" defer></script>
-  <script src="app.js?v=74" defer></script>
+  <script src="theme.js?v=75" defer></script>
+  <script src="motion.js?v=75" defer></script>
+  <script src="app.js?v=75" defer></script>
 
   <div class="cloud-shape-menu" data-cloud-shape-menu hidden role="menu" aria-label="Cloud shape actions">
     <button type="button" role="menuitem" data-cloud-act="hub">Make house (hub)</button>

@@ -1,7 +1,7 @@
 (() => {
   const THEME_KEY = "pair-theme";
   const VIBE_LAST_KEY = "pair-vibe-last";
-  const allowed = new Set(["dark", "light", "vibe-dark", "vibe-light"]);
+  const allowed = new Set(["custom", "dark", "light", "vibe-dark", "vibe-light"]);
 
   const migrate = (t) => {
     if (t === "vibe") return "vibe-dark";
@@ -25,6 +25,9 @@
     }
   };
 
+  // Visual chrome theme (Custom uses light look)
+  const chromeTheme = (t) => (t === "custom" ? "light" : t);
+
   const vibeOpen = (open) => {
     const menu = document.querySelector("[data-vibe-menu]");
     const btn = document.querySelector("[data-vibe-toggle]");
@@ -35,11 +38,14 @@
 
   const applyTheme = (theme, opts) => {
     const keepMenu = !!(opts && opts.keepMenu);
+    const prev = readTheme();
     const t = migrate(theme);
-    document.documentElement.setAttribute("data-theme", t);
+    const chrome = chromeTheme(t);
+    document.documentElement.setAttribute("data-theme", chrome);
+    document.documentElement.setAttribute("data-pair-mode", t);
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) {
-      meta.setAttribute("content", t === "light" || t === "vibe-light" ? "#f7f5f0" : "#0a0a0c");
+      meta.setAttribute("content", chrome === "light" || chrome === "vibe-light" ? "#f7f5f0" : "#0a0a0c");
     }
     document.querySelectorAll("[data-theme-set]").forEach((btn) => {
       const on = btn.getAttribute("data-theme-set") === t;
@@ -58,6 +64,9 @@
       }
     } catch {}
     if (!keepMenu) vibeOpen(false);
+    document.dispatchEvent(
+      new CustomEvent("pair:theme", { detail: { theme: t, prev, chrome } })
+    );
   };
 
   applyTheme(readTheme());
