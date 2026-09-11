@@ -938,6 +938,8 @@
   const REPEL_PAD = 1.12; // radii must not overlap (extra padding)
   const CLOUD_ORBIT_GAP = 36;
   const CLOUD_ORBIT_PERIOD = 60; // seconds for one clean revolution (rigid ring)
+  const ORBIT_RING_MIN = 160;
+  const ORBIT_RING_MAX = 310; // keep moons on-canvas around SVG center
 
   let pinOn = false;
   let repelOn = false;
@@ -1125,6 +1127,7 @@
   };
 
   let cloudForceAll = false; // All shapes on ring (ignore size gate)
+  let orbitShuffle = false; // Random matrix reorders moon slots
 
   const rebuildCloudMoons = () => {
     const hubEl = findEl(hubId);
@@ -1137,16 +1140,25 @@
     });
 
     const hubR = artRadius(hubId);
-    const smaller = [];
+    const moons = [];
     SYMBOLS.forEach((s) => {
       if (s.id === hubId) return;
       if (!findEl(s.id)) return;
       const r = artRadius(s.id);
-      if (cloudForceAll || r < hubR * 1.05) smaller.push({ id: s.id, r });
+      if (cloudForceAll || r < hubR * 1.05) moons.push({ id: s.id, r });
     });
-    // Stable order by size then id — even slots around the circle
-    smaller.sort((a, b) => a.r - b.r || a.id.localeCompare(b.id));
-    ringIds = smaller.map((m) => m.id);
+    if (!orbitShuffle) {
+      moons.sort((a, b) => a.r - b.r || a.id.localeCompare(b.id));
+    } else {
+      // Fisher–Yates — Random matrix order
+      for (let i = moons.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const tmp = moons[i];
+        moons[i] = moons[j];
+        moons[j] = tmp;
+      }
+    }
+    ringIds = moons.map((m) => m.id);
     const n = ringIds.length;
     if (!n) {
       ringRadius = 0;
@@ -1154,14 +1166,18 @@
       return;
     }
 
-    const maxMoonR = Math.max.apply(null, smaller.map((m) => m.r));
-    // Fit: clear of hub, and even chord spacing so moons never overlap
-    const clearHub = hubR + maxMoonR + CLOUD_ORBIT_GAP;
+    const radii = moons.map((m) => m.r).sort((a, b) => a - b);
+    const maxMoonR = radii[radii.length - 1];
+    const midMoonR = radii[Math.floor(radii.length / 2)];
+    // Prefer mid-size for chord spacing so a huge Torus moon doesn't explode the ring
+    const clearHub = hubR + midMoonR + CLOUD_ORBIT_GAP;
     const sinHalf = Math.sin(Math.PI / n);
-    const clearMoons = sinHalf > 0.001 ? (maxMoonR * REPEL_PAD) / sinHalf : clearHub;
-    ringRadius = Math.max(clearHub, clearMoons);
+    const clearMoons = sinHalf > 0.001 ? (midMoonR * REPEL_PAD) / sinHalf : clearHub;
+    let R = Math.max(clearHub, clearMoons, ORBIT_RING_MIN);
+    // Soft floor so the largest moon still clears the hub a bit
+    R = Math.max(R, hubR + Math.min(maxMoonR, 90) + CLOUD_ORBIT_GAP);
+    ringRadius = Math.min(ORBIT_RING_MAX, R);
 
-    // Keep current phase; just snap onto perfect even angles
     layoutRing();
     writeStore(store);
   };
@@ -1187,40 +1203,30 @@
     cloudRaf = requestAnimationFrame(tickCloudOrbit);
   };
 
-  const startCloudOrbit = () => {
+  const startCloudOrbit = (opts) => {
     if (cloudRaf) cancelAnimationFrame(cloudRaf);
     cloudLastTs = 0;
     if (!hubId || !findEl(hubId)) hubId = CLOUD_ID;
-    ringPhase = -Math.PI / 2;
+    if (!(opts && opts.keepPhase)) ringPhase = -Math.PI / 2;
     rebuildCloudMoons();
     cloudRaf = requestAnimationFrame(tickCloudOrbit);
   };
 
-  const setCloudOrbit = (on) => {
-    cloudOrbitOn = !!on;
-    if (cloudOrbitOn) {
-      if (!pinOn) {
-        pinOn = true;
-        if (ringOn) {
-          ringOn = false;
-          writeRing(false);
-          syncRing();
-        }
-        SYMBOLS.forEach((s) => ensurePinnedAtWorld(s.id));
-        writeStore(store);
-      }
-      // Armed only — keep artist seats until double-click or Random picks a hub
-      stopCloudOrbit();
-      cloudForceAll = false;
-    } else {
-      stopCloudOrbit();
-      cloudForceAll = false;
-    }
-    syncPinUi();
+  // Park hub at SVG stage center so the ring always matches the screenshot look
+  const centerHubAtStage = (id) => {
+    const cfg = ensurePinnedAtWorld(id);
+    cfg.ax = SVG_CX;
+    cfg.ay = SVG_CY;
+    cfg.pinned = true;
+    placeAbs(id);
+    return cfg;
   };
 
   const startOrbitAround = (id, opts) => {
-    const forceAll = !!(opts && opts.forceAll);
+    const forceAll = opts && opts.forceAll !== undefined ? !!opts.forceAll : true;
+    const center = opts && opts.center !== undefined ? !!opts.center : true;
+    const shuffle = !!(opts && opts.shuffle);
+    const keepPhase = !!(opts && opts.keepPhase);
     if (!id || !findEl(id)) return;
     if (ringOn) {
       ringOn = false;
@@ -1233,24 +1239,53 @@
     }
     hubId = id;
     cloudForceAll = forceAll;
+    orbitShuffle = shuffle;
     cloudOrbitOn = true;
-    ensurePinnedAtWorld(id);
-    rebuildCloudMoons();
-    if (!forceAll && ringIds.length < 3) {
-      cloudForceAll = true;
+    if (center) centerHubAtStage(id);
+    else ensurePinnedAtWorld(id);
+    if (!forceAll) {
       rebuildCloudMoons();
+      if (ringIds.length < 3) {
+        cloudForceAll = true;
+      }
     }
-    startCloudOrbit();
+    startCloudOrbit({ keepPhase: keepPhase });
+    orbitShuffle = false; // one-shot shuffle
+    syncPinUi();
+  };
+
+  const setCloudOrbit = (on) => {
+    cloudOrbitOn = !!on;
+    if (cloudOrbitOn) {
+      // Sandbox → Orbit: start a clean centered ring (Cloud hub, everyone on it)
+      const hub = hubId && findEl(hubId) ? hubId : CLOUD_ID;
+      startOrbitAround(hub, { forceAll: true, center: true, shuffle: false });
+    } else {
+      stopCloudOrbit();
+      cloudForceAll = false;
+      orbitShuffle = false;
+    }
     syncPinUi();
   };
 
   const randomOrbit = () => {
     const ids = SYMBOLS.map((s) => s.id).filter((id) => findEl(id));
     if (!ids.length) return;
-    const hub = ids[Math.floor(Math.random() * ids.length)];
-    // Random matrix: random phase + sometimes force-all moons
+    // Prefer mid-size hubs so the centered look stays balanced (still random)
+    const scored = ids.map((id) => ({ id: id, r: artRadius(id) }));
+    scored.sort((a, b) => a.r - b.r);
+    // Pick from middle 60% of sizes — avoids tiny bean or giant torus as hub too often
+    const lo = Math.max(0, Math.floor(scored.length * 0.2));
+    const hi = Math.max(lo + 1, Math.ceil(scored.length * 0.8));
+    const pool = scored.slice(lo, hi);
+    const hub = pool[Math.floor(Math.random() * pool.length)].id;
     ringPhase = Math.random() * Math.PI * 2;
-    startOrbitAround(hub, { forceAll: Math.random() < 0.45 });
+    startOrbitAround(hub, {
+      forceAll: true,
+      center: true,
+      shuffle: true,
+      keepPhase: true,
+    });
     pinMenuOpen(true);
     applyAll();
   };
