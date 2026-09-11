@@ -1564,29 +1564,29 @@ html[data-pair-mode="custom"] .themes [data-theme-set="custom"] {
 }
 
 
-/* Ink mode — paint the actual vector strokes (cls-* are stroke:#000, fill:none).
+/* Spectrum line colour — paint the actual vector strokes (cls-* are stroke:#000, fill:none).
    Never force fill on stroke geometry (that looked blurry/blobby). */
-.mark-host svg.sigil .sym[data-ink="on"][data-colour="hue"],
-.mark-host svg.sigil .center[data-ink="on"][data-colour="hue"] {
+.mark-host svg.sigil .sym[data-line="on"][data-colour="hue"],
+.mark-host svg.sigil .center[data-line="on"][data-colour="hue"] {
   filter: none !important;
 }
-.mark-host svg.sigil .sym[data-ink="on"][data-colour="hue"] > :not(.sym-orb):not(.sym-shape-hit):not(.sym-hitpad),
-.mark-host svg.sigil .center[data-ink="on"][data-colour="hue"] > :not(.sym-orb):not(.sym-shape-hit):not(.sym-hitpad) {
+.mark-host svg.sigil .sym[data-line="on"][data-colour="hue"] > :not(.sym-orb):not(.sym-shape-hit):not(.sym-hitpad),
+.mark-host svg.sigil .center[data-line="on"][data-colour="hue"] > :not(.sym-orb):not(.sym-shape-hit):not(.sym-hitpad) {
   filter: none !important;
 }
 /* Stroke-based art (cls-1…6) */
-.mark-host svg.sigil .sym[data-ink="on"][data-colour="hue"] :is(.cls-1, .cls-2, .cls-3, .cls-4, .cls-5, .cls-6),
-.mark-host svg.sigil .center[data-ink="on"][data-colour="hue"] :is(.cls-1, .cls-2, .cls-3, .cls-4, .cls-5, .cls-6),
-.mark-host svg.sigil .sym[data-ink="on"][data-colour="hue"] :is(path, circle, ellipse, line, polyline, polygon):not(.cls-7),
-.mark-host svg.sigil .center[data-ink="on"][data-colour="hue"] :is(path, circle, ellipse, line, polyline, polygon):not(.cls-7) {
+.mark-host svg.sigil .sym[data-line="on"][data-colour="hue"] :is(.cls-1, .cls-2, .cls-3, .cls-4, .cls-5, .cls-6),
+.mark-host svg.sigil .center[data-line="on"][data-colour="hue"] :is(.cls-1, .cls-2, .cls-3, .cls-4, .cls-5, .cls-6),
+.mark-host svg.sigil .sym[data-line="on"][data-colour="hue"] :is(path, circle, ellipse, line, polyline, polygon):not(.cls-7),
+.mark-host svg.sigil .center[data-line="on"][data-colour="hue"] :is(path, circle, ellipse, line, polyline, polygon):not(.cls-7) {
   fill: none !important;
   stroke: hsl(var(--sym-hue, 46), var(--sym-sat, 70%), var(--sym-lit, 48%)) !important;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 /* Filled art (cls-7 / solid) — colour fill only, no stroke fattening */
-.mark-host svg.sigil .sym[data-ink="on"][data-colour="hue"] .cls-7,
-.mark-host svg.sigil .center[data-ink="on"][data-colour="hue"] .cls-7 {
+.mark-host svg.sigil .sym[data-line="on"][data-colour="hue"] .cls-7,
+.mark-host svg.sigil .center[data-line="on"][data-colour="hue"] .cls-7 {
   fill: hsl(var(--sym-hue, 46), var(--sym-sat, 70%), var(--sym-lit, 48%)) !important;
   stroke: none !important;
 }
@@ -1601,8 +1601,18 @@ html[data-pair-mode="custom"] .themes [data-theme-set="custom"] {
   cursor: pointer;
 }
 
-/* Ink mode needs true vectors — parent drop-shadow forces a bitmap and blurs on zoom */
-html[data-ink-any="on"] .mark.is-ready {
+/* Spectrum line colour needs true vectors — parent drop-shadow forces a bitmap and blurs on zoom */
+html[data-line-any="on"] .mark.is-ready {
+  filter: none !important;
+}
+
+/* Spectrum hue: prefer crisp stroke paint; no soft glow on the same symbol */
+.mark-host svg.sigil .sym[data-line="on"][data-colour="hue"],
+.mark-host svg.sigil .center[data-line="on"][data-colour="hue"],
+.mark-host svg.sigil .sym[data-line="on"][data-colour="hue"][data-anim="cw"],
+.mark-host svg.sigil .center[data-line="on"][data-colour="hue"][data-anim="cw"],
+.mark-host svg.sigil .sym[data-line="on"][data-colour="hue"][data-anim="ccw"],
+.mark-host svg.sigil .center[data-line="on"][data-colour="hue"][data-anim="ccw"] {
   filter: none !important;
 }
 

@@ -610,21 +610,17 @@
     const pc = parseColour(cfg.colour);
     el.dataset.anim = cfg.anim;
     el.dataset.colour = pc.mode === "off" ? "off" : pc.mode === "vibe" ? "vibe" : "hue";
-    el.dataset.ink = cfg.ink && pc.mode === "hue" ? "on" : "off";
+    // Spectrum = paint actual SVG strokes (black → hue). No separate Ink mode.
+    el.dataset.line = pc.mode === "hue" ? "on" : "off";
+    el.dataset.ink = "off";
     if (pc.mode === "hue") {
-      const d = cfg.colourDepth == null ? 70 : cfg.colourDepth;
-      // Depth → real sat/lit percentages (no broken unitless calc in CSS)
-      const sat = Math.round(35 + d * 0.6); // 35–95
-      const lit = Math.round(68 - d * 0.32); // 68–36 (deeper = richer/darker ink)
       el.style.setProperty("--sym-hue", String(pc.hue));
-      el.style.setProperty("--sym-sat", sat + "%");
-      el.style.setProperty("--sym-lit", lit + "%");
-      el.style.removeProperty("--sym-depth");
+      el.style.setProperty("--sym-sat", "78%");
+      el.style.setProperty("--sym-lit", "48%");
     } else {
       el.style.removeProperty("--sym-hue");
       el.style.removeProperty("--sym-sat");
       el.style.removeProperty("--sym-lit");
-      el.style.removeProperty("--sym-depth");
     }
     applyPose(id);
     syncOrbOn(id);
@@ -678,13 +674,13 @@
       });
       SYMBOLS.forEach((s) => applyToDom(s.id));
       syncRing();
-      let anyInk = false;
+      let anyLine = false;
       SYMBOLS.forEach((s) => {
-        const c = ensure(s.id);
-        const pc = parseColour(c.colour);
-        if (c.ink && pc.mode === "hue") anyInk = true;
+        const pc = parseColour(ensure(s.id).colour);
+        if (pc.mode === "hue") anyLine = true;
       });
-      document.documentElement.setAttribute("data-ink-any", anyInk ? "on" : "off");
+      document.documentElement.setAttribute("data-line-any", anyLine ? "on" : "off");
+      document.documentElement.setAttribute("data-ink-any", "off");
     } finally {
       applying = false;
     }
@@ -729,40 +725,17 @@
       btn.setAttribute("aria-selected", btn.getAttribute("data-colour-pick") === modePick ? "true" : "false");
     });
     const barWrap = document.querySelector("[data-colour-bar-wrap]");
-    const depthWrap = document.querySelector("[data-colour-depth-wrap]");
-    const styleWrap = document.querySelector("[data-colour-style]");
+    const barHint = document.querySelector("[data-colour-bar-hint]");
     const bar = document.querySelector("[data-colour-bar]");
-    const depthEl = document.querySelector("[data-colour-depth]");
     const swatch = document.querySelector("[data-colour-swatch]");
     const showBar = modePick === "bar";
     if (barWrap) barWrap.hidden = !showBar;
-    if (depthWrap) depthWrap.hidden = !showBar;
-    if (styleWrap) styleWrap.hidden = !showBar;
+    if (barHint) barHint.hidden = !showBar;
     if (bar) {
       bar.value = String(Math.round(pc.hue * 10));
       bar.disabled = !selected.size || !showBar;
     }
-    if (depthEl) {
-      depthEl.value = String(cfg.colourDepth == null ? 70 : cfg.colourDepth);
-      depthEl.disabled = !selected.size || !showBar;
-    }
-    if (swatch) {
-      const d = cfg.colourDepth == null ? 70 : cfg.colourDepth;
-      const sat = Math.round(35 + d * 0.6);
-      const lit = Math.round(68 - d * 0.32);
-      swatch.style.background = "hsl(" + pc.hue + ", " + sat + "%, " + lit + "%)";
-    }
-    document.querySelectorAll("[data-colour-style]").forEach((btn) => {
-      const st = btn.getAttribute("data-colour-style");
-      btn.setAttribute("aria-pressed", showBar && ((st === "ink" && cfg.ink) || (st === "glow" && !cfg.ink)) ? "true" : "false");
-    });
-    const hubW = document.querySelector("[data-hub-weight]");
-    const hubWV = document.querySelector("[data-hub-weight-val]");
-    if (hubW) {
-      hubW.value = String(cfg.hubWeight || 1);
-      hubW.disabled = !selected.size;
-    }
-    if (hubWV) hubWV.textContent = (cfg.hubWeight || 1) + "×";
+    if (swatch) swatch.style.background = "hsl(" + pc.hue + ", 78%, 48%)";
     const slot = readCustomSlot();
     document.querySelectorAll("[data-custom-slot]").forEach((btn) => {
       btn.setAttribute("aria-selected", btn.getAttribute("data-custom-slot") === slot ? "true" : "false");
@@ -1038,49 +1011,11 @@
   if (colourBar) {
     colourBar.addEventListener("input", () => {
       const hue = Number(colourBar.value) / 10;
-      const depthEl = document.querySelector("[data-colour-depth]");
-      const d = depthEl ? Number(depthEl.value) : 70;
       const swatch = document.querySelector("[data-colour-swatch]");
-      if (swatch) {
-        const sat = Math.round(35 + d * 0.6);
-        const lit = Math.round(68 - d * 0.32);
-        swatch.style.background = "hsl(" + hue + ", " + sat + "%, " + lit + "%)";
-      }
+      if (swatch) swatch.style.background = "hsl(" + hue + ", 78%, 48%)";
       forSelected((id, cfg) => {
         cfg.colour = colourToken("hue", hue);
         cfg.hue = hue;
-      });
-    });
-  }
-  const colourDepth = document.querySelector("[data-colour-depth]");
-  if (colourDepth) {
-    colourDepth.addEventListener("input", () => {
-      const d = Math.max(0, Math.min(100, Math.round(Number(colourDepth.value) || 70)));
-      forSelected((id, cfg) => {
-        cfg.colourDepth = d;
-      });
-    });
-  }
-  const colourStyle = document.querySelector("[data-colour-style]");
-  if (colourStyle) {
-    colourStyle.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const btn = e.target.closest("[data-colour-style]");
-      if (!btn) return;
-      const st = btn.getAttribute("data-colour-style");
-      forSelected((id, cfg) => {
-        cfg.ink = st === "ink";
-      });
-    });
-  }
-  const hubWeightEl = document.querySelector("[data-hub-weight]");
-  if (hubWeightEl) {
-    hubWeightEl.addEventListener("input", () => {
-      const w = Math.max(1, Math.min(100, Math.round(Number(hubWeightEl.value) || 1)));
-      const hubWV = document.querySelector("[data-hub-weight-val]");
-      if (hubWV) hubWV.textContent = w + "×";
-      forSelected((id, cfg) => {
-        cfg.hubWeight = w;
       });
     });
   }
@@ -1114,9 +1049,6 @@
           orb: c.orb,
           orbFn: c.orbFn,
           orbField: c.orbField,
-          hubWeight: c.hubWeight,
-          ink: c.ink,
-          colourDepth: c.colourDepth,
           spiral: c.spiral,
           x: 0,
           y: 0,
@@ -1172,6 +1104,47 @@
     loadBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       loadActiveCustom();
+    });
+  }
+  const clearBtn = document.querySelector("[data-custom-clear]");
+  if (clearBtn) {
+    clearBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const slot = readCustomSlot();
+      const key = customStoreKey(slot);
+      try {
+        localStorage.removeItem(key);
+        if (slot === "A") localStorage.removeItem(STORE_CUSTOM);
+      } catch (err) {}
+      if (readPairMode() === "custom") {
+        store = {};
+        SYMBOLS.forEach((s) => {
+          restoreToOrbit(s.id);
+          store[s.id] = {
+            anim: "off",
+            speed: 1,
+            colour: "off",
+            colourSpeed: 1,
+            size: 100,
+            x: 0,
+            y: 0,
+            pinned: false,
+            ax: 0,
+            ay: 0,
+            orb: false,
+            orbFn: "shield",
+            orbField: false,
+            spiral: false,
+          };
+        });
+        writeStore(store);
+        applyAll();
+      }
+      clearBtn.textContent = "Cleared " + slot;
+      setTimeout(() => {
+        clearBtn.textContent = "Clear slot";
+      }, 900);
+      renderLists();
     });
   }
 
@@ -1399,7 +1372,9 @@
           const b = ids[j];
           const ca = ensure(a);
           const cb = ensure(b);
-          const need = (artRadius(a) + artRadius(b)) * (cloudOrbitOn ? 1.04 : REPEL_PAD);
+          const orbPad = (id) => (ensure(id).orb ? 1.18 : 1);
+          const need =
+            (artRadius(a) * orbPad(a) + artRadius(b) * orbPad(b)) * (cloudOrbitOn ? 1.06 : REPEL_PAD);
           let dx = cb.ax - ca.ax;
           let dy = cb.ay - ca.ay;
           let d = Math.hypot(dx, dy);
@@ -1634,26 +1609,11 @@
     syncPinUi();
   };
 
-  const pickWeightedHub = (ids) => {
-    // True random among symbols, each base chance equal, then × hubWeight (1–100)
-    let total = 0;
-    const weights = ids.map((id) => {
-      const w = ensure(id).hubWeight || 1;
-      total += w;
-      return w;
-    });
-    let r = Math.random() * total;
-    for (let i = 0; i < ids.length; i++) {
-      r -= weights[i];
-      if (r <= 0) return ids[i];
-    }
-    return ids[ids.length - 1];
-  };
-
   const randomOrbit = () => {
     const ids = SYMBOLS.map((s) => s.id).filter((id) => findEl(id));
     if (!ids.length) return;
-    const hub = pickWeightedHub(ids);
+    // True uniform: each symbol equal 1/n chance
+    const hub = ids[Math.floor(Math.random() * ids.length)];
     ringPhase = Math.random() * Math.PI * 2;
     startOrbitAround(hub, {
       forceAll: true,
