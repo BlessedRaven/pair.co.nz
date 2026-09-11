@@ -1475,3 +1475,26 @@ html[data-ring="off"] .mark-host svg.sigil .center[data-motion-spin] {
 .mark-host svg.sigil .center[data-orbit-active-hub="true"] {
   filter: drop-shadow(0 0 8px var(--accent)) drop-shadow(0 0 16px rgba(225, 29, 46, 0.45));
 }
+
+/* Attractor orbit wave */
+.mark-host svg.sigil .orbit-wave {
+  fill: none;
+  stroke: rgba(120, 200, 255, 0.55);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 10;
+  pointer-events: none;
+  animation: orbit-wave-spin 10s linear infinite, orbit-wave-pulse 2.4s ease-in-out infinite;
+  filter: drop-shadow(0 0 6px rgba(100, 180, 255, 0.7));
+}
+.mark-host svg.sigil .sym[data-attractor="true"] .orbit-wave,
+.mark-host svg.sigil .center[data-attractor="true"] .orbit-wave {
+  stroke: rgba(255, 200, 120, 0.65);
+  filter: drop-shadow(0 0 8px rgba(255, 180, 80, 0.75));
+}
+@keyframes orbit-wave-spin {
+  to { stroke-dashoffset: -160; }
+}
+@keyframes orbit-wave-pulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.95; }
+}

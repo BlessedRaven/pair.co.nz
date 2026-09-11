@@ -18,7 +18,7 @@
       } catch (e) {}
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=64" />
+  <link rel="stylesheet" href="styles.css?v=65" />
 </head>
 <body>
   <header class="top">
@@ -48,6 +48,7 @@
           <span class="pin-menu" data-pin-menu hidden>
             <button type="button" data-pin-repel aria-pressed="false" title="Hard separation on drag">Repel</button>
             <button type="button" data-pin-stack aria-pressed="true" title="Allow shapes to stack / overlap">Stack</button>
+            <button type="button" data-pin-attract aria-pressed="false" title="Attract: pull nearby shapes into orbit (old Cloud-style)">Attract</button>
             <button type="button" data-pin-layout-reset>Reset</button>
           </span>
         </span>
@@ -55,7 +56,7 @@
           <button type="button" data-orbit-toggle aria-pressed="false" aria-expanded="false" aria-haspopup="true" title="Multi-hub orbit mode">Orbit</button>
           <span class="pin-menu" data-orbit-menu hidden>
             <button type="button" data-orbit-clear>Clear orbits</button>
-            <p class="orbit-hint">Tap a shape: hub / orbiter / free. Torus = hub only. Many hubs OK.</p>
+            <p class="orbit-hint">Double-click a shape = attractor (auto-pulls nearby into orbit). Double-click again to release. Torus = hub only. No stacking in Orbit.</p>
           </span>
         </span>
         <button type="button" class="top-reset" data-motion-reset title="Reset all symbol play">Reset</button>
@@ -209,9 +210,9 @@
     <span class="muted">Mints TBD · not financial advice</span>
   </footer>
 
-  <script src="theme.js?v=64" defer></script>
-  <script src="motion.js?v=64" defer></script>
-  <script src="app.js?v=64" defer></script>
+  <script src="theme.js?v=65" defer></script>
+  <script src="motion.js?v=65" defer></script>
+  <script src="app.js?v=65" defer></script>
 
   <div class="cloud-shape-menu" data-cloud-shape-menu hidden role="menu" aria-label="Orbit shape actions">
     <button type="button" role="menuitem" data-cloud-act="hub">Be orbited (hub)</button>
