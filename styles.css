@@ -1466,35 +1466,22 @@ html[data-ring="off"] .mark-host svg.sigil .center[data-motion-spin] {
 }
 
 
-/* Spectrum hue glow */
-.mark-host svg.sigil .sym[data-colour="hue"],
-.mark-host svg.sigil .center[data-colour="hue"] {
-  filter:
-    drop-shadow(0 0 1.15px hsl(var(--sym-hue, 46), calc(70% + var(--sym-depth, 70) * 0.25%), calc(62% - var(--sym-depth, 70) * 0.12%)))
-    drop-shadow(0 0 8px hsla(var(--sym-hue, 46), calc(70% + var(--sym-depth, 70) * 0.25%), calc(55% - var(--sym-depth, 70) * 0.08%), 0.8))
-    drop-shadow(0 0 22px hsla(var(--sym-hue, 46), calc(65% + var(--sym-depth, 70) * 0.2%), 48%, 0.34));
-  transition: filter 200ms ease;
-}
+/* Spectrum: NO glow/filter — only thin stroke recolour (see data-line rules below) */
 .mark-host svg.sigil .sym[data-anim="off"][data-colour="hue"],
 .mark-host svg.sigil .center[data-anim="off"][data-colour="hue"] {
   animation: none !important;
   transform: scale(var(--sym-scale, 1));
+  filter: none !important;
 }
 .mark-host svg.sigil .sym[data-anim="cw"][data-colour="hue"],
 .mark-host svg.sigil .center[data-anim="cw"][data-colour="hue"] {
   animation: pair-sym-spin var(--spin-dur, 72s) linear infinite;
-  filter:
-    drop-shadow(0 0 1.15px hsl(var(--sym-hue, 46), 95%, 58%))
-    drop-shadow(0 0 8px hsla(var(--sym-hue, 46), 95%, 55%, 0.78))
-    drop-shadow(0 0 20px hsla(var(--sym-hue, 46), 90%, 50%, 0.32));
+  filter: none !important;
 }
 .mark-host svg.sigil .sym[data-anim="ccw"][data-colour="hue"],
 .mark-host svg.sigil .center[data-anim="ccw"][data-colour="hue"] {
   animation: pair-sym-spin-ccw var(--spin-dur, 72s) linear infinite;
-  filter:
-    drop-shadow(0 0 1.15px hsl(var(--sym-hue, 46), 95%, 58%))
-    drop-shadow(0 0 8px hsla(var(--sym-hue, 46), 95%, 55%, 0.78))
-    drop-shadow(0 0 20px hsla(var(--sym-hue, 46), 90%, 50%, 0.32));
+  filter: none !important;
 }
 
 .colour-bar-wrap {
@@ -1574,21 +1561,17 @@ html[data-pair-mode="custom"] .themes [data-theme-set="custom"] {
 .mark-host svg.sigil .center[data-line="on"][data-colour="hue"] > :not(.sym-orb):not(.sym-shape-hit):not(.sym-hitpad) {
   filter: none !important;
 }
-/* Stroke-based art (cls-1…6) */
+/* Stroke-based art — ONLY swap stroke colour; keep original stroke-width from SVG */
 .mark-host svg.sigil .sym[data-line="on"][data-colour="hue"] :is(.cls-1, .cls-2, .cls-3, .cls-4, .cls-5, .cls-6),
-.mark-host svg.sigil .center[data-line="on"][data-colour="hue"] :is(.cls-1, .cls-2, .cls-3, .cls-4, .cls-5, .cls-6),
-.mark-host svg.sigil .sym[data-line="on"][data-colour="hue"] :is(path, circle, ellipse, line, polyline, polygon):not(.cls-7),
-.mark-host svg.sigil .center[data-line="on"][data-colour="hue"] :is(path, circle, ellipse, line, polyline, polygon):not(.cls-7) {
+.mark-host svg.sigil .center[data-line="on"][data-colour="hue"] :is(.cls-1, .cls-2, .cls-3, .cls-4, .cls-5, .cls-6) {
   fill: none !important;
-  stroke: hsl(var(--sym-hue, 46), var(--sym-sat, 70%), var(--sym-lit, 48%)) !important;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  stroke: hsl(var(--sym-hue, 46), var(--sym-sat, 78%), var(--sym-lit, 48%)) !important;
 }
-/* Filled art (cls-7 / solid) — colour fill only, no stroke fattening */
+/* Filled art (cls-7) — recolour fill only */
 .mark-host svg.sigil .sym[data-line="on"][data-colour="hue"] .cls-7,
 .mark-host svg.sigil .center[data-line="on"][data-colour="hue"] .cls-7 {
-  fill: hsl(var(--sym-hue, 46), var(--sym-sat, 70%), var(--sym-lit, 48%)) !important;
-  stroke: none !important;
+  fill: hsl(var(--sym-hue, 46), var(--sym-sat, 78%), var(--sym-lit, 48%)) !important;
+  stroke-width: 0 !important;
 }
 
 .colour-depth {

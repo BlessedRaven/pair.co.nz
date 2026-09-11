@@ -1271,7 +1271,7 @@
   const CLOUD_ORBIT_GAP = 36;
   const CLOUD_ORBIT_PERIOD = 60; // seconds for one clean revolution (rigid ring)
   const ORBIT_RING_MIN = 160;
-  const ORBIT_RING_MAX = 310; // keep moons on-canvas around SVG center
+  const ORBIT_RING_MAX = 390; // room for even ring without packing moons on top of each other
 
   let pinOn = false;
   let repelOn = false;
@@ -1357,15 +1357,96 @@
     return cfg;
   };
 
+
+  // Orb Shield: soft bubble — other symbols cannot cross the rim (gentle outward push)
+  const resolveShieldBarriers = (priorityId) => {
+    const hosts = SYMBOLS.map((s) => s.id).filter((id) => {
+      const c = ensure(id);
+      return c.orb && (c.orbFn || "shield") === "shield" && findEl(id);
+    });
+    if (!hosts.length) return;
+    const others = SYMBOLS.map((s) => s.id).filter((id) => findEl(id));
+    hosts.forEach((hid) => {
+      if (!ensure(hid).pinned) ensurePinnedAtWorld(hid);
+      const hc = ensure(hid);
+      const rim = artRadius(hid) * 1.16; // match Shield orb pad roughly
+      others.forEach((oid) => {
+        if (oid === hid) return;
+        // Don't fight active Sandbox orbit moons/hub
+        if (cloudOrbitOn && (oid === hubId || ringIds.indexOf(oid) >= 0)) return;
+        if (!ensure(oid).pinned) ensurePinnedAtWorld(oid);
+        const oc = ensure(oid);
+        const or = artRadius(oid);
+        let dx = oc.ax - hc.ax;
+        let dy = oc.ay - hc.ay;
+        let d = Math.hypot(dx, dy);
+        if (d < 0.001) {
+          dx = 1;
+          dy = 0;
+          d = 1;
+        }
+        const need = rim + or * 0.92;
+        if (d >= need) return;
+        const ux = dx / d;
+        const uy = dy / d;
+        // Soft bubble pong — mostly push the visitor
+        const push = need - d;
+        if (priorityId === hid) {
+          oc.ax = Math.round((hc.ax + ux * need) * 10) / 10;
+          oc.ay = Math.round((hc.ay + uy * need) * 10) / 10;
+        } else if (priorityId === oid) {
+          oc.ax = Math.round((hc.ax + ux * need) * 10) / 10;
+          oc.ay = Math.round((hc.ay + uy * need) * 10) / 10;
+        } else {
+          oc.ax = Math.round((oc.ax + ux * push * 0.85) * 10) / 10;
+          oc.ay = Math.round((oc.ay + uy * push * 0.85) * 10) / 10;
+        }
+        oc.pinned = true;
+        placeAbs(oid);
+      });
+    });
+  };
+
+  // Orb Orbit: drop a smaller symbol near a host → capture into that host's ring
+  const tryOrbitGravityCapture = (droppedId) => {
+    if (!droppedId || !findEl(droppedId)) return false;
+    if (cloudOrbitOn && droppedId === hubId) return false;
+    const dr = artRadius(droppedId);
+    const dc = ensure(droppedId);
+    let best = null;
+    let bestD = Infinity;
+    SYMBOLS.forEach((s) => {
+      if (s.id === droppedId) return;
+      const c = ensure(s.id);
+      if (!c.orb || c.orbFn !== "orbit") return;
+      if (!findEl(s.id)) return;
+      const hr = artRadius(s.id);
+      if (!(dr < hr * 0.98)) return; // only smaller moons
+      if (!c.pinned) ensurePinnedAtWorld(s.id);
+      const h = ensure(s.id);
+      const d = Math.hypot(dc.ax - h.ax, dc.ay - h.ay);
+      const reach = hr * 1.85 + dr;
+      if (d <= reach && d < bestD) {
+        bestD = d;
+        best = s.id;
+      }
+    });
+    if (!best) return false;
+    startOrbitAround(best, { forceAll: false, center: false, shuffle: false });
+    return true;
+  };
+
   // Soft/hard separation. In Orbit: friendly push then snap moons back onto the ring.
   const resolveRepel = (priorityId) => {
     if (!repelOn) return;
+    // Orbit owns ring seats — never shove moons off the circle mid-spin
+    if (cloudOrbitOn && !drag) return;
     const ids = SYMBOLS.map((s) => s.id).filter((id) => findEl(id));
     ids.forEach((id) => {
       if (!ensure(id).pinned) ensurePinnedAtWorld(id);
     });
-    const soft = cloudOrbitOn ? 0.55 : 1; // friendlier in orbit
-    for (let pass = 0; pass < (cloudOrbitOn ? 3 : 5); pass++) {
+    const soft = cloudOrbitOn ? 0.35 : 1; // gentler while dragging in orbit
+    for (let pass = 0; pass < (cloudOrbitOn ? 2 : 5); pass++) {
       for (let i = 0; i < ids.length; i++) {
         for (let j = i + 1; j < ids.length; j++) {
           const a = ids[i];
@@ -1481,17 +1562,17 @@
     });
 
     const hubR = artRadius(hubId);
-    const moons = [];
+    let moons = [];
     SYMBOLS.forEach((s) => {
       if (s.id === hubId) return;
       if (!findEl(s.id)) return;
       const r = artRadius(s.id);
-      if (cloudForceAll || r < hubR * 1.05) moons.push({ id: s.id, r });
+      // Motion-style: only smaller-than-hub moons, unless forceAll (Random / All shapes)
+      if (cloudForceAll || r < hubR * 1.02) moons.push({ id: s.id, r });
     });
     if (!orbitShuffle) {
       moons.sort((a, b) => a.r - b.r || a.id.localeCompare(b.id));
     } else {
-      // Fisher–Yates — Random matrix order
       for (let i = moons.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         const tmp = moons[i];
@@ -1499,6 +1580,37 @@
         moons[j] = tmp;
       }
     }
+
+    const fitRadius = (list) => {
+      const n = list.length;
+      if (!n) return 0;
+      const radii = list.map((m) => m.r).sort((a, b) => a - b);
+      const maxMoonR = radii[radii.length - 1];
+      const midMoonR = radii[Math.floor(radii.length / 2)];
+      const clearHub = hubR + midMoonR + CLOUD_ORBIT_GAP;
+      const sinHalf = Math.sin(Math.PI / n);
+      const clearMoons = sinHalf > 0.001 ? (midMoonR * REPEL_PAD) / sinHalf : clearHub;
+      let R = Math.max(clearHub, clearMoons, ORBIT_RING_MIN);
+      R = Math.max(R, hubR + Math.min(maxMoonR, 100) + CLOUD_ORBIT_GAP);
+      return R;
+    };
+
+    // If forceAll packed too tight for the stage, drop largest moons until the ring fits
+    if (cloudForceAll) {
+      moons = moons.slice().sort((a, b) => a.r - b.r || a.id.localeCompare(b.id));
+      while (moons.length > 2 && fitRadius(moons) > ORBIT_RING_MAX) {
+        moons.pop(); // drop largest
+      }
+      if (orbitShuffle) {
+        for (let i = moons.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          const tmp = moons[i];
+          moons[i] = moons[j];
+          moons[j] = tmp;
+        }
+      }
+    }
+
     ringIds = moons.map((m) => m.id);
     const n = ringIds.length;
     if (!n) {
@@ -1507,16 +1619,7 @@
       return;
     }
 
-    const radii = moons.map((m) => m.r).sort((a, b) => a - b);
-    const maxMoonR = radii[radii.length - 1];
-    const midMoonR = radii[Math.floor(radii.length / 2)];
-    // Prefer mid-size for chord spacing so a huge Torus moon doesn't explode the ring
-    const clearHub = hubR + midMoonR + CLOUD_ORBIT_GAP;
-    const sinHalf = Math.sin(Math.PI / n);
-    const clearMoons = sinHalf > 0.001 ? (midMoonR * REPEL_PAD) / sinHalf : clearHub;
-    let R = Math.max(clearHub, clearMoons, ORBIT_RING_MIN);
-    // Soft floor so the largest moon still clears the hub a bit
-    R = Math.max(R, hubR + Math.min(maxMoonR, 90) + CLOUD_ORBIT_GAP);
+    let R = fitRadius(moons);
     ringRadius = Math.min(ORBIT_RING_MAX, R);
 
     layoutRing();
@@ -1564,7 +1667,8 @@
   };
 
   const startOrbitAround = (id, opts) => {
-    const forceAll = opts && opts.forceAll !== undefined ? !!opts.forceAll : true;
+    // Default: size-gated moons (Motion / teach-demo feel). forceAll only for Random / All shapes.
+    const forceAll = opts && opts.forceAll !== undefined ? !!opts.forceAll : false;
     const center = opts && opts.center !== undefined ? !!opts.center : true;
     const shuffle = !!(opts && opts.shuffle);
     const keepPhase = !!(opts && opts.keepPhase);
@@ -1584,12 +1688,6 @@
     cloudOrbitOn = true;
     if (center) centerHubAtStage(id);
     else ensurePinnedAtWorld(id);
-    if (!forceAll) {
-      rebuildCloudMoons();
-      if (ringIds.length < 3) {
-        cloudForceAll = true;
-      }
-    }
     startCloudOrbit({ keepPhase: keepPhase });
     orbitShuffle = false; // one-shot shuffle
     syncPinUi();
@@ -1598,9 +1696,9 @@
   const setCloudOrbit = (on) => {
     cloudOrbitOn = !!on;
     if (cloudOrbitOn) {
-      // Sandbox → Orbit: start a clean centered ring (Cloud hub, everyone on it)
-      const hub = hubId && findEl(hubId) ? hubId : CLOUD_ID;
-      startOrbitAround(hub, { forceAll: true, center: true, shuffle: false });
+      // Sandbox → Orbit: Motion-like even ring — Cloud hub, only smaller moons
+      const hub = CLOUD_ID;
+      startOrbitAround(hub, { forceAll: false, center: true, shuffle: false });
     } else {
       stopCloudOrbit();
       cloudForceAll = false;
@@ -1927,6 +2025,7 @@
     // While dragging a moon, allow free move; ring snaps even again on release
 
     if (repelOn) resolveRepel(drag.id);
+    resolveShieldBarriers(drag.id);
     writeStore(store);
   };
 
@@ -1934,6 +2033,7 @@
     if (!drag) return;
     const id = drag.id;
     const wasTap = !drag.moved;
+    const wasMoved = !!drag.moved;
     drag = null;
     if (cloudOrbitOn) {
       if (wasTap) {
@@ -1954,8 +2054,14 @@
         rebuildCloudMoons();
       }
       if (!cloudRaf) cloudRaf = requestAnimationFrame(tickCloudOrbit);
-    } else if (repelOn) {
-      resolveRepel(id);
+    } else {
+      // Not in Sandbox Orbit: Orbit-orb hosts can capture a smaller drop
+      if (wasMoved && tryOrbitGravityCapture(id)) {
+        writeStore(store);
+        return;
+      }
+      if (repelOn) resolveRepel(id);
+      resolveShieldBarriers(id);
     }
     writeStore(store);
   };
