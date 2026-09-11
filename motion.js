@@ -905,7 +905,9 @@
     writeRing(false);
     ringSpin = "off";
     writeRingSpin("off");
+    repelOn = false;
     setPin(false);
+    syncPinUi();
     applyAll();
     renderLists();
   };
@@ -1024,7 +1026,7 @@
   // Hard separation: no two symbols may touch/overlay when repel is on
   const resolveRepel = (priorityId) => {
     // Repel stays a Pin tool; shape drag itself is always available
-    if (!repelOn || !pinOn) return;
+    if (!repelOn) return;
     const ids = SYMBOLS.map((s) => s.id).filter((id) => findEl(id));
     ids.forEach((id) => {
       if (!ensure(id).pinned) ensurePinnedAtWorld(id);
@@ -1198,7 +1200,6 @@
     cloudOrbitOn = !!on;
     if (cloudOrbitOn) {
       if (!pinOn) {
-        // force pin on
         pinOn = true;
         if (ringOn) {
           ringOn = false;
@@ -1206,13 +1207,52 @@
           syncRing();
         }
         SYMBOLS.forEach((s) => ensurePinnedAtWorld(s.id));
+        writeStore(store);
       }
-      startCloudOrbit();
+      // Armed only — keep artist seats until double-click or Random picks a hub
+      stopCloudOrbit();
+      cloudForceAll = false;
     } else {
       stopCloudOrbit();
       cloudForceAll = false;
     }
     syncPinUi();
+  };
+
+  const startOrbitAround = (id, opts) => {
+    const forceAll = !!(opts && opts.forceAll);
+    if (!id || !findEl(id)) return;
+    if (ringOn) {
+      ringOn = false;
+      writeRing(false);
+      syncRing();
+    }
+    if (!pinOn) {
+      pinOn = true;
+      SYMBOLS.forEach((s) => ensurePinnedAtWorld(s.id));
+    }
+    hubId = id;
+    cloudForceAll = forceAll;
+    cloudOrbitOn = true;
+    ensurePinnedAtWorld(id);
+    rebuildCloudMoons();
+    if (!forceAll && ringIds.length < 3) {
+      cloudForceAll = true;
+      rebuildCloudMoons();
+    }
+    startCloudOrbit();
+    syncPinUi();
+  };
+
+  const randomOrbit = () => {
+    const ids = SYMBOLS.map((s) => s.id).filter((id) => findEl(id));
+    if (!ids.length) return;
+    const hub = ids[Math.floor(Math.random() * ids.length)];
+    // Random matrix: random phase + sometimes force-all moons
+    ringPhase = Math.random() * Math.PI * 2;
+    startOrbitAround(hub, { forceAll: Math.random() < 0.45 });
+    pinMenuOpen(true);
+    applyAll();
   };
 
   document.addEventListener("pair:orb-cloud-hub", (e) => {
@@ -1239,13 +1279,13 @@
       pinMenuOpen(false);
       cloudOrbitOn = false;
       stopCloudOrbit();
+      // Leaving Sandbox never leaves Repel latched for the next enter
+      repelOn = false;
     } else {
-      // Freeze at current artist / world seats — do NOT auto-repel (keeps normal view)
+      // Freeze at current artist seats — never auto-run Repel on enter
       SYMBOLS.forEach((s) => ensurePinnedAtWorld(s.id));
       writeStore(store);
-      // Repel only if user already turned it on (e.g. re-entering with repel latched)
-      if (repelOn) resolveRepel(null);
-      if (cloudOrbitOn) startCloudOrbit();
+      // Orbit armed keeps normal seats until double-click / Random starts a hub
     }
     syncPinUi();
   };
@@ -1271,17 +1311,17 @@
   if (repelBtn) {
     repelBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      if (!pinOn) {
-        if (ringOn) {
-          ringOn = false;
-          writeRing(false);
-          syncRing();
-        }
-        setPin(true);
-        pinMenuOpen(true);
-      }
+      // Repel is independent of Sandbox menu — never auto-enter Sandbox
       setRepel(!repelOn);
       applyAll();
+    });
+  }
+
+  const randomBtn = document.querySelector("[data-pin-orbit-random]");
+  if (randomBtn) {
+    randomBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      randomOrbit();
     });
   }
 
@@ -1309,6 +1349,7 @@
       setCloudOrbit(false);
       stopCloudOrbit();
       cloudForceAll = false;
+      repelOn = false;
       hubId = CLOUD_ID;
       SYMBOLS.forEach((s) => {
         restoreToOrbit(s.id);
@@ -1329,6 +1370,7 @@
         };
       });
       writeStore(store);
+      syncPinUi();
       applyAll();
       renderLists();
     });
@@ -1387,6 +1429,7 @@
     setCloudOrbit(false);
     stopCloudOrbit();
     cloudForceAll = false;
+    repelOn = false;
     hubId = CLOUD_ID;
     SYMBOLS.forEach((s) => {
       restoreToOrbit(s.id);
@@ -1420,25 +1463,15 @@
       const id = cloudMenuSym;
       cloudMenuOpen(false);
       if (act === "hub" && id) {
-        if (!pinOn) setPin(true);
-        hubId = id;
-        cloudOrbitOn = true;
-        ensurePinnedAtWorld(id);
-        startCloudOrbit();
-        syncPinUi();
+        startOrbitAround(id, { forceAll: false });
         applyAll();
       } else if (act === "reset-shape" && id) {
         resetOneShape(id);
       } else if (act === "reset-all") {
         resetAllShapes();
       } else if (act === "all-shapes") {
-        if (!pinOn) setPin(true);
-        cloudOrbitOn = true;
-        cloudForceAll = true;
-        if (!hubId || !findEl(hubId)) hubId = CLOUD_ID;
-        SYMBOLS.forEach((s) => ensurePinnedAtWorld(s.id));
-        startCloudOrbit();
-        syncPinUi();
+        const hub = hubId && findEl(hubId) ? hubId : CLOUD_ID;
+        startOrbitAround(hub, { forceAll: true });
         applyAll();
       }
     });
@@ -1450,7 +1483,7 @@
   }
 
 
-  // Double-click a shape → Sandbox Orbit with that shape as hub
+  // Double-click a shape → start / retarget Orbit hub (default seats stay until this or Random)
   document.addEventListener(
     "dblclick",
     (e) => {
@@ -1460,24 +1493,7 @@
       if (!id || !SYMBOLS.some((s) => s.id === id)) return;
       e.preventDefault();
       e.stopPropagation();
-      if (ringOn) {
-        ringOn = false;
-        writeRing(false);
-        syncRing();
-      }
-      if (!pinOn) setPin(true);
-      hubId = id;
-      cloudForceAll = false;
-      cloudOrbitOn = true;
-      ensurePinnedAtWorld(id);
-      // Prefer size-gated moons; if almost none, pull everyone onto the ring
-      rebuildCloudMoons();
-      if (ringIds.length < 3) {
-        cloudForceAll = true;
-        rebuildCloudMoons();
-      }
-      startCloudOrbit();
-      syncPinUi();
+      startOrbitAround(id, { forceAll: false });
       pinMenuOpen(true);
       applyAll();
     },
@@ -1540,7 +1556,7 @@
     }
     // While dragging a moon, allow free move; ring snaps even again on release
 
-    if (repelOn && pinOn) resolveRepel(drag.id);
+    if (repelOn) resolveRepel(drag.id);
     writeStore(store);
   };
 
@@ -1568,7 +1584,7 @@
         rebuildCloudMoons();
       }
       if (!cloudRaf) cloudRaf = requestAnimationFrame(tickCloudOrbit);
-    } else if (repelOn && pinOn) {
+    } else if (repelOn) {
       resolveRepel(id);
     }
     writeStore(store);

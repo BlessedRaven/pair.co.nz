@@ -18,7 +18,7 @@
       } catch (e) {}
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=70" />
+  <link rel="stylesheet" href="styles.css?v=71" />
 </head>
 <body>
   <header class="top">
@@ -46,11 +46,12 @@
         <span class="pin-wrap" data-pin-wrap>
           <button type="button" data-motion-pin aria-pressed="false" aria-expanded="false" aria-haspopup="true" title="Sandbox: drag, repel, orbit — double-click a shape to orbit it">Sandbox</button>
           <span class="pin-menu" data-pin-menu hidden>
-            <button type="button" data-pin-repel aria-pressed="false">Repel</button>
-            <button type="button" data-pin-cloud-orbit aria-pressed="false">Orbit</button>
+            <button type="button" data-pin-cloud-orbit aria-pressed="false" title="Arm orbit — double-click a shape or Random">Orbit</button>
+            <button type="button" data-pin-orbit-random title="Random hub + orbit ring">Random</button>
             <button type="button" data-pin-layout-reset>Reset</button>
           </span>
         </span>
+        <button type="button" data-pin-repel aria-pressed="false" title="Hard separation while dragging (off by default)">Repel</button>
         <button type="button" class="top-reset" data-motion-reset title="Reset all symbol play">Reset</button>
       </div>
     </div>
@@ -105,7 +106,7 @@
       </div>
       <button type="button" class="motion-reset motion-reset-danger" data-motion-reset>Reset</button>
       <button type="button" class="motion-sandbox" data-sandbox-toggle aria-pressed="false" title="Play framing label">Play frame</button>
-      <p class="motion-hint">Select symbols (or Select all), then edit. Projects → Orb adds a glow circle. Sandbox = optional Repel + Orbit (double-click a shape). Zoom = empty-space drag.</p>
+      <p class="motion-hint">Select symbols (or Select all), then edit. Projects → Orb adds a glow circle. Sandbox → Orbit (double-click hub or Random). Repel is separate. Zoom = empty-space drag.</p>
     </div>
   </aside>
 
@@ -178,7 +179,7 @@
         <g class="hits-free"></g>
       </svg>
     </div>
-    <p class="hint">Sandbox = artist seats + optional Repel/Orbit · double-click shape to orbit · Link/Drag/Zoom bottom-right</p>
+    <p class="hint">Sandbox Orbit = normal seats until double-click / Random · Repel separate · Link/Drag/Zoom bottom-right</p>
   </main>
 
   
@@ -202,9 +203,9 @@
     <span class="muted">Mints TBD · not financial advice</span>
   </footer>
 
-  <script src="theme.js?v=70" defer></script>
-  <script src="motion.js?v=70" defer></script>
-  <script src="app.js?v=70" defer></script>
+  <script src="theme.js?v=71" defer></script>
+  <script src="motion.js?v=71" defer></script>
+  <script src="app.js?v=71" defer></script>
 
   <div class="cloud-shape-menu" data-cloud-shape-menu hidden role="menu" aria-label="Cloud shape actions">
     <button type="button" role="menuitem" data-cloud-act="hub">Make house (hub)</button>
