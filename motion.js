@@ -938,7 +938,7 @@
   const CLOUD_ORBIT_PERIOD = 60; // seconds for one clean revolution (rigid ring)
 
   let pinOn = false;
-  let repelOn = true;
+  let repelOn = false;
   let cloudOrbitOn = false;
   let drag = null;
   // hubId is Cloud for now; later any selected symbol can become the hub
@@ -1140,7 +1140,7 @@
       if (s.id === hubId) return;
       if (!findEl(s.id)) return;
       const r = artRadius(s.id);
-      if (cloudForceAll || r < hubR * 0.98) smaller.push({ id: s.id, r });
+      if (cloudForceAll || r < hubR * 1.05) smaller.push({ id: s.id, r });
     });
     // Stable order by size then id — even slots around the circle
     smaller.sort((a, b) => a.r - b.r || a.id.localeCompare(b.id));
@@ -1240,8 +1240,10 @@
       cloudOrbitOn = false;
       stopCloudOrbit();
     } else {
+      // Freeze at current artist / world seats — do NOT auto-repel (keeps normal view)
       SYMBOLS.forEach((s) => ensurePinnedAtWorld(s.id));
       writeStore(store);
+      // Repel only if user already turned it on (e.g. re-entering with repel latched)
       if (repelOn) resolveRepel(null);
       if (cloudOrbitOn) startCloudOrbit();
     }
@@ -1446,6 +1448,41 @@
       cloudMenuOpen(false);
     });
   }
+
+
+  // Double-click a shape → Sandbox Orbit with that shape as hub
+  document.addEventListener(
+    "dblclick",
+    (e) => {
+      const el = e.target.closest(".mark-host svg.sigil .sym, .mark-host svg.sigil .center");
+      if (!el) return;
+      const id = el.getAttribute("data-sym");
+      if (!id || !SYMBOLS.some((s) => s.id === id)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (ringOn) {
+        ringOn = false;
+        writeRing(false);
+        syncRing();
+      }
+      if (!pinOn) setPin(true);
+      hubId = id;
+      cloudForceAll = false;
+      cloudOrbitOn = true;
+      ensurePinnedAtWorld(id);
+      // Prefer size-gated moons; if almost none, pull everyone onto the ring
+      rebuildCloudMoons();
+      if (ringIds.length < 3) {
+        cloudForceAll = true;
+        rebuildCloudMoons();
+      }
+      startCloudOrbit();
+      syncPinUi();
+      pinMenuOpen(true);
+      applyAll();
+    },
+    true
+  );
 
   // Shape drag is native site-wide (same feel as Pin). Pin only adds repel/orbit/reset.
   const canvasDragOn = () => true;
