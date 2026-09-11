@@ -1469,9 +1469,9 @@ html[data-ring="off"] .mark-host svg.sigil .center[data-motion-spin] {
 .mark-host svg.sigil .sym[data-colour="hue"],
 .mark-host svg.sigil .center[data-colour="hue"] {
   filter:
-    drop-shadow(0 0 1.15px hsl(var(--sym-hue, 46), 95%, 58%))
-    drop-shadow(0 0 8px hsla(var(--sym-hue, 46), 95%, 55%, 0.78))
-    drop-shadow(0 0 20px hsla(var(--sym-hue, 46), 90%, 50%, 0.32));
+    drop-shadow(0 0 1.15px hsl(var(--sym-hue, 46), calc(70% + var(--sym-depth, 70) * 0.25%), calc(62% - var(--sym-depth, 70) * 0.12%)))
+    drop-shadow(0 0 8px hsla(var(--sym-hue, 46), calc(70% + var(--sym-depth, 70) * 0.25%), calc(55% - var(--sym-depth, 70) * 0.08%), 0.8))
+    drop-shadow(0 0 22px hsla(var(--sym-hue, 46), calc(65% + var(--sym-depth, 70) * 0.2%), 48%, 0.34));
   transition: filter 200ms ease;
 }
 .mark-host svg.sigil .sym[data-anim="off"][data-colour="hue"],
@@ -1560,5 +1560,32 @@ html[data-pair-mode="custom"] .themes [data-theme-set="custom"] {
   color: var(--bg);
   background: var(--fg);
   border-color: transparent;
+}
+
+
+/* Ink mode — recolour actual SVG strokes/fills (not just glow) */
+.mark-host svg.sigil .sym[data-ink="on"][data-colour="hue"] :is(path, circle, ellipse, line, polyline, polygon, rect),
+.mark-host svg.sigil .center[data-ink="on"][data-colour="hue"] :is(path, circle, ellipse, line, polyline, polygon, rect) {
+  fill: hsl(var(--sym-hue, 46), calc(40% + var(--sym-depth, 70) * 0.45%), calc(78% - var(--sym-depth, 70) * 0.35%)) !important;
+  stroke: hsl(var(--sym-hue, 46), calc(40% + var(--sym-depth, 70) * 0.45%), calc(78% - var(--sym-depth, 70) * 0.35%)) !important;
+}
+/* When ink is on, drop the glow filter so lines read clean */
+.mark-host svg.sigil .sym[data-ink="on"][data-colour="hue"],
+.mark-host svg.sigil .center[data-ink="on"][data-colour="hue"] {
+  filter: none;
+}
+.mark-host svg.sigil .sym[data-ink="on"][data-colour="hue"] > :not(.sym-orb):not(.sym-shape-hit):not(.sym-hitpad),
+.mark-host svg.sigil .center[data-ink="on"][data-colour="hue"] > :not(.sym-orb):not(.sym-shape-hit):not(.sym-hitpad) {
+  filter: none;
+}
+
+.colour-depth {
+  flex: 1;
+  height: 0.55rem;
+  appearance: none;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #bbb, #222);
+  border: 1px solid color-mix(in srgb, var(--fg) 16%, transparent);
+  cursor: pointer;
 }
 

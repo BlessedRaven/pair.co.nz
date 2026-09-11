@@ -18,7 +18,7 @@
       } catch (e) {}
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=75" />
+  <link rel="stylesheet" href="styles.css?v=76" />
 </head>
 <body>
   <header class="top">
@@ -77,8 +77,16 @@
           <button type="button" role="option" class="motion-opt" data-colour-pick="bar" aria-selected="false">Spectrum</button>
         </div>
         <div class="colour-bar-wrap" data-colour-bar-wrap hidden>
-          <input class="colour-bar" data-colour-bar type="range" min="0" max="360" value="25" step="1" aria-label="Colour spectrum" />
+          <input class="colour-bar" data-colour-bar type="range" min="0" max="3600" value="250" step="1" aria-label="Colour spectrum" />
           <span class="colour-bar-swatch" data-colour-swatch title="Current colour"></span>
+        </div>
+        <div class="colour-bar-wrap" data-colour-depth-wrap hidden style="margin-top:0.35rem">
+          <label class="motion-hint" style="margin:0;min-width:3.2rem">Depth</label>
+          <input class="colour-depth" data-colour-depth type="range" min="0" max="100" value="70" step="1" aria-label="Colour depth" />
+        </div>
+        <div class="motion-list" data-colour-style style="margin-top:0.4rem" hidden>
+          <button type="button" class="motion-opt" data-colour-style="glow" aria-pressed="true">Glow</button>
+          <button type="button" class="motion-opt" data-colour-style="ink" aria-pressed="false">Ink lines</button>
         </div>
         <div class="motion-speed-row" style="margin-top:0.65rem">
           <p class="motion-label">Size</p>
@@ -96,6 +104,23 @@
         </div>
         <input class="motion-speed" data-motion-colour-speed type="range" min="1" max="100" value="100" step="1" aria-label="Colour speed" />
 
+        <p class="motion-label" style="margin-top:0.65rem">Hub rarity <span class="motion-speed-val" data-hub-weight-val>1×</span></p>
+        <input class="motion-speed" data-hub-weight type="range" min="1" max="100" value="1" step="1" aria-label="Orbit hub rarity weight" />
+        <p class="motion-hint" style="margin-top:0.25rem">How often this symbol is picked as Random orbit center (1–100×).</p>
+        <div class="motion-list" style="margin-top:0.55rem" data-pi-spiral-wrap hidden>
+          <button type="button" class="motion-opt" data-pi-spiral aria-pressed="false">Pi spiral</button>
+        </div>
+        <p class="motion-label" style="margin-top:0.85rem">Custom saves</p>
+        <div class="motion-list" data-custom-slots role="listbox" aria-label="Custom slots">
+          <button type="button" role="option" class="motion-opt" data-custom-slot="A" aria-selected="true">A</button>
+          <button type="button" role="option" class="motion-opt" data-custom-slot="B" aria-selected="false">B</button>
+          <button type="button" role="option" class="motion-opt" data-custom-slot="C" aria-selected="false">C</button>
+        </div>
+        <div class="motion-list" style="margin-top:0.4rem">
+          <button type="button" class="motion-opt" data-custom-save>Save to Custom</button>
+          <button type="button" class="motion-opt" data-custom-load>Load Custom</button>
+        </div>
+        <p class="motion-hint" style="margin-top:0.25rem">Reset won’t wipe saves. Save stores the current Symbol look into A/B/C.</p>
         <p class="motion-label" style="margin-top:0.85rem">Projects</p>
         <div class="motion-list" data-project-list role="listbox" aria-label="Projects">
           <button type="button" role="option" class="motion-opt" data-project-pick="orb" aria-selected="false">Orb</button>
@@ -212,9 +237,9 @@
     <span class="muted">Mints TBD · not financial advice</span>
   </footer>
 
-  <script src="theme.js?v=75" defer></script>
-  <script src="motion.js?v=75" defer></script>
-  <script src="app.js?v=75" defer></script>
+  <script src="theme.js?v=76" defer></script>
+  <script src="motion.js?v=76" defer></script>
+  <script src="app.js?v=76" defer></script>
 
   <div class="cloud-shape-menu" data-cloud-shape-menu hidden role="menu" aria-label="Cloud shape actions">
     <button type="button" role="menuitem" data-cloud-act="hub">Make house (hub)</button>
