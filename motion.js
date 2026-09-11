@@ -612,10 +612,18 @@
     el.dataset.colour = pc.mode === "off" ? "off" : pc.mode === "vibe" ? "vibe" : "hue";
     el.dataset.ink = cfg.ink && pc.mode === "hue" ? "on" : "off";
     if (pc.mode === "hue") {
+      const d = cfg.colourDepth == null ? 70 : cfg.colourDepth;
+      // Depth → real sat/lit percentages (no broken unitless calc in CSS)
+      const sat = Math.round(35 + d * 0.6); // 35–95
+      const lit = Math.round(68 - d * 0.32); // 68–36 (deeper = richer/darker ink)
       el.style.setProperty("--sym-hue", String(pc.hue));
-      el.style.setProperty("--sym-depth", String(cfg.colourDepth == null ? 70 : cfg.colourDepth));
+      el.style.setProperty("--sym-sat", sat + "%");
+      el.style.setProperty("--sym-lit", lit + "%");
+      el.style.removeProperty("--sym-depth");
     } else {
       el.style.removeProperty("--sym-hue");
+      el.style.removeProperty("--sym-sat");
+      el.style.removeProperty("--sym-lit");
       el.style.removeProperty("--sym-depth");
     }
     applyPose(id);
@@ -670,6 +678,13 @@
       });
       SYMBOLS.forEach((s) => applyToDom(s.id));
       syncRing();
+      let anyInk = false;
+      SYMBOLS.forEach((s) => {
+        const c = ensure(s.id);
+        const pc = parseColour(c.colour);
+        if (c.ink && pc.mode === "hue") anyInk = true;
+      });
+      document.documentElement.setAttribute("data-ink-any", anyInk ? "on" : "off");
     } finally {
       applying = false;
     }
@@ -733,9 +748,9 @@
     }
     if (swatch) {
       const d = cfg.colourDepth == null ? 70 : cfg.colourDepth;
-      const sat = 55 + d * 0.4;
-      const lit = 72 - d * 0.28;
-      swatch.style.background = "hsl(" + pc.hue + " " + sat + "% " + lit + "%)";
+      const sat = Math.round(35 + d * 0.6);
+      const lit = Math.round(68 - d * 0.32);
+      swatch.style.background = "hsl(" + pc.hue + ", " + sat + "%, " + lit + "%)";
     }
     document.querySelectorAll("[data-colour-style]").forEach((btn) => {
       const st = btn.getAttribute("data-colour-style");
@@ -1027,9 +1042,9 @@
       const d = depthEl ? Number(depthEl.value) : 70;
       const swatch = document.querySelector("[data-colour-swatch]");
       if (swatch) {
-        const sat = 55 + d * 0.4;
-        const lit = 72 - d * 0.28;
-        swatch.style.background = "hsl(" + hue + " " + sat + "% " + lit + "%)";
+        const sat = Math.round(35 + d * 0.6);
+        const lit = Math.round(68 - d * 0.32);
+        swatch.style.background = "hsl(" + hue + ", " + sat + "%, " + lit + "%)";
       }
       forSelected((id, cfg) => {
         cfg.colour = colourToken("hue", hue);
