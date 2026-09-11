@@ -200,7 +200,7 @@
   const clampSize = (sp) => {
     let n = Number(sp);
     if (!Number.isFinite(n)) n = 100;
-    return Math.max(25, Math.min(200, Math.round(n)));
+    return Math.max(25, Math.min(320, Math.round(n)));
   };
 
   const ensure = (id) => {
@@ -538,7 +538,7 @@
       }
     });
     const fn = cfg.orbFn || "shield";
-    const pad = fn === "cloud" ? 1.28 : fn === "orbit" ? 1.2 : 1.14;
+    const pad = fn === "cloud" ? 1.28 : fn === "orbit" ? 1.72 : 1.14;
     const cx = bb.x + bb.width / 2;
     const cy = bb.y + bb.height / 2;
     const r = Math.max(12, (Math.max(bb.width, bb.height) / 2) * pad);
@@ -1358,6 +1358,72 @@
   };
 
 
+  // Match syncOrbOn rim pads (Orbit line is the capture path)
+  const orbRimRadius = (id) => {
+    const c = ensure(id);
+    const fn = c.orbFn || "shield";
+    const pad = fn === "cloud" ? 1.28 : fn === "orbit" ? 1.72 : 1.14;
+    return artRadius(id) * pad;
+  };
+
+  // Double-click / Orbit hub: grow until this symbol is the biggest (size-gate never collapses)
+  const ensureHubLargest = (id) => {
+    if (!id || !findEl(id)) return;
+    const cfg = ensure(id);
+    const sizeNow = clampSize(cfg.size) || 100;
+    const rNow = artRadius(id);
+    const base = rNow / (sizeNow / 100);
+    if (!(base > 0.01)) return;
+    let maxOther = 0;
+    SYMBOLS.forEach((s) => {
+      if (s.id === id || !findEl(s.id)) return;
+      maxOther = Math.max(maxOther, artRadius(s.id));
+    });
+    const target = maxOther * 1.12;
+    if (rNow >= target) {
+      applyToDom(id);
+      return;
+    }
+    cfg.size = clampSize(Math.ceil((target / base) * 100));
+    applyToDom(id);
+    if (selected.has(id)) renderLists();
+  };
+
+  // Keep oversized / unused shapes off the ring so Torus etc. don't sit on the hub
+  const parkNonMoons = () => {
+    if (!hubId || !findEl(hubId)) return;
+    const hub = ensure(hubId);
+    const hubR = artRadius(hubId);
+    const basePark = Math.max(ringRadius || 0, hubR + 90) + 70;
+    let i = 0;
+    SYMBOLS.forEach((s) => {
+      if (s.id === hubId) return;
+      if (ringIds.indexOf(s.id) >= 0) return;
+      if (!findEl(s.id)) return;
+      const cfg = ensurePinnedAtWorld(s.id);
+      const or = artRadius(s.id);
+      const need = basePark + or + (i % 6) * 18;
+      let dx = cfg.ax - hub.ax;
+      let dy = cfg.ay - hub.ay;
+      let d = Math.hypot(dx, dy);
+      if (d < 0.001) {
+        const ang = -Math.PI / 2 + (i * 2 * Math.PI) / 8;
+        dx = Math.cos(ang);
+        dy = Math.sin(ang);
+        d = 1;
+      }
+      const ux = dx / d;
+      const uy = dy / d;
+      if (d < need) {
+        cfg.ax = Math.round((hub.ax + ux * need) * 10) / 10;
+        cfg.ay = Math.round((hub.ay + uy * need) * 10) / 10;
+        cfg.pinned = true;
+        placeAbs(s.id);
+      }
+      i++;
+    });
+  };
+
   // Orb Shield: soft bubble — other symbols cannot cross the rim (gentle outward push)
   const resolveShieldBarriers = (priorityId) => {
     const hosts = SYMBOLS.map((s) => s.id).filter((id) => {
@@ -1369,7 +1435,7 @@
     hosts.forEach((hid) => {
       if (!ensure(hid).pinned) ensurePinnedAtWorld(hid);
       const hc = ensure(hid);
-      const rim = artRadius(hid) * 1.16; // match Shield orb pad roughly
+      const rim = orbRimRadius(hid);
       others.forEach((oid) => {
         if (oid === hid) return;
         // Don't fight active Sandbox orbit moons/hub
@@ -1389,12 +1455,8 @@
         if (d >= need) return;
         const ux = dx / d;
         const uy = dy / d;
-        // Soft bubble pong — mostly push the visitor
         const push = need - d;
-        if (priorityId === hid) {
-          oc.ax = Math.round((hc.ax + ux * need) * 10) / 10;
-          oc.ay = Math.round((hc.ay + uy * need) * 10) / 10;
-        } else if (priorityId === oid) {
+        if (priorityId === hid || priorityId === oid) {
           oc.ax = Math.round((hc.ax + ux * need) * 10) / 10;
           oc.ay = Math.round((hc.ay + uy * need) * 10) / 10;
         } else {
@@ -1407,34 +1469,51 @@
     });
   };
 
-  // Orb Orbit: drop a smaller symbol near a host → capture into that host's ring
-  const tryOrbitGravityCapture = (droppedId) => {
-    if (!droppedId || !findEl(droppedId)) return false;
-    if (cloudOrbitOn && droppedId === hubId) return false;
-    const dr = artRadius(droppedId);
-    const dc = ensure(droppedId);
+  // Orbit-orb dashed line = capture path. Any shape (or Shield) touching it starts orbiting that host.
+  let orbitCaptureLock = false;
+  const tryOrbitLineCapture = (visitorId) => {
+    if (orbitCaptureLock) return false;
+    if (!visitorId || !findEl(visitorId)) return false;
+    const vc = ensure(visitorId);
+    if (!vc.pinned) ensurePinnedAtWorld(visitorId);
+    const vr = artRadius(visitorId);
     let best = null;
     let bestD = Infinity;
     SYMBOLS.forEach((s) => {
-      if (s.id === droppedId) return;
+      if (s.id === visitorId) return;
       const c = ensure(s.id);
       if (!c.orb || c.orbFn !== "orbit") return;
       if (!findEl(s.id)) return;
-      const hr = artRadius(s.id);
-      if (!(dr < hr * 0.98)) return; // only smaller moons
+      if (cloudOrbitOn && s.id === hubId && ringIds.indexOf(visitorId) >= 0) return; // already moon of this hub
       if (!c.pinned) ensurePinnedAtWorld(s.id);
       const h = ensure(s.id);
-      const d = Math.hypot(dc.ax - h.ax, dc.ay - h.ay);
-      const reach = hr * 1.85 + dr;
-      if (d <= reach && d < bestD) {
+      const rim = orbRimRadius(s.id);
+      const d = Math.hypot(vc.ax - h.ax, vc.ay - h.ay);
+      // Touch the orbit line (band around rim) or cross inside it
+      const outer = rim + vr * 0.35;
+      const inner = Math.max(0, rim - vr * 0.85);
+      if (d <= outer && d >= inner * 0.15 && d < bestD) {
+        bestD = d;
+        best = s.id;
+      }
+      // Also: fully inside the orbit circle counts as contact
+      if (d < rim + vr * 0.2 && d < bestD) {
         bestD = d;
         best = s.id;
       }
     });
     if (!best) return false;
-    startOrbitAround(best, { forceAll: false, center: false, shuffle: false });
+    if (cloudOrbitOn && best === hubId) return false; // already around this host
+    orbitCaptureLock = true;
+    try {
+      startOrbitAround(best, { forceAll: false, center: false, shuffle: false });
+    } finally {
+      orbitCaptureLock = false;
+    }
     return true;
   };
+
+  const tryOrbitGravityCapture = (droppedId) => tryOrbitLineCapture(droppedId);
 
   // Soft/hard separation. In Orbit: friendly push then snap moons back onto the ring.
   const resolveRepel = (priorityId) => {
@@ -1623,6 +1702,7 @@
     ringRadius = Math.min(ORBIT_RING_MAX, R);
 
     layoutRing();
+    parkNonMoons();
     writeStore(store);
   };
 
@@ -1686,6 +1766,7 @@
     cloudForceAll = forceAll;
     orbitShuffle = shuffle;
     cloudOrbitOn = true;
+    ensureHubLargest(id);
     if (center) centerHubAtStage(id);
     else ensurePinnedAtWorld(id);
     startCloudOrbit({ keepPhase: keepPhase });
@@ -1714,7 +1795,7 @@
     const hub = ids[Math.floor(Math.random() * ids.length)];
     ringPhase = Math.random() * Math.PI * 2;
     startOrbitAround(hub, {
-      forceAll: true,
+      forceAll: false,
       center: true,
       shuffle: true,
       keepPhase: true,
@@ -2026,6 +2107,10 @@
 
     if (repelOn) resolveRepel(drag.id);
     resolveShieldBarriers(drag.id);
+    // Orbit-orb line capture while dragging (Sandbox or free)
+    if (!(cloudOrbitOn && drag.id === hubId)) {
+      tryOrbitLineCapture(drag.id);
+    }
     writeStore(store);
   };
 
