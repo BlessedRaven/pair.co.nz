@@ -1215,6 +1215,15 @@
     syncPinUi();
   };
 
+  document.addEventListener("pair:orb-cloud-hub", (e) => {
+    const id = e.detail && e.detail.id;
+    if (!id || !findEl(id)) return;
+    if (!cloudOrbitOn) return;
+    hubId = id;
+    ensurePinnedAtWorld(id);
+    rebuildCloudMoons();
+  });
+
   const setRepel = (on) => {
     repelOn = !!on;
     syncPinUi();
@@ -1312,6 +1321,9 @@
           pinned: false,
           ax: 0,
           ay: 0,
+        orb: false,
+        orbFn: "shield",
+        orbField: false,
         };
       });
       writeStore(store);
@@ -1357,6 +1369,8 @@
       pinned: false,
       ax: 0,
       ay: 0,
+      orb: false,
+      orbFn: "shield",
     };
     writeStore(store);
     if (cloudOrbitOn) {
@@ -1385,6 +1399,9 @@
         pinned: false,
         ax: 0,
         ay: 0,
+        orb: false,
+        orbFn: "shield",
+      orbField: false,
       };
     });
     writeStore(store);
@@ -1429,7 +1446,6 @@
       cloudMenuOpen(false);
     });
   }
-
 
   // Shape drag is native site-wide (same feel as Pin). Pin only adds repel/orbit/reset.
   const canvasDragOn = () => true;
