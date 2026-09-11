@@ -18,7 +18,7 @@
       } catch (e) {}
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=67" />
+  <link rel="stylesheet" href="styles.css?v=68" />
 </head>
 <body>
   <header class="top">
@@ -46,20 +46,11 @@
         <span class="pin-wrap" data-pin-wrap>
           <button type="button" data-motion-pin aria-pressed="false" aria-expanded="false" aria-haspopup="true" title="Pin: drag symbols">Pin</button>
           <span class="pin-menu" data-pin-menu hidden>
-            <button type="button" data-pin-repel aria-pressed="false" title="Hard separation on drag">Repel</button>
-            <button type="button" data-pin-stack aria-pressed="true" title="Allow shapes to stack / overlap">Stack</button>
-            <button type="button" data-pin-attract aria-pressed="false" title="Attract: pull nearby shapes into orbit (old Cloud-style)">Attract</button>
+            <button type="button" data-pin-repel aria-pressed="true">Repel</button>
+            <button type="button" data-pin-cloud-orbit aria-pressed="false">Cloud orbit</button>
             <button type="button" data-pin-layout-reset>Reset</button>
           </span>
         </span>
-        <span class="orbit-wrap pin-wrap" data-orbit-wrap>
-          <button type="button" data-orbit-toggle aria-pressed="false" aria-expanded="false" aria-haspopup="true" title="Orbit: any shape as hub — everything orbits it">Orbit</button>
-          <span class="pin-menu" data-orbit-menu hidden>
-            <button type="button" data-orbit-clear>Clear attractors</button>
-            <p class="orbit-hint">Double-click a shape to attract smaller symbols into a clean ring (like old Cloud). Double-click again to release. Torus = hub only.</p>
-          </span>
-        </span>
-        <button type="button" data-harmony-toggle aria-pressed="false" title="Site-wide: nothing may overlap">Harmony</button>
         <button type="button" class="top-reset" data-motion-reset title="Reset all symbol play">Reset</button>
       </div>
     </div>
@@ -187,7 +178,7 @@
         <g class="hits-free"></g>
       </svg>
     </div>
-    <p class="hint">Orbit = Cloud-style any hub · Harmony = no overlap · Link/Drag/Zoom bottom-right</p>
+    <p class="hint">Pin = Repel + Cloud orbit · Link/Drag/Zoom bottom-right</p>
   </main>
 
 
@@ -211,15 +202,15 @@
     <span class="muted">Mints TBD · not financial advice</span>
   </footer>
 
-  <script src="theme.js?v=67" defer></script>
-  <script src="motion.js?v=67" defer></script>
-  <script src="app.js?v=67" defer></script>
+  <script src="theme.js?v=68" defer></script>
+  <script src="motion.js?v=68" defer></script>
+  <script src="app.js?v=68" defer></script>
 
-  <div class="cloud-shape-menu" data-cloud-shape-menu hidden role="menu" aria-label="Orbit shape actions">
-    <button type="button" role="menuitem" data-cloud-act="hub">Be orbited (hub)</button>
-    <button type="button" role="menuitem" data-cloud-act="orbit-hub">Orbit selected hub</button>
-    <button type="button" role="menuitem" data-cloud-act="free">Free</button>
+  <div class="cloud-shape-menu" data-cloud-shape-menu hidden role="menu" aria-label="Cloud shape actions">
+    <button type="button" role="menuitem" data-cloud-act="hub">Make hub</button>
+    <button type="button" role="menuitem" data-cloud-act="all-shapes">All shapes</button>
     <button type="button" role="menuitem" data-cloud-act="reset-shape">Reset shape</button>
+    <button type="button" role="menuitem" data-cloud-act="reset-all">Reset</button>
   </div>
 
 </body>

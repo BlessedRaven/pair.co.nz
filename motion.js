@@ -929,72 +929,44 @@
     });
   }
 
-  // —— Pin: optional Repel / Stack. Orbit: separate multi-hub mode ——
+  // —— Pin: fluid drag + optional hard repel + Cloud-orbit prototype ——
   const SVG_CX = 447.56;
   const SVG_CY = 484.96;
-  const REPEL_PAD = 1.12;
-  const ORBIT_GAP = 36;
-  const ORBIT_PERIOD = 60;
+  const CLOUD_ID = "cloud";
+  const REPEL_PAD = 1.12; // radii must not overlap (extra padding)
+  const CLOUD_ORBIT_GAP = 36;
+  const CLOUD_ORBIT_PERIOD = 60; // seconds for one clean revolution (rigid ring)
 
   let pinOn = false;
-  let repelOn = false; // Stack is default; Repel is optional
-  let orbitModeOn = false;
+  let repelOn = true;
+  let cloudOrbitOn = false;
   let drag = null;
-  // moonOf[moonId] = hubId — multiple hubs, many moons; Torus never a moon
-  let moonOf = {};
-  let activeHubId = null; // hub selected for assigning orbiters
-  let attractors = {}; // hubId -> true (double-click / Pin Attract)
-  let pinAttractOn = false;
-  let harmonyOn = false; // site-wide no-overlap
-  let harmonyRaf = 0;
-  const ATTRACT_RANGE = 4.2; // pull radius = hub artRadius * this + pad
-  const ATTRACT_PAD = 70;
-  // per-hub ring state
-  let hubRing = {}; // hubId -> { ids: [], radius, phase }
-  let orbitRaf = 0;
-  let orbitLastTs = 0;
+  // hubId is Cloud for now; later any selected symbol can become the hub
+  let hubId = CLOUD_ID;
+  let ringIds = []; // moons in even angular order
+  let ringRadius = 0; // single shared radius — perfect circle
+  let ringPhase = -Math.PI / 2; // shared rotation phase
+  let cloudRaf = 0;
+  let cloudLastTs = 0;
 
   const pinBtn = document.querySelector("[data-motion-pin]");
   const pinMenu = document.querySelector("[data-pin-menu]");
   const repelBtn = document.querySelector("[data-pin-repel]");
-  const stackBtn = document.querySelector("[data-pin-stack]");
+  const cloudOrbitBtn = document.querySelector("[data-pin-cloud-orbit]");
   const pinLayoutResetBtn = document.querySelector("[data-pin-layout-reset]");
-  const attractBtn = document.querySelector("[data-pin-attract]");
-  const orbitBtn = document.querySelector("[data-orbit-toggle]");
-  const harmonyBtn = document.querySelector("[data-harmony-toggle]");
-  const orbitMenu = document.querySelector("[data-orbit-menu]");
-  const orbitClearBtn = document.querySelector("[data-orbit-clear]");
 
   const pinMenuOpen = (open) => {
     if (!pinMenu || !pinBtn) return;
     pinMenu.hidden = !open;
     pinBtn.setAttribute("aria-expanded", open ? "true" : "false");
   };
-  const orbitMenuOpen = (open) => {
-    if (!orbitMenu || !orbitBtn) return;
-    orbitMenu.hidden = !open;
-    orbitBtn.setAttribute("aria-expanded", open ? "true" : "false");
-  };
 
   const syncPinUi = () => {
     if (pinBtn) pinBtn.setAttribute("aria-pressed", pinOn ? "true" : "false");
     document.documentElement.setAttribute("data-pin", pinOn ? "on" : "off");
     if (repelBtn) repelBtn.setAttribute("aria-pressed", repelOn ? "true" : "false");
-    if (stackBtn) stackBtn.setAttribute("aria-pressed", !repelOn && !pinAttractOn ? "true" : "false");
-    if (attractBtn) attractBtn.setAttribute("aria-pressed", pinAttractOn ? "true" : "false");
-  };
-
-  const syncOrbitUi = () => {
-    if (orbitBtn) orbitBtn.setAttribute("aria-pressed", orbitModeOn ? "true" : "false");
-    document.documentElement.setAttribute("data-orbit-mode", orbitModeOn ? "on" : "off");
-    document.documentElement.setAttribute("data-cloud-orbit", orbitModeOn ? "on" : "off"); // legacy tap gate in app.js
-    document.querySelectorAll(".mark-host svg.sigil [data-orbit-active-hub]").forEach((el) => {
-      el.removeAttribute("data-orbit-active-hub");
-    });
-    if (orbitModeOn && activeHubId) {
-      const el = findEl(activeHubId);
-      if (el) el.setAttribute("data-orbit-active-hub", "true");
-    }
+    if (cloudOrbitBtn) cloudOrbitBtn.setAttribute("aria-pressed", cloudOrbitOn ? "true" : "false");
+    document.documentElement.setAttribute("data-cloud-orbit", cloudOrbitOn && pinOn ? "on" : "off");
   };
 
   const artRadius = (id) => {
@@ -1049,39 +1021,28 @@
     return cfg;
   };
 
-  const isOrbitBody = (id) => {
-    if (moonOf[id]) return true;
-    if (attractors[id]) return true;
-    return Object.keys(moonOf).some((m) => moonOf[m] === id);
-  };
-
+  // Hard separation: no two symbols may touch/overlay when repel is on
   const resolveRepel = (priorityId) => {
-    // Harmony = site-wide no overlap. Orbit also separates. Else Pin+Repel only.
-    if (harmonyOn || orbitModeOn) {
-      /* forced */
-    } else if (!repelOn || !pinOn) {
-      return;
-    }
+    // Repel stays a Pin tool; shape drag itself is always available
+    if (!repelOn || !pinOn) return;
     const ids = SYMBOLS.map((s) => s.id).filter((id) => findEl(id));
     ids.forEach((id) => {
       if (!ensure(id).pinned) ensurePinnedAtWorld(id);
     });
-    const passes = harmonyOn ? 10 : 5;
-    const pad = harmonyOn ? REPEL_PAD * 1.15 : REPEL_PAD;
-    for (let pass = 0; pass < passes; pass++) {
+    // Multiple passes so chains settle
+    for (let pass = 0; pass < 5; pass++) {
       for (let i = 0; i < ids.length; i++) {
         for (let j = i + 1; j < ids.length; j++) {
           const a = ids[i];
           const b = ids[j];
-          // Orbit ring owns same-hub spacing — unless Harmony (then separate everything)
-          if (!harmonyOn && (orbitModeOn || Object.keys(attractors).length) && isOrbitBody(a) && isOrbitBody(b)) {
-            const ha = moonOf[a] || a;
-            const hb = moonOf[b] || b;
-            if (ha === hb) continue;
+          // Rigid cloud-orbit ring owns spacing — don't shove moons off the circle
+          if (cloudOrbitOn) {
+            const onRing = (id) => id === hubId || ringIds.indexOf(id) >= 0;
+            if (onRing(a) && onRing(b)) continue;
           }
           const ca = ensure(a);
           const cb = ensure(b);
-          const need = (artRadius(a) + artRadius(b)) * pad;
+          const need = (artRadius(a) + artRadius(b)) * REPEL_PAD;
           let dx = cb.ax - ca.ax;
           let dy = cb.ay - ca.ay;
           let d = Math.hypot(dx, dy);
@@ -1094,6 +1055,7 @@
           const push = (need - d) / 2;
           const ux = dx / d;
           const uy = dy / d;
+          // Keep priority (dragged / cloud hub) more fixed
           let wa = 1;
           let wb = 1;
           if (priorityId === a) {
@@ -1102,6 +1064,12 @@
           } else if (priorityId === b) {
             wa = 1.95;
             wb = 0.05;
+          } else if (cloudOrbitOn && a === hubId) {
+            wa = 0.1;
+            wb = 1.9;
+          } else if (cloudOrbitOn && b === hubId) {
+            wa = 1.9;
+            wb = 0.1;
           }
           const sum = wa + wb;
           ca.ax = Math.round((ca.ax - ux * push * (wa / sum) * 2) * 10) / 10;
@@ -1116,151 +1084,34 @@
     ids.forEach((id) => placeAbs(id));
   };
 
-  const clearOrbitMarks = () => {
-    document.querySelectorAll(".mark-host svg.sigil [data-cloud-hub], .mark-host svg.sigil [data-cloud-moon]").forEach((el) => {
+  const stopCloudOrbit = () => {
+    if (cloudRaf) {
+      cancelAnimationFrame(cloudRaf);
+      cloudRaf = 0;
+    }
+    cloudLastTs = 0;
+    ringIds = [];
+    ringRadius = 0;
+    document.querySelectorAll(".mark-host svg.sigil [data-cloud-hub]").forEach((el) => {
       el.removeAttribute("data-cloud-hub");
+      el.style.removeProperty("--tidal-rot");
+    });
+    document.querySelectorAll(".mark-host svg.sigil [data-cloud-moon]").forEach((el) => {
       el.removeAttribute("data-cloud-moon");
       el.style.removeProperty("--tidal-rot");
     });
   };
 
-  const stopOrbitEngine = () => {
-    if (orbitRaf) {
-      cancelAnimationFrame(orbitRaf);
-      orbitRaf = 0;
-    }
-    orbitLastTs = 0;
-    clearOrbitMarks();
-  };
-
-  const moonsOfHub = (hub) =>
-    Object.keys(moonOf)
-      .filter((m) => moonOf[m] === hub)
-      .sort();
-
-  const fitRingRadius = (hub, moons) => {
-    const hubR = artRadius(hub);
-    if (!moons.length) return 0;
-    const moonRs = moons.map((id) => artRadius(id));
-    const maxMoonR = Math.max.apply(null, moonRs);
-    const n = moons.length;
-    const clearHub = hubR + maxMoonR + ORBIT_GAP;
-    const sinHalf = Math.sin(Math.PI / n);
-    const clearMoons = sinHalf > 0.001 ? (maxMoonR * REPEL_PAD) / sinHalf : clearHub;
-    return Math.max(clearHub, clearMoons);
-  };
-
-  const attractRadius = (hub) => artRadius(hub) * ATTRACT_RANGE + ATTRACT_PAD;
-
-  const syncAttractorWave = (hub) => {
-    const el = findEl(hub);
-    if (!el) return;
-    const ns = "http://www.w3.org/2000/svg";
-    let wave = el.querySelector(":scope > .orbit-wave");
-    const on = !!attractors[hub];
-    el.setAttribute("data-attractor", on ? "true" : "false");
-    if (!on) {
-      if (wave) wave.remove();
-      return;
-    }
-    if (!wave) {
-      wave = document.createElementNS(ns, "circle");
-      wave.setAttribute("class", "orbit-wave");
-      el.insertBefore(wave, el.firstChild);
-    }
-    const bb = withArtOnly(el, () => {
-      try {
-        return el.getBBox();
-      } catch (err) {
-        return { x: 0, y: 0, width: 40, height: 40 };
-      }
-    });
-    const cx = bb.x + bb.width / 2;
-    const cy = bb.y + bb.height / 2;
-    const r = attractRadius(hub) / Math.max(clampSize(ensure(hub).size) / 100, 0.25);
-    // attractRadius is in world-ish units matching artRadius*scale; wave is in local art space
-    const localR = Math.max(bb.width, bb.height) / 2 * ATTRACT_RANGE + ATTRACT_PAD * 0.15;
-    wave.setAttribute("cx", cx);
-    wave.setAttribute("cy", cy);
-    wave.setAttribute("r", localR);
-  };
-
-  const pullIntoOrbit = (hub) => {
-    if (!hub || !findEl(hub)) return;
-    // Release previous moons of this hub, then re-pull (old Cloud: only SMALLER shapes)
-    Object.keys(moonOf).forEach((m) => {
-      if (moonOf[m] === hub) delete moonOf[m];
-    });
-    if (moonOf[hub]) delete moonOf[hub];
-    ensurePinnedAtWorld(hub);
-    const hubR = artRadius(hub);
-    SYMBOLS.forEach((s) => {
-      if (s.id === hub) return;
-      if (s.id === "torus") return; // never a moon
-      if (attractors[s.id]) return; // other attractors stay hubs
-      if (!findEl(s.id)) return;
-      const r = artRadius(s.id);
-      // Exact old Cloud gate: only symbols smaller than the hub join the ring
-      if (r >= hubR * 0.98) return;
-      ensurePinnedAtWorld(s.id);
-      Object.keys(moonOf).forEach((m) => {
-        if (moonOf[m] === s.id) delete moonOf[m];
-      });
-      moonOf[s.id] = hub;
-    });
-    activeHubId = hub;
-    syncAttractorWave(hub);
-  };
-
-  const toggleAttractor = (id) => {
-    if (!id || !findEl(id)) return;
-    if (ringOn) {
-      ringOn = false;
-      writeRing(false);
-      syncRing();
-    }
-    if (attractors[id]) {
-      // OFF
-      delete attractors[id];
-      Object.keys(moonOf).forEach((m) => {
-        if (moonOf[m] === id) delete moonOf[m];
-      });
-      if (activeHubId === id) activeHubId = null;
-      syncAttractorWave(id);
-      rebuildAllOrbits();
-      if (!Object.keys(attractors).length) {
-        orbitModeOn = false;
-        stopOrbitEngine();
-      }
-      syncOrbitUi();
-      return;
-    }
-    // ON — like old Cloud: this hub pulls only smaller shapes into a clean ring
-    if (moonOf[id]) delete moonOf[id];
-    attractors[id] = true;
-    activeHubId = id;
-    orbitModeOn = true;
-    SYMBOLS.forEach((s) => ensurePinnedAtWorld(s.id));
-    pullIntoOrbit(id);
-    rebuildAllOrbits();
-    startOrbitEngine();
-    Object.keys(attractors).forEach(syncAttractorWave);
-    syncOrbitUi();
-  };
-
-  const layoutHubRing = (hub) => {
-    const st = hubRing[hub];
-    if (!st || !st.ids.length) return;
-    const hubCfg = ensurePinnedAtWorld(hub);
-    const elHub = findEl(hub);
-    if (elHub) elHub.setAttribute("data-cloud-hub", "true");
-    const n = st.ids.length;
-    st.ids.forEach((id, i) => {
+  const layoutRing = () => {
+    const hub = ensure(hubId);
+    const n = ringIds.length;
+    if (!n || !ringRadius) return;
+    ringIds.forEach((id, i) => {
       if (drag && drag.id === id) return;
-      const ang = st.phase + (i * 2 * Math.PI) / n;
+      const ang = ringPhase + (i * 2 * Math.PI) / n;
       const cfg = ensure(id);
-      cfg.ax = hubCfg.ax + Math.cos(ang) * st.radius;
-      cfg.ay = hubCfg.ay + Math.sin(ang) * st.radius;
+      cfg.ax = hub.ax + Math.cos(ang) * ringRadius;
+      cfg.ay = hub.ay + Math.sin(ang) * ringRadius;
       cfg.pinned = true;
       placeAbs(id);
       const el = findEl(id);
@@ -1271,194 +1122,98 @@
     });
   };
 
-  const rebuildAllOrbits = () => {
-    clearOrbitMarks();
-    const hubs = [...new Set(Object.values(moonOf))];
-    const next = {};
-    hubs.forEach((hub) => {
-      if (!findEl(hub)) return;
-      const ids = moonsOfHub(hub).filter((id) => id !== "torus" && findEl(id));
-      const prev = hubRing[hub];
-      const phase = prev && Number.isFinite(prev.phase) ? prev.phase : -Math.PI / 2;
-      next[hub] = { ids, phase, radius: 0 };
-      hubRing[hub] = next[hub];
-      next[hub].radius = fitRingRadius(hub, ids);
-      ensurePinnedAtWorld(hub);
-      layoutHubRing(hub);
+  let cloudForceAll = false; // All shapes on ring (ignore size gate)
+
+  const rebuildCloudMoons = () => {
+    const hubEl = findEl(hubId);
+    if (!hubEl) return;
+    const hub = ensurePinnedAtWorld(hubId);
+    hubEl.setAttribute("data-cloud-hub", "true");
+    document.querySelectorAll(".mark-host svg.sigil [data-cloud-moon]").forEach((el) => {
+      el.removeAttribute("data-cloud-moon");
+      el.style.removeProperty("--tidal-rot");
     });
-    hubRing = next;
+
+    const hubR = artRadius(hubId);
+    const smaller = [];
+    SYMBOLS.forEach((s) => {
+      if (s.id === hubId) return;
+      if (!findEl(s.id)) return;
+      const r = artRadius(s.id);
+      if (cloudForceAll || r < hubR * 0.98) smaller.push({ id: s.id, r });
+    });
+    // Stable order by size then id — even slots around the circle
+    smaller.sort((a, b) => a.r - b.r || a.id.localeCompare(b.id));
+    ringIds = smaller.map((m) => m.id);
+    const n = ringIds.length;
+    if (!n) {
+      ringRadius = 0;
+      writeStore(store);
+      return;
+    }
+
+    const maxMoonR = Math.max.apply(null, smaller.map((m) => m.r));
+    // Fit: clear of hub, and even chord spacing so moons never overlap
+    const clearHub = hubR + maxMoonR + CLOUD_ORBIT_GAP;
+    const sinHalf = Math.sin(Math.PI / n);
+    const clearMoons = sinHalf > 0.001 ? (maxMoonR * REPEL_PAD) / sinHalf : clearHub;
+    ringRadius = Math.max(clearHub, clearMoons);
+
+    // Keep current phase; just snap onto perfect even angles
+    layoutRing();
     writeStore(store);
-    Object.keys(attractors).forEach(syncAttractorWave);
-    // remove waves from non-attractors
-    SYMBOLS.forEach((s) => {
-      if (!attractors[s.id]) {
-        const el = findEl(s.id);
-        if (el) {
-          const w = el.querySelector(":scope > .orbit-wave");
-          if (w) w.remove();
-          el.removeAttribute("data-attractor");
+  };
+
+  const tickCloudOrbit = (ts) => {
+    if (!pinOn || !cloudOrbitOn) {
+      stopCloudOrbit();
+      return;
+    }
+    if (!cloudLastTs) cloudLastTs = ts;
+    const dt = Math.min(0.05, (ts - cloudLastTs) / 1000);
+    cloudLastTs = ts;
+
+    // Rigid ring: one shared omega — perfect spacing stays perfect
+    if (!(drag && (drag.id === hubId || ringIds.indexOf(drag.id) >= 0))) {
+      const omega = (Math.PI * 2) / CLOUD_ORBIT_PERIOD;
+      ringPhase += omega * dt;
+      layoutRing();
+    } else if (drag && drag.id === hubId) {
+      // Hub moving — moons stay locked relative via layoutRing
+      layoutRing();
+    }
+    cloudRaf = requestAnimationFrame(tickCloudOrbit);
+  };
+
+  const startCloudOrbit = () => {
+    if (cloudRaf) cancelAnimationFrame(cloudRaf);
+    cloudLastTs = 0;
+    if (!hubId || !findEl(hubId)) hubId = CLOUD_ID;
+    ringPhase = -Math.PI / 2;
+    rebuildCloudMoons();
+    cloudRaf = requestAnimationFrame(tickCloudOrbit);
+  };
+
+  const setCloudOrbit = (on) => {
+    cloudOrbitOn = !!on;
+    if (cloudOrbitOn) {
+      if (!pinOn) {
+        // force pin on
+        pinOn = true;
+        if (ringOn) {
+          ringOn = false;
+          writeRing(false);
+          syncRing();
         }
+        SYMBOLS.forEach((s) => ensurePinnedAtWorld(s.id));
       }
-    });
-    syncOrbitUi();
-  };
-
-  const tickOrbit = (ts) => {
-    if (!orbitModeOn) {
-      stopOrbitEngine();
-      return;
-    }
-    if (!orbitLastTs) orbitLastTs = ts;
-    const dt = Math.min(0.05, (ts - orbitLastTs) / 1000);
-    orbitLastTs = ts;
-    const omega = (Math.PI * 2) / ORBIT_PERIOD;
-    Object.keys(hubRing).forEach((hub) => {
-      const st = hubRing[hub];
-      if (!st || !st.ids.length) return;
-      const draggingHub = drag && drag.id === hub;
-      const draggingMoon = drag && st.ids.indexOf(drag.id) >= 0;
-      if (!draggingHub && !draggingMoon) {
-        st.phase += omega * dt;
-      }
-      layoutHubRing(hub);
-    });
-    orbitRaf = requestAnimationFrame(tickOrbit);
-  };
-
-  const startOrbitEngine = () => {
-    if (orbitRaf) cancelAnimationFrame(orbitRaf);
-    orbitLastTs = 0;
-    rebuildAllOrbits();
-    orbitRaf = requestAnimationFrame(tickOrbit);
-  };
-
-  // Orbit bar: arms double-click attractors. Does NOT dump every shape onto one hub.
-  const setOrbitMode = (on) => {
-    orbitModeOn = !!on;
-    if (orbitModeOn) {
-      if (ringOn) {
-        ringOn = false;
-        writeRing(false);
-        syncRing();
-      }
-      SYMBOLS.forEach((s) => ensurePinnedAtWorld(s.id));
-      if (Object.keys(attractors).length) {
-        Object.keys(attractors).forEach((hub) => pullIntoOrbit(hub));
-        rebuildAllOrbits();
-        startOrbitEngine();
-      }
-      orbitMenuOpen(true);
+      startCloudOrbit();
     } else {
-      // Turning Orbit off releases all attractors
-      stopOrbitEngine();
-      clearOrbits();
-      orbitMenuOpen(false);
+      stopCloudOrbit();
+      cloudForceAll = false;
     }
-    syncOrbitUi();
-  };
-
-  const syncHarmonyUi = () => {
-    document.documentElement.setAttribute("data-harmony", harmonyOn ? "on" : "off");
-    if (harmonyBtn) harmonyBtn.setAttribute("aria-pressed", harmonyOn ? "true" : "false");
-  };
-
-  const tickHarmony = () => {
-    if (!harmonyOn) {
-      harmonyRaf = 0;
-      return;
-    }
-    SYMBOLS.forEach((s) => {
-      if (findEl(s.id)) ensurePinnedAtWorld(s.id);
-    });
-    resolveRepel(null);
-    // Re-seat any attractor rings so moons stay even and clear of each other
-    if (Object.keys(attractors).length) {
-      Object.keys(attractors).forEach((hub) => {
-        if (!hubRing[hub]) return;
-        hubRing[hub].radius = fitRingRadius(hub, hubRing[hub].ids || []);
-        layoutHubRing(hub);
-      });
-    }
-    harmonyRaf = requestAnimationFrame(tickHarmony);
-  };
-
-  const setHarmony = (on) => {
-    harmonyOn = !!on;
-    syncHarmonyUi();
-    if (harmonyOn) {
-      if (!harmonyRaf) harmonyRaf = requestAnimationFrame(tickHarmony);
-    } else if (harmonyRaf) {
-      cancelAnimationFrame(harmonyRaf);
-      harmonyRaf = 0;
-    }
-  };
-
-  const clearOrbits = () => {
-    moonOf = {};
-    hubRing = {};
-    activeHubId = null;
-    Object.keys(attractors).forEach((id) => {
-      delete attractors[id];
-      syncAttractorWave(id);
-    });
-    attractors = {};
-    pinAttractOn = false;
-    clearOrbitMarks();
-    if (orbitModeOn) rebuildAllOrbits();
     syncPinUi();
-    syncOrbitUi();
   };
-
-  const assignHub = (id) => {
-    if (!id || !findEl(id)) return;
-    // If it was a moon, free it first
-    if (moonOf[id]) delete moonOf[id];
-    activeHubId = id;
-    ensurePinnedAtWorld(id);
-    if (!orbitModeOn) setOrbitMode(true);
-    else {
-      rebuildAllOrbits();
-      syncOrbitUi();
-    }
-  };
-
-  const assignMoon = (moonId, hubId) => {
-    if (!moonId || !hubId || moonId === hubId) return;
-    if (moonId === "torus") return; // Torus cannot orbit others
-    if (!findEl(moonId) || !findEl(hubId)) return;
-    // Hub cannot also be a moon of someone else
-    if (moonOf[hubId]) delete moonOf[hubId];
-    // Remove moon from being a hub's... moons stay; if moon was a hub, its moons need reassign? free them
-    Object.keys(moonOf).forEach((m) => {
-      if (moonOf[m] === moonId) delete moonOf[m];
-    });
-    moonOf[moonId] = hubId;
-    activeHubId = hubId;
-    ensurePinnedAtWorld(hubId);
-    ensurePinnedAtWorld(moonId);
-    if (!orbitModeOn) setOrbitMode(true);
-    else rebuildAllOrbits();
-    syncOrbitUi();
-  };
-
-  const freeOrbitRole = (id) => {
-    if (!id) return;
-    if (moonOf[id]) delete moonOf[id];
-    Object.keys(moonOf).forEach((m) => {
-      if (moonOf[m] === id) delete moonOf[m];
-    });
-    if (activeHubId === id) activeHubId = null;
-    rebuildAllOrbits();
-    syncOrbitUi();
-  };
-
-  const syncCloudFlag = () => {};
-
-  document.addEventListener("pair:orb-cloud-hub", (e) => {
-    const id = e.detail && e.detail.id;
-    if (!id) return;
-    assignHub(id);
-  });
 
   const setRepel = (on) => {
     repelOn = !!on;
@@ -1473,17 +1228,19 @@
     pinOn = !!on;
     if (!pinOn) {
       pinMenuOpen(false);
+      cloudOrbitOn = false;
+      stopCloudOrbit();
     } else {
       SYMBOLS.forEach((s) => ensurePinnedAtWorld(s.id));
       writeStore(store);
       if (repelOn) resolveRepel(null);
+      if (cloudOrbitOn) startCloudOrbit();
     }
     syncPinUi();
   };
 
   setPin(false);
   syncPinUi();
-  syncOrbitUi();
 
   if (pinBtn) {
     pinBtn.addEventListener("click", (e) => {
@@ -1512,13 +1269,13 @@
         setPin(true);
         pinMenuOpen(true);
       }
-      setRepel(true);
+      setRepel(!repelOn);
       applyAll();
     });
   }
 
-  if (stackBtn) {
-    stackBtn.addEventListener("click", (e) => {
+  if (cloudOrbitBtn) {
+    cloudOrbitBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       if (!pinOn) {
         if (ringOn) {
@@ -1529,99 +1286,19 @@
         setPin(true);
         pinMenuOpen(true);
       }
-      pinAttractOn = false;
-      setRepel(false);
+      setCloudOrbit(!cloudOrbitOn);
       applyAll();
     });
   }
 
-  if (attractBtn) {
-    attractBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (!pinOn) {
-        if (ringOn) {
-          ringOn = false;
-          writeRing(false);
-          syncRing();
-        }
-        setPin(true);
-        pinMenuOpen(true);
-      }
-      pinAttractOn = !pinAttractOn;
-      if (pinAttractOn) {
-        setRepel(true); // attract uses separation like old Cloud
-        const pick =
-          (selected && selected.size === 1 && [...selected][0]) ||
-          activeHubId ||
-          "cloud";
-        const hub = findEl(pick) ? pick : "cloud";
-        if (!attractors[hub]) toggleAttractor(hub);
-        else {
-          pullIntoOrbit(hub);
-          rebuildAllOrbits();
-        }
-      } else {
-        // release pin-attract hubs that aren't manually needed — clear all attractors from pin attract
-        clearOrbits();
-        setOrbitMode(false);
-      }
-      syncPinUi();
-      applyAll();
-    });
-  }
-
-  // Double-click shape → toggle attractor (Orbit / Pin Attract)
-  document.addEventListener(
-    "dblclick",
-    (e) => {
-      const el = e.target.closest(".mark-host svg.sigil .sym, .mark-host svg.sigil .center");
-      if (!el) return;
-      const id = el.getAttribute("data-sym");
-      if (!SYMBOLS.some((s) => s.id === id)) return;
-      e.preventDefault();
-      e.stopPropagation();
-      // Double-click toggles attractor (old Cloud pull: smaller moons only)
-      toggleAttractor(id);
-      applyAll();
-    },
-    true
-  );
-
-  if (orbitBtn) {
-    orbitBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const next = !orbitModeOn;
-      if (next && ringOn) {
-        ringOn = false;
-        writeRing(false);
-        syncRing();
-      }
-      setOrbitMode(next);
-      applyAll();
-    });
-  }
-
-  if (harmonyBtn) {
-    harmonyBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      setHarmony(!harmonyOn);
-    });
-  }
-  syncHarmonyUi();
-
-  if (orbitClearBtn) {
-    orbitClearBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      clearOrbits();
-      applyAll();
-    });
-  }
-
+  // Pin → Reset: put every symbol back to artist baseline seats
   if (pinLayoutResetBtn) {
     pinLayoutResetBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      setOrbitMode(false);
-      clearOrbits();
+      setCloudOrbit(false);
+      stopCloudOrbit();
+      cloudForceAll = false;
+      hubId = CLOUD_ID;
       SYMBOLS.forEach((s) => {
         restoreToOrbit(s.id);
         store[s.id] = {
@@ -1635,9 +1312,6 @@
           pinned: false,
           ax: 0,
           ay: 0,
-          orb: false,
-          orbFn: "shield",
-          orbField: false,
         };
       });
       writeStore(store);
@@ -1647,10 +1321,12 @@
   }
 
   document.addEventListener("click", (e) => {
-    if (pinMenu && !pinMenu.hidden && !e.target.closest("[data-pin-wrap]")) pinMenuOpen(false);
-    if (orbitMenu && !orbitMenu.hidden && !e.target.closest("[data-orbit-wrap]")) orbitMenuOpen(false);
+    if (!pinMenu || pinMenu.hidden) return;
+    if (e.target.closest("[data-pin-wrap]")) return;
+    pinMenuOpen(false);
   });
 
+  // Cloud orbit: tap a shape → action menu (hub / reset shape / reset / all shapes)
   const cloudMenu = document.querySelector("[data-cloud-shape-menu]");
   let cloudMenuSym = null;
   const cloudMenuOpen = (open, id, clientX, clientY) => {
@@ -1664,19 +1340,11 @@
       cloudMenu.style.left = x + "px";
       cloudMenu.style.top = y + "px";
     }
-    // enable/disable Orbit selected hub button
-    const orbitHubBtn = cloudMenu.querySelector('[data-cloud-act="orbit-hub"]');
-    if (orbitHubBtn) {
-      const ok = !!(activeHubId && id !== activeHubId && id !== "torus");
-      orbitHubBtn.disabled = !ok;
-      orbitHubBtn.style.opacity = ok ? "1" : "0.4";
-    }
     document.documentElement.setAttribute("data-cloud-menu", open ? "on" : "off");
   };
 
   const resetOneShape = (id) => {
     if (!id) return;
-    freeOrbitRole(id);
     restoreToOrbit(id);
     store[id] = {
       anim: (store[id] && store[id].anim) || "off",
@@ -1689,10 +1357,36 @@
       pinned: false,
       ax: 0,
       ay: 0,
-      orb: false,
-      orbFn: "shield",
-      orbField: false,
     };
+    writeStore(store);
+    if (cloudOrbitOn) {
+      ensurePinnedAtWorld(id);
+      rebuildCloudMoons();
+    }
+    applyAll();
+    renderLists();
+  };
+
+  const resetAllShapes = () => {
+    setCloudOrbit(false);
+    stopCloudOrbit();
+    cloudForceAll = false;
+    hubId = CLOUD_ID;
+    SYMBOLS.forEach((s) => {
+      restoreToOrbit(s.id);
+      store[s.id] = {
+        anim: (store[s.id] && store[s.id].anim) || "off",
+        speed: (store[s.id] && store[s.id].speed) || 100,
+        colour: (store[s.id] && store[s.id].colour) || "off",
+        colourSpeed: (store[s.id] && store[s.id].colourSpeed) || 100,
+        size: 100,
+        x: 0,
+        y: 0,
+        pinned: false,
+        ax: 0,
+        ay: 0,
+      };
+    });
     writeStore(store);
     applyAll();
     renderLists();
@@ -1702,15 +1396,32 @@
     cloudMenu.addEventListener("click", (e) => {
       e.stopPropagation();
       const btn = e.target.closest("[data-cloud-act]");
-      if (!btn || btn.disabled) return;
+      if (!btn) return;
       const act = btn.getAttribute("data-cloud-act");
       const id = cloudMenuSym;
       cloudMenuOpen(false);
-      if (act === "hub" && id) assignHub(id);
-      else if (act === "orbit-hub" && id && activeHubId) assignMoon(id, activeHubId);
-      else if (act === "free" && id) freeOrbitRole(id);
-      else if (act === "reset-shape" && id) resetOneShape(id);
-      applyAll();
+      if (act === "hub" && id) {
+        if (!pinOn) setPin(true);
+        hubId = id;
+        cloudOrbitOn = true;
+        ensurePinnedAtWorld(id);
+        startCloudOrbit();
+        syncPinUi();
+        applyAll();
+      } else if (act === "reset-shape" && id) {
+        resetOneShape(id);
+      } else if (act === "reset-all") {
+        resetAllShapes();
+      } else if (act === "all-shapes") {
+        if (!pinOn) setPin(true);
+        cloudOrbitOn = true;
+        cloudForceAll = true;
+        if (!hubId || !findEl(hubId)) hubId = CLOUD_ID;
+        SYMBOLS.forEach((s) => ensurePinnedAtWorld(s.id));
+        startCloudOrbit();
+        syncPinUi();
+        applyAll();
+      }
     });
     document.addEventListener("click", (e) => {
       if (!cloudMenu || cloudMenu.hidden) return;
@@ -1718,6 +1429,7 @@
       cloudMenuOpen(false);
     });
   }
+
 
   // Shape drag is native site-wide (same feel as Pin). Pin only adds repel/orbit/reset.
   const canvasDragOn = () => true;
@@ -1770,14 +1482,12 @@
     cfg.ay = Math.round((cfg.ay + dy) * 10) / 10;
     placeAbs(drag.id);
 
-    if (orbitModeOn) {
-      const hub = moonOf[drag.id] ? moonOf[drag.id] : drag.id;
-      if (hubRing[hub]) layoutHubRing(hub);
-      // if dragging a hub, layout its ring
-      if (hubRing[drag.id]) layoutHubRing(drag.id);
+    if (cloudOrbitOn && drag.id === hubId) {
+      layoutRing();
     }
+    // While dragging a moon, allow free move; ring snaps even again on release
 
-    if (harmonyOn || orbitModeOn || (repelOn && pinOn)) resolveRepel(drag.id);
+    if (repelOn && pinOn) resolveRepel(drag.id);
     writeStore(store);
   };
 
@@ -1786,27 +1496,25 @@
     const id = drag.id;
     const wasTap = !drag.moved;
     drag = null;
-    if (orbitModeOn) {
+    if (cloudOrbitOn) {
       if (wasTap) {
-        // Tap while Orbit armed: toggle this shape as attractor
-        toggleAttractor(id);
+        // Tap in Cloud mode → shape actions (hub / reset / all)
+        cloudMenuOpen(true, id, e && e.clientX, e && e.clientY);
       } else {
-        // Snap moon angle from drop position
-        const hub = moonOf[id];
-        if (hub && hubRing[hub]) {
-          const st = hubRing[hub];
-          const h = ensure(hub);
+        // Snap back to perfect even circular spacing (phase from drop angle if a moon was dragged)
+        if (id !== hubId && ringIds.indexOf(id) >= 0) {
+          const hub = ensure(hubId);
           const cfg = ensure(id);
-          const dropAng = Math.atan2(cfg.ay - h.ay, cfg.ax - h.ax);
-          const idx = st.ids.indexOf(id);
-          const n = st.ids.length;
+          const dropAng = Math.atan2(cfg.ay - hub.ay, cfg.ax - hub.ax);
+          const idx = ringIds.indexOf(id);
+          const n = ringIds.length;
           if (n > 0 && idx >= 0) {
-            st.phase = dropAng - (idx * 2 * Math.PI) / n;
+            ringPhase = dropAng - (idx * 2 * Math.PI) / n;
           }
         }
-        rebuildAllOrbits();
+        rebuildCloudMoons();
       }
-      if (!orbitRaf) orbitRaf = requestAnimationFrame(tickOrbit);
+      if (!cloudRaf) cloudRaf = requestAnimationFrame(tickCloudOrbit);
     } else if (repelOn && pinOn) {
       resolveRepel(id);
     }
