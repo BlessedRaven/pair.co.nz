@@ -1050,8 +1050,8 @@
   };
 
   const isOrbitBody = (id) => {
-    if (!orbitModeOn) return false;
     if (moonOf[id]) return true;
+    if (attractors[id]) return true;
     return Object.keys(moonOf).some((m) => moonOf[m] === id);
   };
 
@@ -1066,20 +1066,22 @@
     ids.forEach((id) => {
       if (!ensure(id).pinned) ensurePinnedAtWorld(id);
     });
-    for (let pass = 0; pass < 5; pass++) {
+    const passes = harmonyOn ? 10 : 5;
+    const pad = harmonyOn ? REPEL_PAD * 1.15 : REPEL_PAD;
+    for (let pass = 0; pass < passes; pass++) {
       for (let i = 0; i < ids.length; i++) {
         for (let j = i + 1; j < ids.length; j++) {
           const a = ids[i];
           const b = ids[j];
-          // Don't shove moons off their assigned rings
-          if (orbitModeOn && isOrbitBody(a) && isOrbitBody(b)) {
+          // Orbit ring owns same-hub spacing — unless Harmony (then separate everything)
+          if (!harmonyOn && (orbitModeOn || Object.keys(attractors).length) && isOrbitBody(a) && isOrbitBody(b)) {
             const ha = moonOf[a] || a;
             const hb = moonOf[b] || b;
             if (ha === hb) continue;
           }
           const ca = ensure(a);
           const cb = ensure(b);
-          const need = (artRadius(a) + artRadius(b)) * REPEL_PAD;
+          const need = (artRadius(a) + artRadius(b)) * pad;
           let dx = cb.ax - ca.ax;
           let dy = cb.ay - ca.ay;
           let d = Math.hypot(dx, dy);
@@ -1141,37 +1143,11 @@
     if (!moons.length) return 0;
     const moonRs = moons.map((id) => artRadius(id));
     const maxMoonR = Math.max.apply(null, moonRs);
-    const meanMoonR = moonRs.reduce((a, b) => a + b, 0) / moonRs.length;
     const n = moons.length;
-    const sizePad = 1.2;
-    // Clear hub body + moon body; chord spacing uses max moon so big symbols don't clip
-    const clearHub = hubR + maxMoonR * sizePad + ORBIT_GAP;
-    const sinHalf = Math.sin(Math.PI / Math.max(n, 1));
-    const clearMoons = sinHalf > 0.001 ? (maxMoonR * sizePad * REPEL_PAD) / sinHalf : clearHub;
-    // Slight bias for size variance (spread when moons differ a lot)
-    const variance = Math.max(0, maxMoonR - meanMoonR) * 0.35;
-    let radius = Math.max(clearHub, clearMoons) + variance;
-    const hubCfg = ensure(hub);
-    for (let grow = 0; grow < 10; grow++) {
-      let clash = false;
-      for (let i = 0; i < n; i++) {
-        const ang = (hubRing[hub] && hubRing[hub].phase) || -Math.PI / 2;
-        const a = ang + (i * 2 * Math.PI) / n;
-        const mx = hubCfg.ax + Math.cos(a) * radius;
-        const my = hubCfg.ay + Math.sin(a) * radius;
-        const mr = moonRs[i];
-        SYMBOLS.forEach((s) => {
-          if (s.id === hub || moons.indexOf(s.id) >= 0) return;
-          if (!findEl(s.id)) return;
-          const other = ensure(s.id);
-          const need = (mr + artRadius(s.id)) * REPEL_PAD * 1.05;
-          if (Math.hypot(other.ax - mx, other.ay - my) < need) clash = true;
-        });
-      }
-      if (!clash) break;
-      radius *= 1.1;
-    }
-    return radius;
+    const clearHub = hubR + maxMoonR + ORBIT_GAP;
+    const sinHalf = Math.sin(Math.PI / n);
+    const clearMoons = sinHalf > 0.001 ? (maxMoonR * REPEL_PAD) / sinHalf : clearHub;
+    return Math.max(clearHub, clearMoons);
   };
 
   const attractRadius = (hub) => artRadius(hub) * ATTRACT_RANGE + ATTRACT_PAD;
@@ -1211,34 +1187,26 @@
 
   const pullIntoOrbit = (hub) => {
     if (!hub || !findEl(hub)) return;
+    // Release previous moons of this hub, then re-pull (old Cloud: only SMALLER shapes)
+    Object.keys(moonOf).forEach((m) => {
+      if (moonOf[m] === hub) delete moonOf[m];
+    });
     if (moonOf[hub]) delete moonOf[hub];
     ensurePinnedAtWorld(hub);
-    const hubCfg = ensure(hub);
-    const reach = attractRadius(hub);
     const hubR = artRadius(hub);
     SYMBOLS.forEach((s) => {
       if (s.id === hub) return;
       if (s.id === "torus") return; // never a moon
       if (attractors[s.id]) return; // other attractors stay hubs
       if (!findEl(s.id)) return;
-      ensurePinnedAtWorld(s.id);
-      const cfg = ensure(s.id);
-      const d = Math.hypot(cfg.ax - hubCfg.ax, cfg.ay - hubCfg.ay);
       const r = artRadius(s.id);
-      // Pull if inside attract radius OR smaller than hub (old Cloud-style)
-      if (d <= reach || r < hubR * 0.98) {
-        const cur = moonOf[s.id];
-        if (cur && cur !== hub && findEl(cur)) {
-          const other = ensure(cur);
-          const dOther = Math.hypot(cfg.ax - other.ax, cfg.ay - other.ay);
-          if (dOther + 8 < d) return;
-        }
-        // free this moon if it was a hub for others
-        Object.keys(moonOf).forEach((m) => {
-          if (moonOf[m] === s.id) delete moonOf[m];
-        });
-        moonOf[s.id] = hub;
-      }
+      // Exact old Cloud gate: only symbols smaller than the hub join the ring
+      if (r >= hubR * 0.98) return;
+      ensurePinnedAtWorld(s.id);
+      Object.keys(moonOf).forEach((m) => {
+        if (moonOf[m] === s.id) delete moonOf[m];
+      });
+      moonOf[s.id] = hub;
     });
     activeHubId = hub;
     syncAttractorWave(hub);
@@ -1246,30 +1214,36 @@
 
   const toggleAttractor = (id) => {
     if (!id || !findEl(id)) return;
+    if (ringOn) {
+      ringOn = false;
+      writeRing(false);
+      syncRing();
+    }
     if (attractors[id]) {
+      // OFF
       delete attractors[id];
-      // release moons of this hub
       Object.keys(moonOf).forEach((m) => {
         if (moonOf[m] === id) delete moonOf[m];
       });
       if (activeHubId === id) activeHubId = null;
       syncAttractorWave(id);
-      if (!Object.keys(attractors).length && !pinAttractOn) {
-        // keep orbit mode if user wants; just rebuild
-        rebuildAllOrbits();
-      } else {
-        rebuildAllOrbits();
+      rebuildAllOrbits();
+      if (!Object.keys(attractors).length) {
+        orbitModeOn = false;
+        stopOrbitEngine();
       }
       syncOrbitUi();
       return;
     }
-    // turn on attractor
+    // ON — like old Cloud: this hub pulls only smaller shapes into a clean ring
     if (moonOf[id]) delete moonOf[id];
     attractors[id] = true;
     activeHubId = id;
-    if (!orbitModeOn) setOrbitMode(true);
+    orbitModeOn = true;
+    SYMBOLS.forEach((s) => ensurePinnedAtWorld(s.id));
     pullIntoOrbit(id);
     rebuildAllOrbits();
+    startOrbitEngine();
     Object.keys(attractors).forEach(syncAttractorWave);
     syncOrbitUi();
   };
@@ -1358,26 +1332,7 @@
     orbitRaf = requestAnimationFrame(tickOrbit);
   };
 
-  // Old Cloud behaviour: one hub, every other (non-Torus) shape on a clean ring
-  const setOrbitHubCloudStyle = (hub) => {
-    if (!hub || !findEl(hub)) hub = findEl("cloud") ? "cloud" : SYMBOLS[0].id;
-    moonOf = {};
-    attractors = {};
-    attractors[hub] = true;
-    activeHubId = hub;
-    ensurePinnedAtWorld(hub);
-    SYMBOLS.forEach((s) => {
-      if (s.id === hub) return;
-      if (s.id === "torus") return; // Torus never orbits others
-      if (!findEl(s.id)) return;
-      ensurePinnedAtWorld(s.id);
-      moonOf[s.id] = hub;
-    });
-    rebuildAllOrbits();
-    syncAttractorWave(hub);
-    syncOrbitUi();
-  };
-
+  // Orbit bar: arms double-click attractors. Does NOT dump every shape onto one hub.
   const setOrbitMode = (on) => {
     orbitModeOn = !!on;
     if (orbitModeOn) {
@@ -1387,15 +1342,14 @@
         syncRing();
       }
       SYMBOLS.forEach((s) => ensurePinnedAtWorld(s.id));
-      const pick =
-        (selected && selected.size === 1 && [...selected][0]) ||
-        activeHubId ||
-        "cloud";
-      const hub = findEl(pick) ? pick : findEl("cloud") ? "cloud" : "torus";
-      setOrbitHubCloudStyle(hub);
-      startOrbitEngine();
+      if (Object.keys(attractors).length) {
+        Object.keys(attractors).forEach((hub) => pullIntoOrbit(hub));
+        rebuildAllOrbits();
+        startOrbitEngine();
+      }
       orbitMenuOpen(true);
     } else {
+      // Turning Orbit off releases all attractors
       stopOrbitEngine();
       clearOrbits();
       orbitMenuOpen(false);
@@ -1413,18 +1367,16 @@
       harmonyRaf = 0;
       return;
     }
-    // Pin everyone so separation has ax/ay
     SYMBOLS.forEach((s) => {
-      if (findEl(s.id) && !ensure(s.id).pinned) ensurePinnedAtWorld(s.id);
+      if (findEl(s.id)) ensurePinnedAtWorld(s.id);
     });
     resolveRepel(null);
-    // Keep orbit rings after pushes (hubs may have moved)
-    if (orbitModeOn) {
-      Object.keys(hubRing).forEach((hub) => {
-        if (hubRing[hub]) {
-          hubRing[hub].radius = fitRingRadius(hub, hubRing[hub].ids || []);
-          layoutHubRing(hub);
-        }
+    // Re-seat any attractor rings so moons stay even and clear of each other
+    if (Object.keys(attractors).length) {
+      Object.keys(attractors).forEach((hub) => {
+        if (!hubRing[hub]) return;
+        hubRing[hub].radius = fitRingRadius(hub, hubRing[hub].ids || []);
+        layoutHubRing(hub);
       });
     }
     harmonyRaf = requestAnimationFrame(tickHarmony);
@@ -1628,9 +1580,8 @@
       if (!SYMBOLS.some((s) => s.id === id)) return;
       e.preventDefault();
       e.stopPropagation();
-      // Double-click always Cloud-style: this shape becomes the hub
-      if (!orbitModeOn) setOrbitMode(true);
-      setOrbitHubCloudStyle(id);
+      // Double-click toggles attractor (old Cloud pull: smaller moons only)
+      toggleAttractor(id);
       applyAll();
     },
     true
@@ -1837,8 +1788,8 @@
     drag = null;
     if (orbitModeOn) {
       if (wasTap) {
-        // Tap = make this the Cloud-style hub (everything orbits it)
-        setOrbitHubCloudStyle(id);
+        // Tap while Orbit armed: toggle this shape as attractor
+        toggleAttractor(id);
       } else {
         // Snap moon angle from drop position
         const hub = moonOf[id];
