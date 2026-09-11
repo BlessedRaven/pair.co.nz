@@ -945,6 +945,8 @@
   let activeHubId = null; // hub selected for assigning orbiters
   let attractors = {}; // hubId -> true (double-click / Pin Attract)
   let pinAttractOn = false;
+  let harmonyOn = false; // site-wide no-overlap
+  let harmonyRaf = 0;
   const ATTRACT_RANGE = 4.2; // pull radius = hub artRadius * this + pad
   const ATTRACT_PAD = 70;
   // per-hub ring state
@@ -959,6 +961,7 @@
   const pinLayoutResetBtn = document.querySelector("[data-pin-layout-reset]");
   const attractBtn = document.querySelector("[data-pin-attract]");
   const orbitBtn = document.querySelector("[data-orbit-toggle]");
+  const harmonyBtn = document.querySelector("[data-harmony-toggle]");
   const orbitMenu = document.querySelector("[data-orbit-menu]");
   const orbitClearBtn = document.querySelector("[data-orbit-clear]");
 
@@ -1053,8 +1056,8 @@
   };
 
   const resolveRepel = (priorityId) => {
-    // Orbit mode: no stacking — always separate. Pin: only when Repel on.
-    if (orbitModeOn) {
+    // Harmony = site-wide no overlap. Orbit also separates. Else Pin+Repel only.
+    if (harmonyOn || orbitModeOn) {
       /* forced */
     } else if (!repelOn || !pinOn) {
       return;
@@ -1355,6 +1358,26 @@
     orbitRaf = requestAnimationFrame(tickOrbit);
   };
 
+  // Old Cloud behaviour: one hub, every other (non-Torus) shape on a clean ring
+  const setOrbitHubCloudStyle = (hub) => {
+    if (!hub || !findEl(hub)) hub = findEl("cloud") ? "cloud" : SYMBOLS[0].id;
+    moonOf = {};
+    attractors = {};
+    attractors[hub] = true;
+    activeHubId = hub;
+    ensurePinnedAtWorld(hub);
+    SYMBOLS.forEach((s) => {
+      if (s.id === hub) return;
+      if (s.id === "torus") return; // Torus never orbits others
+      if (!findEl(s.id)) return;
+      ensurePinnedAtWorld(s.id);
+      moonOf[s.id] = hub;
+    });
+    rebuildAllOrbits();
+    syncAttractorWave(hub);
+    syncOrbitUi();
+  };
+
   const setOrbitMode = (on) => {
     orbitModeOn = !!on;
     if (orbitModeOn) {
@@ -1364,14 +1387,58 @@
         syncRing();
       }
       SYMBOLS.forEach((s) => ensurePinnedAtWorld(s.id));
+      const pick =
+        (selected && selected.size === 1 && [...selected][0]) ||
+        activeHubId ||
+        "cloud";
+      const hub = findEl(pick) ? pick : findEl("cloud") ? "cloud" : "torus";
+      setOrbitHubCloudStyle(hub);
       startOrbitEngine();
       orbitMenuOpen(true);
     } else {
       stopOrbitEngine();
-      activeHubId = null;
+      clearOrbits();
       orbitMenuOpen(false);
     }
     syncOrbitUi();
+  };
+
+  const syncHarmonyUi = () => {
+    document.documentElement.setAttribute("data-harmony", harmonyOn ? "on" : "off");
+    if (harmonyBtn) harmonyBtn.setAttribute("aria-pressed", harmonyOn ? "true" : "false");
+  };
+
+  const tickHarmony = () => {
+    if (!harmonyOn) {
+      harmonyRaf = 0;
+      return;
+    }
+    // Pin everyone so separation has ax/ay
+    SYMBOLS.forEach((s) => {
+      if (findEl(s.id) && !ensure(s.id).pinned) ensurePinnedAtWorld(s.id);
+    });
+    resolveRepel(null);
+    // Keep orbit rings after pushes (hubs may have moved)
+    if (orbitModeOn) {
+      Object.keys(hubRing).forEach((hub) => {
+        if (hubRing[hub]) {
+          hubRing[hub].radius = fitRingRadius(hub, hubRing[hub].ids || []);
+          layoutHubRing(hub);
+        }
+      });
+    }
+    harmonyRaf = requestAnimationFrame(tickHarmony);
+  };
+
+  const setHarmony = (on) => {
+    harmonyOn = !!on;
+    syncHarmonyUi();
+    if (harmonyOn) {
+      if (!harmonyRaf) harmonyRaf = requestAnimationFrame(tickHarmony);
+    } else if (harmonyRaf) {
+      cancelAnimationFrame(harmonyRaf);
+      harmonyRaf = 0;
+    }
   };
 
   const clearOrbits = () => {
@@ -1561,7 +1628,9 @@
       if (!SYMBOLS.some((s) => s.id === id)) return;
       e.preventDefault();
       e.stopPropagation();
-      toggleAttractor(id);
+      // Double-click always Cloud-style: this shape becomes the hub
+      if (!orbitModeOn) setOrbitMode(true);
+      setOrbitHubCloudStyle(id);
       applyAll();
     },
     true
@@ -1580,6 +1649,14 @@
       applyAll();
     });
   }
+
+  if (harmonyBtn) {
+    harmonyBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setHarmony(!harmonyOn);
+    });
+  }
+  syncHarmonyUi();
 
   if (orbitClearBtn) {
     orbitClearBtn.addEventListener("click", (e) => {
@@ -1749,7 +1826,7 @@
       if (hubRing[drag.id]) layoutHubRing(drag.id);
     }
 
-    if ((repelOn && pinOn) || orbitModeOn) resolveRepel(drag.id);
+    if (harmonyOn || orbitModeOn || (repelOn && pinOn)) resolveRepel(drag.id);
     writeStore(store);
   };
 
@@ -1760,7 +1837,8 @@
     drag = null;
     if (orbitModeOn) {
       if (wasTap) {
-        cloudMenuOpen(true, id, e && e.clientX, e && e.clientY);
+        // Tap = make this the Cloud-style hub (everything orbits it)
+        setOrbitHubCloudStyle(id);
       } else {
         // Snap moon angle from drop position
         const hub = moonOf[id];

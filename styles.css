@@ -1498,3 +1498,11 @@ html[data-ring="off"] .mark-host svg.sigil .center[data-motion-spin] {
   0%, 100% { opacity: 0.45; }
   50% { opacity: 0.95; }
 }
+
+html[data-harmony="on"] .themes button[data-harmony-toggle],
+.themes button[data-harmony-toggle][aria-pressed="true"] {
+  color: var(--bg);
+  background: #1a9a6a;
+  border-color: transparent;
+  box-shadow: 0 0 14px rgba(40, 200, 140, 0.45);
+}
