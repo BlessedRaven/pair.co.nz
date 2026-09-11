@@ -595,6 +595,12 @@ body {
 }
 
 .mark-host svg.sigil {
+  filter: none;
+}
+
+/* Invert art in dark themes — keep colour glows on .sym (outside invert) */
+.mark-host svg.sigil .sym > :not(.sym-orb):not(.sym-shape-hit):not(.sym-hitpad),
+.mark-host svg.sigil .center > :not(.sym-orb):not(.sym-shape-hit):not(.sym-hitpad) {
   filter: var(--sigil-filter);
 }
 
@@ -702,6 +708,10 @@ html[data-ring="off"][data-theme="vibe-light"] .mark.is-ready {
 }
 
 /* Static rainbow colour glows */
+.mark-host svg.sigil .sym[data-colour],
+.mark-host svg.sigil .center[data-colour] {
+  transition: filter 220ms ease;
+}
 .mark-host svg.sigil .sym[data-colour="red"],
 .mark-host svg.sigil .center[data-colour="red"] {
   filter:
@@ -1459,3 +1469,48 @@ html[data-ring="off"] .mark-host svg.sigil .center[data-motion-spin] {
   bottom: calc(100% + 0.35rem);
   top: auto;
 }
+
+
+/* Multi-select orb rims */
+.mark-host svg.sigil .sym-orb-rim[data-orb-rim="shield"] {
+  stroke: rgba(140, 210, 255, 0.85);
+  stroke-width: 1.35;
+}
+.mark-host svg.sigil .sym-orb-rim[data-orb-rim="orbit"] {
+  stroke: rgba(255, 190, 80, 0.9);
+  stroke-width: 1.2;
+  stroke-dasharray: 4 5;
+}
+.mark-host svg.sigil .sym-orb-rim[data-orb-rim="cloud"] {
+  stroke: rgba(180, 150, 255, 0.88);
+  stroke-width: 1.5;
+  opacity: 0.92;
+}
+
+.motion-pct-input {
+  width: 3.2rem;
+  margin-left: 0.35rem;
+  appearance: textfield;
+  -moz-appearance: textfield;
+  border: 1px solid color-mix(in srgb, var(--fg) 22%, transparent);
+  border-radius: 0.35rem;
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 650;
+  padding: 0.12rem 0.25rem;
+  text-align: right;
+}
+.motion-pct-input::-webkit-outer-spin-button,
+.motion-pct-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.motion-pct-suffix {
+  font-size: 0.72rem;
+  font-weight: 650;
+  color: var(--muted);
+  margin-left: 0.1rem;
+}
+

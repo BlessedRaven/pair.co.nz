@@ -18,7 +18,7 @@
       } catch (e) {}
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=72" />
+  <link rel="stylesheet" href="styles.css?v=73" />
 </head>
 <body>
   <header class="top">
@@ -71,21 +71,24 @@
         <div class="motion-list" data-motion-anims role="listbox" aria-label="Animation"></div>
         <p class="motion-label" style="margin-top:0.65rem">Colour</p>
         <div class="motion-list" data-motion-colours role="listbox" aria-label="Colour"></div>
-        <div class="motion-speed-row" style="margin-top:0.65rem">
-          <p class="motion-label">Size</p>
-          <span class="motion-speed-val" data-motion-size-val>100%</span>
-        </div>
-        <input class="motion-speed" data-motion-size type="range" min="25" max="200" value="100" step="1" aria-label="Symbol size" />
-        <div class="motion-speed-row" style="margin-top:0.65rem">
-          <p class="motion-label">Spin speed</p>
-          <span class="motion-speed-val" data-motion-speed-val>100%</span>
-        </div>
-        <input class="motion-speed" data-motion-speed type="range" min="1" max="100" value="100" step="1" aria-label="Spin speed" />
-        <div class="motion-speed-row" style="margin-top:0.65rem">
-          <p class="motion-label">Colour speed</p>
-          <span class="motion-speed-val" data-motion-colour-speed-val>100%</span>
-        </div>
-        <input class="motion-speed" data-motion-colour-speed type="range" min="1" max="100" value="100" step="1" aria-label="Colour speed" />
+        <p class="motion-label" style="margin-top:0.65rem">
+          Size
+          <input class="motion-pct-input" data-motion-size-val type="number" min="0" max="100" step="1" value="0" aria-label="Size percent" />
+          <span class="motion-pct-suffix">%</span>
+        </p>
+        <input class="motion-speed" data-motion-size type="range" min="100" max="200" value="100" step="1" aria-label="Symbol size" />
+        <p class="motion-label" style="margin-top:0.65rem">
+          Spin speed
+          <input class="motion-pct-input" data-motion-speed-val type="number" min="1" max="100" step="1" value="1" aria-label="Spin speed percent" />
+          <span class="motion-pct-suffix">%</span>
+        </p>
+        <input class="motion-speed" data-motion-speed type="range" min="1" max="100" value="1" step="1" aria-label="Spin speed" />
+        <p class="motion-label" style="margin-top:0.65rem">
+          Colour speed
+          <input class="motion-pct-input" data-motion-colour-speed-val type="number" min="1" max="100" step="1" value="1" aria-label="Colour speed percent" />
+          <span class="motion-pct-suffix">%</span>
+        </p>
+        <input class="motion-speed" data-motion-colour-speed type="range" min="1" max="100" value="1" step="1" aria-label="Colour speed" />
 
         <p class="motion-label" style="margin-top:0.85rem">Projects</p>
         <div class="motion-list" data-project-list role="listbox" aria-label="Projects">
@@ -101,7 +104,7 @@
           <div class="motion-list" style="margin-top:0.4rem" data-orb-opts>
             <button type="button" class="motion-opt" data-orb-field aria-pressed="false">Glow field</button>
           </div>
-          <p class="motion-hint" style="margin-top:0.35rem">Circle rim by default. Optional Glow field = translucent aura. Shield / Orbit / Cloud change the feel.</p>
+          <p class="motion-hint" style="margin-top:0.35rem">Multi-select Shield / Orbit / Cloud (click again to off). Glow field = translucent aura.</p>
         </div>
       </div>
       <button type="button" class="motion-reset motion-reset-danger" data-motion-reset>Reset</button>
@@ -203,9 +206,9 @@
     <span class="muted">Mints TBD · not financial advice</span>
   </footer>
 
-  <script src="theme.js?v=72" defer></script>
-  <script src="motion.js?v=72" defer></script>
-  <script src="app.js?v=72" defer></script>
+  <script src="theme.js?v=73" defer></script>
+  <script src="motion.js?v=73" defer></script>
+  <script src="app.js?v=73" defer></script>
 
   <div class="cloud-shape-menu" data-cloud-shape-menu hidden role="menu" aria-label="Cloud shape actions">
     <button type="button" role="menuitem" data-cloud-act="hub">Make house (hub)</button>

@@ -121,25 +121,83 @@
 
   const clampPct = (sp) => {
     let n = Number(sp);
-    if (!Number.isFinite(n)) n = 100;
+    if (!Number.isFinite(n)) n = 1;
     if (n > 100) n = Math.round(n / 2);
     return Math.max(1, Math.min(100, Math.round(n)));
   };
 
+  // Internal size 100 = artist default (UI shows 0%). Range 100–200 → UI 0–100.
   const clampSize = (sp) => {
     let n = Number(sp);
     if (!Number.isFinite(n)) n = 100;
-    return Math.max(25, Math.min(200, Math.round(n)));
+    return Math.max(100, Math.min(200, Math.round(n)));
+  };
+  const sizeToDisplay = (size) => Math.max(0, Math.min(100, clampSize(size) - 100));
+  const displayToSize = (disp) => clampSize(100 + Number(disp));
+
+  // Per-symbol spin period multiplier (wave faster, torus a touch slower than 1%)
+  const SPEED_MULT = { wave: 1.85, torus: 0.8 };
+
+  const defaultCfgFor = (id) => {
+    const base = {
+      anim: "off",
+      speed: 1,
+      colour: "off",
+      colourSpeed: 1,
+      size: 100,
+      x: 0,
+      y: 0,
+      pinned: false,
+      ax: 0,
+      ay: 0,
+      orb: false,
+      orbFn: "shield",
+      orbFns: ["shield"],
+      orbField: false,
+    };
+    if (id === "flower") {
+      base.anim = "cw";
+      base.speed = 1;
+    } else if (id === "hermes") {
+      base.anim = "cw";
+      base.speed = 100;
+    } else if (id === "torus") {
+      base.anim = "cw";
+      base.speed = 1;
+    } else if (id === "sun") {
+      base.anim = "cw";
+      base.speed = 100;
+      base.colour = "red";
+      base.orb = true;
+      base.orbFns = ["shield", "cloud"];
+      base.orbFn = "shield";
+      base.orbField = true;
+    } else if (id === "key") {
+      base.anim = "cw";
+      base.speed = 100;
+    } else if (id === "wave") {
+      base.anim = "cw";
+      base.speed = 100;
+    }
+    return base;
   };
 
   const ensure = (id) => {
-    if (!store[id]) store[id] = { anim: "off", speed: 100, colour: "off", colourSpeed: 100, size: 100, x: 0, y: 0, pinned: false, ax: 0, ay: 0, orb: false, orbFn: "shield", orbField: false };
+    if (!store[id]) store[id] = defaultCfgFor(id);
     const a = store[id].anim;
     if (a !== "cw" && a !== "ccw" && a !== "off") store[id].anim = "off";
     if (!COLOUR_IDS.has(store[id].colour)) store[id].colour = "off";
-    store[id].speed = clampPct(store[id].speed);
-    store[id].colourSpeed = clampPct(store[id].colourSpeed == null ? 100 : store[id].colourSpeed);
-    store[id].size = clampSize(store[id].size == null ? 100 : store[id].size);
+    store[id].speed = clampPct(store[id].speed == null ? 1 : store[id].speed);
+    store[id].colourSpeed = clampPct(store[id].colourSpeed == null ? 1 : store[id].colourSpeed);
+    // Migrate old saves where default size was shown as 100%
+    let sz = store[id].size;
+    if (sz == null) sz = 100;
+    // Old range allowed <100; fold up to new floor
+    if (Number(sz) < 100 && Number(sz) >= 25) {
+      /* keep shrunk legacy as display-relative: treat as 100 (0% UI) */
+      sz = 100;
+    }
+    store[id].size = clampSize(sz);
     let x = Number(store[id].x);
     let y = Number(store[id].y);
     store[id].x = Number.isFinite(x) ? x : 0;
@@ -150,16 +208,25 @@
     store[id].ax = Number.isFinite(ax) ? ax : 0;
     store[id].ay = Number.isFinite(ay) ? ay : 0;
     store[id].orb = !!store[id].orb;
-    const ofn = store[id].orbFn;
-    store[id].orbFn = ofn === "orbit" || ofn === "cloud" ? ofn : "shield";
     store[id].orbField = !!store[id].orbField;
+    // Multi orb functions
+    let fns = store[id].orbFns;
+    if (!Array.isArray(fns) || !fns.length) {
+      const ofn = store[id].orbFn;
+      fns = [ofn === "orbit" || ofn === "cloud" ? ofn : "shield"];
+    }
+    fns = fns.filter((f) => f === "shield" || f === "orbit" || f === "cloud");
+    if (!fns.length) fns = ["shield"];
+    store[id].orbFns = [...new Set(fns)];
+    store[id].orbFn = store[id].orbFns[0];
     return store[id];
   };
   SYMBOLS.forEach((s) => ensure(s.id));
 
-  const periodSec = (speedPct) => {
+  const periodSec = (speedPct, id) => {
     const pct = clampPct(speedPct);
-    return Math.max(0.35, 75 / pct);
+    const mult = (id && SPEED_MULT[id]) || 1;
+    return Math.max(0.28, 75 / (pct * mult));
   };
 
   // Colour cycle: slower curve so 100% ≈ 8s, 50% ≈ 16s, 1% ≈ soft crawl
@@ -458,16 +525,20 @@
         return { x: 0, y: 0, width: 40, height: 40 };
       }
     });
-    const fn = cfg.orbFn || "shield";
-    const pad = fn === "cloud" ? 1.28 : fn === "orbit" ? 1.2 : 1.14;
-    const cx = bb.x + bb.width / 2;
-    const cy = bb.y + bb.height / 2;
-    const r = Math.max(12, (Math.max(bb.width, bb.height) / 2) * pad);
-
-    orb.setAttribute("data-orb-fn", fn);
+    const fns = cfg.orbFns && cfg.orbFns.length ? cfg.orbFns : [cfg.orbFn || "shield"];
+    const primary = fns[0] || "shield";
+    let cx = bb.x + bb.width / 2;
+    let cy = bb.y + bb.height / 2;
+    let baseR = Math.max(12, Math.max(bb.width, bb.height) / 2);
+    // Trinity: circumcircle fitted to the three lobe tips (viewBox-calibrated)
+    if (id === "trinity") {
+      cx = 82.513;
+      cy = 576.497;
+      baseR = 93.4;
+    }
+    orb.setAttribute("data-orb-fn", fns.join(" "));
     orb.setAttribute("data-orb-field", cfg.orbField ? "on" : "off");
 
-    // Optional translucent field
     let field = orb.querySelector(".sym-orb-field");
     let defs = orb.querySelector("defs");
     if (cfg.orbField) {
@@ -481,12 +552,10 @@
         defs.innerHTML = "";
         grad = document.createElementNS(ns, "radialGradient");
         grad.setAttribute("id", gradId);
-        for (let i = 0; i < 4; i++) {
-          grad.appendChild(document.createElementNS(ns, "stop"));
-        }
+        for (let i = 0; i < 4; i++) grad.appendChild(document.createElementNS(ns, "stop"));
         defs.appendChild(grad);
       }
-      const cols = ORB_FIELD_COLORS[fn] || ORB_FIELD_COLORS.shield;
+      const cols = ORB_FIELD_COLORS[primary] || ORB_FIELD_COLORS.shield;
       const stops = [
         [0, cols.inner],
         [0.45, cols.mid],
@@ -503,25 +572,30 @@
         field.setAttribute("class", "sym-orb-field");
         orb.appendChild(field);
       }
+      const fieldPad = fns.indexOf("cloud") >= 0 ? 1.28 : fns.indexOf("orbit") >= 0 ? 1.2 : 1.14;
       field.setAttribute("cx", cx);
       field.setAttribute("cy", cy);
-      field.setAttribute("r", r);
+      field.setAttribute("r", baseR * fieldPad);
       field.setAttribute("fill", "url(#" + gradId + ")");
     } else if (field) {
       field.remove();
       if (defs) defs.remove();
     }
 
-    // Rim circle (always)
-    let rim = orb.querySelector(".sym-orb-rim");
-    if (!rim) {
-      rim = document.createElementNS(ns, "circle");
+    // One rim per active orb function (multi-select)
+    orb.querySelectorAll(".sym-orb-rim").forEach((n) => n.remove());
+    const padFor = (fn) => (fn === "cloud" ? 1.28 : fn === "orbit" ? 1.22 : 1.0);
+    fns.forEach((fn, i) => {
+      const rim = document.createElementNS(ns, "circle");
       rim.setAttribute("class", "sym-orb-rim");
+      rim.setAttribute("data-orb-rim", fn);
+      rim.setAttribute("cx", cx);
+      rim.setAttribute("cy", cy);
+      // Trinity shield rim kisses the three tips (pad ~1)
+      const pad = id === "trinity" && fn === "shield" ? 1.0 : padFor(fn);
+      rim.setAttribute("r", baseR * pad + i * 2.5);
       orb.appendChild(rim);
-    }
-    rim.setAttribute("cx", cx);
-    rim.setAttribute("cy", cy);
-    rim.setAttribute("r", r);
+    });
   };
 
   const applyToDom = (id) => {
@@ -540,7 +614,7 @@
     }
     el.style.animation = "";
     if (cfg.anim !== "off") {
-      el.style.setProperty("--spin-dur", periodSec(cfg.speed) + "s");
+      el.style.setProperty("--spin-dur", periodSec(cfg.speed, id) + "s");
     } else {
       el.style.removeProperty("--spin-dur");
     }
@@ -568,7 +642,7 @@
 
   const primaryCfg = () => {
     const ids = selectedList();
-    if (!ids.length) return { anim: "off", speed: 100, colour: "off", colourSpeed: 100, size: 100 };
+    if (!ids.length) return { anim: "off", speed: 1, colour: "off", colourSpeed: 1, size: 100, orb: false, orbFns: ["shield"], orbField: false };
     return ensure(ids[ids.length - 1]);
   };
 
@@ -608,15 +682,20 @@
         "</button>"
       );
     }).join("");
+    const sizeDisp = sizeToDisplay(cfg.size);
     sizeEl.value = String(cfg.size);
-    sizeVal.textContent = clampSize(cfg.size) + "%";
+    sizeVal.value = String(sizeDisp);
     sizeEl.disabled = !selected.size;
+    sizeVal.disabled = !selected.size;
     speedEl.value = String(cfg.speed);
-    speedVal.textContent = formatPct(cfg.speed);
+    speedVal.value = String(clampPct(cfg.speed));
     speedEl.disabled = !selected.size || cfg.anim === "off";
+    speedVal.disabled = !selected.size || cfg.anim === "off";
     colourSpeedEl.value = String(cfg.colourSpeed);
-    colourSpeedVal.textContent = formatPct(cfg.colourSpeed);
-    colourSpeedEl.disabled = !selected.size || cfg.colour !== "vibe";
+    colourSpeedVal.value = String(clampPct(cfg.colourSpeed));
+    // Colour speed applies to vibe cycle; still editable whenever a colour is on
+    colourSpeedEl.disabled = !selected.size || cfg.colour === "off";
+    colourSpeedVal.disabled = !selected.size || cfg.colour === "off";
 
     const projectOrbBtn = document.querySelector('[data-project-pick="orb"]');
     const projectDetail = document.querySelector('[data-project-detail="orb"]');
@@ -625,7 +704,8 @@
     if (projectDetail) projectDetail.hidden = !selected.size;
     document.querySelectorAll("[data-orb-fn]").forEach((btn) => {
       const fn = btn.getAttribute("data-orb-fn");
-      btn.setAttribute("aria-selected", selected.size && fn === cfg.orbFn ? "true" : "false");
+      const on = selected.size && selectedList().some((id) => (ensure(id).orbFns || []).indexOf(fn) >= 0);
+      btn.setAttribute("aria-selected", on ? "true" : "false");
     });
     const fieldBtn = document.querySelector("[data-orb-field]");
     if (fieldBtn) {
@@ -794,18 +874,26 @@
       if (fn !== "shield" && fn !== "orbit" && fn !== "cloud") return;
       const ids = selectedList();
       if (!ids.length) return;
+      // Toggle: if every selected already has fn → remove; else add
+      const allHave = ids.every((id) => (ensure(id).orbFns || []).indexOf(fn) >= 0);
       ids.forEach((id) => {
         const cfg = ensure(id);
-        cfg.orb = true;
-        cfg.orbFn = fn;
+        let fns = Array.isArray(cfg.orbFns) ? cfg.orbFns.slice() : [cfg.orbFn || "shield"];
+        if (allHave) fns = fns.filter((f) => f !== fn);
+        else if (fns.indexOf(fn) < 0) fns.push(fn);
+        if (!fns.length) {
+          cfg.orb = false;
+          cfg.orbFns = ["shield"];
+          cfg.orbFn = "shield";
+        } else {
+          cfg.orb = true;
+          cfg.orbFns = fns;
+          cfg.orbFn = fns[0];
+        }
       });
       writeStore(store);
       ids.forEach((id) => applyToDom(id));
       renderLists();
-      // Soft link: single Cloud-fn pick can become Cloud-orbit hub when that mode is live
-      if (fn === "cloud" && ids.length === 1) {
-        document.dispatchEvent(new CustomEvent("pair:orb-cloud-hub", { detail: { id: ids[0] } }));
-      }
     });
   }
 
@@ -857,12 +945,14 @@
     const raw = btn.getAttribute("data-colour-pick") || "off";
     const colour = COLOUR_IDS.has(raw) ? raw : "off";
     forSelected((id, cfg) => {
-      cfg.colour = colour;
+      // Re-click same colour → off (smooth toggle). "None" always clears.
+      if (colour === "off") cfg.colour = "off";
+      else if (cfg.colour === colour) cfg.colour = "off";
+      else cfg.colour = colour;
     });
   });
 
-  sizeEl.addEventListener("input", () => {
-    const size = clampSize(sizeEl.value);
+  const applySizeToSelected = (size) => {
     const ids = selectedList();
     if (!ids.length) return;
     ids.forEach((id) => {
@@ -872,7 +962,18 @@
       syncOrbOn(id);
     });
     writeStore(store);
-    sizeVal.textContent = size + "%";
+    sizeEl.value = String(size);
+    sizeVal.value = String(sizeToDisplay(size));
+  };
+
+  sizeEl.addEventListener("input", () => {
+    applySizeToSelected(clampSize(sizeEl.value));
+  });
+  sizeVal.addEventListener("change", () => {
+    let n = Number(sizeVal.value);
+    if (!Number.isFinite(n)) n = 0;
+    n = Math.max(0, Math.min(100, Math.round(n)));
+    applySizeToSelected(displayToSize(n));
   });
 
   speedEl.addEventListener("input", () => {
@@ -880,7 +981,15 @@
     forSelected((id, cfg) => {
       cfg.speed = speed;
     });
-    speedVal.textContent = formatPct(speed);
+    speedVal.value = String(speed);
+  });
+  speedVal.addEventListener("change", () => {
+    const speed = clampPct(speedVal.value);
+    forSelected((id, cfg) => {
+      cfg.speed = speed;
+    });
+    speedEl.value = String(speed);
+    speedVal.value = String(speed);
   });
 
   colourSpeedEl.addEventListener("input", () => {
@@ -888,14 +997,22 @@
     forSelected((id, cfg) => {
       cfg.colourSpeed = colourSpeed;
     });
-    colourSpeedVal.textContent = formatPct(colourSpeed);
+    colourSpeedVal.value = String(colourSpeed);
+  });
+  colourSpeedVal.addEventListener("change", () => {
+    const colourSpeed = clampPct(colourSpeedVal.value);
+    forSelected((id, cfg) => {
+      cfg.colourSpeed = colourSpeed;
+    });
+    colourSpeedEl.value = String(colourSpeed);
+    colourSpeedVal.value = String(colourSpeed);
   });
 
   const doFullReset = () => {
     store = {};
     SYMBOLS.forEach((s) => {
       restoreToOrbit(s.id);
-      store[s.id] = { anim: "off", speed: 100, colour: "off", colourSpeed: 100, size: 100, x: 0, y: 0, pinned: false, ax: 0, ay: 0, orb: false, orbFn: "shield", orbField: false };
+      store[s.id] = defaultCfgFor(s.id);
     });
     document.querySelectorAll(".mark-host svg.sigil .sym-orb").forEach((n) => n.remove());
     writeStore(store);
@@ -1634,6 +1751,23 @@
   renderLists();
   setPanelOpen(false);
   syncRing();
+
+  try {
+    if (localStorage.getItem("pair-sym-defaults-v73") !== "1") {
+      const ids = SYMBOLS.map((s) => s.id);
+      const allOld = ids.every((id) => {
+        const c = store[id];
+        return c && Number(c.speed) === 100 && Number(c.colourSpeed) === 100;
+      });
+      if (allOld) {
+        ids.forEach((id) => {
+          store[id] = defaultCfgFor(id);
+        });
+        writeStore(store);
+      }
+      localStorage.setItem("pair-sym-defaults-v73", "1");
+    }
+  } catch (err) {}
 
   const tryApply = () => {
     if (document.querySelector(".mark-host svg.sigil .sym, .mark-host svg.sigil .center")) {
